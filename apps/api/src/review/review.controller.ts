@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
-import { DecisionInputSchema, RankingOverrideSchema, type Proposal } from '@cap/contracts';
+import { DecisionInputSchema, RankingOverrideSchema, RegistrationSchema, type Proposal } from '@cap/contracts';
 import type { Response } from 'express';
 import { z } from 'zod';
 import { CurrentUser, Roles, type AuthUser } from '../auth/auth';
@@ -54,10 +54,14 @@ export class ReviewController {
     return this.review.publish(user, id);
   }
 
-  @Post('offerings/:id/sync-registrations')
+  @Post('applications/:id/register')
   @Roles('BIRIM', 'OIDB')
-  sync(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.review.syncRegistrations(user, id);
+  register(
+    @Param('id') id: string,
+    @Body(new ZodPipe(RegistrationSchema)) body: { documents: string[]; note?: string },
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.review.register(user, id, body.documents, body.note);
   }
 
   @Post('offerings/:id/close-registration')

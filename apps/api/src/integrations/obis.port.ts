@@ -49,7 +49,6 @@ export abstract class ObisPort {
   abstract getStanding(studentNo: string, opts?: { fresh?: boolean }): Promise<ObisStanding>;
   abstract getTrack(studentNo: string, programId: string): Promise<ObisTrack>;
   abstract getProgramBaseScore(programId: string, year: number): Promise<number | null>;
-  abstract isRegistered(studentNo: string, programId: string): Promise<boolean>;
   abstract getAdvisees(advisorUsername: string): Promise<string[]>;
   abstract ping(): Promise<boolean>;
 }

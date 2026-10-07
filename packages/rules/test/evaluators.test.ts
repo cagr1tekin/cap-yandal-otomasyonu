@@ -38,7 +38,7 @@ describe('bağlam yoksa NOT_APPLICABLE', () => {
     'SEMESTER_WINDOW', 'MAX_ACTIVE_TRACKS', 'NOT_SAME_PROGRAM_BOTH', 'NOT_OWN_PROGRAM', 'TALENT_EXAM_PASSED',
     'SOURCE_PROGRAM_ALLOWED', 'MIN_QUOTA_RATIO', 'CONSECUTIVE_TERMS_NO_COURSE', 'GANO_DROP_STRIKES',
     'MAIN_GANO_BELOW', 'TRACK_GPA_CONSECUTIVE_BELOW', 'NOT_PREVIOUSLY_REMOVED', 'MINOR_PLAN_LIMITS',
-    'GRADUATION_CAP', 'GRADUATION_MINOR', 'FROZEN_WITH_MAIN',
+    'GRADUATION_CAP', 'GRADUATION_MINOR', 'FROZEN_WITH_MAIN', 'PROTOCOL_TOTAL_ECTS', 'NO_MAIN_OVERLAP',
   ];
   it.each(kinds)('%s', (kind) => {
     expect(evaluateRule(rule(kind, { min: 1 }), {}).status).toBe('NOT_APPLICABLE');
@@ -383,5 +383,40 @@ describe('ANY_OF (KR-ÇAP-03)', () => {
     expect(
       evaluateRule(r, { student: student({ classRankPercentile: 35, entryScore: { year: 2025, score: 100 } }), offering: offering() }).status,
     ).toBe('FAIL');
+  });
+});
+
+describe('PROTOCOL_TOTAL_ECTS (KR-ÇAP-18, Yönerge m.7/2)', () => {
+  const r = rule('PROTOCOL_TOTAL_ECTS', { byLevel: { ONLISANS: 120, '4': 240 } });
+  const p = (over = {}) => ({ level: 'LISANS' as const, durationYears: 4, courseEcts: 226, courseCount: 38, commonEcts: 14, overlapCodes: [], ...over });
+  it('226 + 14 = 240 → PASS', () => {
+    expect(evaluateRule(r, { protocol: p() }).status).toBe('PASS');
+  });
+  it('225 + 14 = 239 → FAIL', () => {
+    expect(evaluateRule(r, { protocol: p({ courseEcts: 225 }) }).status).toBe('FAIL');
+  });
+  it('ön lisans 120', () => {
+    expect(evaluateRule(r, { protocol: p({ level: 'ONLISANS', durationYears: 2, courseEcts: 106 }) }).status).toBe('PASS');
+  });
+  it('5 yıllık program: yönergede sayı yok → NA', () => {
+    expect(evaluateRule(r, { protocol: p({ durationYears: 5 }) }).status).toBe('NOT_APPLICABLE');
+  });
+});
+
+describe('NO_MAIN_OVERLAP (KR-ÇAP-19 / KR-YD-13)', () => {
+  const r = rule('NO_MAIN_OVERLAP');
+  const p = (overlapCodes: string[]) => ({ level: 'LISANS' as const, durationYears: 4, courseEcts: 0, courseCount: 0, commonEcts: 0, overlapCodes });
+  it('çakışma yok → PASS, var → FAIL', () => {
+    expect(evaluateRule(r, { protocol: p([]) }).status).toBe('PASS');
+    const res = evaluateRule(r, { protocol: p(['ISL101']) });
+    expect(res.status).toBe('FAIL');
+    expect(res.message).toContain('ISL101');
+  });
+});
+
+describe('dönem izni (Erasmus/Farabi) ders almama kuralını askıya alır', () => {
+  it('onLeave → NA', () => {
+    const r = rule('CONSECUTIVE_TERMS_NO_COURSE', { terms: 2 });
+    expect(evaluateRule(r, { history: history({ consecutiveTermsWithoutCourse: 2, onLeave: true }) }).status).toBe('NOT_APPLICABLE');
   });
 });

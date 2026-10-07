@@ -48,6 +48,11 @@ export class AccessService {
     if (!this.canOnOffering(user, o, roles)) throw forbidden('Bu programın kayıtlarına erişim yetkiniz yok.');
   }
 
+  /** Belirtilen programın bölüm başkanı mı? */
+  isHeadOf(user: AuthUser, programId: string) {
+    return this.programIds(user, 'BOLUM_BASKANI').includes(programId);
+  }
+
   assertUnit(user: AuthUser, unitId: string) {
     if (!this.isOidb(user) && !this.unitIds(user).includes(unitId)) {
       throw forbidden('Bu birim için yetkiniz yok.');

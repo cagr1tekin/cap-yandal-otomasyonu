@@ -60,6 +60,7 @@ enum ApplicationPath {
 
 enum ApplicationStatus {
   SUBMITTED
+  INELIGIBLE
   WITHDRAWN
   UNDER_REVIEW
   PROPOSED
@@ -84,9 +85,41 @@ enum EnrollmentStatus {
   COMPLETED
 }
 
-enum PlanItemStatus {
-  PROPOSED
+enum FormStatus {
+  DRAFT
+  IN_APPROVAL
   APPROVED
+  REJECTED
+  SUBMITTED
+  ENTERED
+  FILED
+}
+
+enum ApprovalSubject {
+  PROTOCOL
+  COURSE_REG
+}
+
+enum ApprovalRole {
+  OGRENCI_IMZA
+  ANA_DAL_DANISMANI
+  ANA_DAL_BOLUM_BASKANI
+  KOORDINATOR
+  HEDEF_BOLUM_BASKANI
+}
+
+enum ApprovalDecision {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveReason {
+  ERASMUS
+  FARABI
+  DERS_ACILMADI
+  DERS_CAKISMASI
+  DIGER
 }
 
 enum ScanStatus {
@@ -103,7 +136,6 @@ enum FindingDecision {
 }
 
 enum Role {
-  OGRENCI
   KOORDINATOR
   DANISMAN
   BOLUM_BASKANI
@@ -112,8 +144,8 @@ enum Role {
 }
 
 model Unit {
-  id       String   @id
-  code     String   @unique
+  id       String              @id
+  code     String              @unique
   name     String
   kind     UnitKind
   programs Program[]
@@ -121,27 +153,45 @@ model Unit {
 }
 
 model Program {
-  id                  String          @id
+  id                  String                  @id
   unitId              String
-  unit                Unit            @relation(fields: [unitId], references: [id])
-  obisProgramId       String          @unique
+  unit                Unit                    @relation(fields: [unitId], references: [id])
+  obisProgramId       String                  @unique
   name                String
   level               ProgramLevel
   durationYears       Int
   category            ProgramCategory
-  requiresTalentExam  Boolean         @default(false)
-  requiresSuccessRank Boolean         @default(false)
+  requiresTalentExam  Boolean                 @default(false)
+  requiresSuccessRank Boolean                 @default(false)
   offerings           Offering[]
   sourceFor           OfferingSourceProgram[]
+  courses             ProgramCourse[]
+}
+
+/**
+ * Program müfredatı (protokol ve dönemlik ders kaydı için).
+ */
+model ProgramCourse {
+  id        String  @id @default(cuid())
+  programId String
+  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  code      String
+  name      String
+  ects      Int
+  semester  Int
+  /// İki programda ortak sayılan genel kültür / alan dışı ders (Yönerge m.7/2)
+  common    Boolean @default(false)
+
+  @@unique([programId, code])
 }
 
 model Term {
-  id        String   @id
+  id        String              @id
   year      String
   season    Season
   startsAt  DateTime
   endsAt    DateTime
-  isCurrent Boolean  @default(false)
+  isCurrent Boolean             @default(false)
   offerings Offering[]
   windows   ApplicationWindow[]
   scans     TermScan[]
@@ -150,26 +200,26 @@ model Term {
 }
 
 model Offering {
-  id                  String          @id @default(cuid())
-  programId           String
-  program             Program         @relation(fields: [programId], references: [id])
-  termId              String
-  term                Term            @relation(fields: [termId], references: [id])
-  type                TrackType
-  quota               Int
-  coordinatorUsername String
-  firstYearIntake     Int?
-  quotaJustification  String?
-  status              OfferingStatus  @default(DRAFT)
-  rankingLockedAt     DateTime?
+  id                   String                  @id @default(cuid())
+  programId            String
+  program              Program                 @relation(fields: [programId], references: [id])
+  termId               String
+  term                 Term                    @relation(fields: [termId], references: [id])
+  type                 TrackType
+  quota                Int
+  coordinatorUsername  String
+  firstYearIntake      Int?
+  quotaJustification   String?
+  status               OfferingStatus          @default(DRAFT)
+  rankingLockedAt      DateTime?
   registrationClosedAt DateTime?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  sourcePrograms      OfferingSourceProgram[]
-  poolCourses         MinorPoolCourse[]
-  applications        Application[]
-  decisions           BoardDecision[]
-  enrollments         Enrollment[]
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  sourcePrograms       OfferingSourceProgram[]
+  poolCourses          MinorPoolCourse[]
+  applications         Application[]
+  decisions            BoardDecision[]
+  enrollments          Enrollment[]
 
   @@unique([programId, termId, type])
   @@index([termId, type, status])
@@ -191,34 +241,37 @@ model MinorPoolCourse {
   courseCode String
   name       String
   ects       Int
-  planItems  MinorPlanItem[]
 
   @@unique([offeringId, courseCode])
 }
 
 model ApplicationWindow {
-  id         String    @id @default(cuid())
-  unitId     String
-  unit       Unit      @relation(fields: [unitId], references: [id])
-  termId     String
-  term       Term      @relation(fields: [termId], references: [id])
-  type       TrackType
-  opensAt    DateTime
-  closesAt   DateTime
-  announceAt DateTime?
+  id                         String    @id @default(cuid())
+  unitId                     String
+  unit                       Unit      @relation(fields: [unitId], references: [id])
+  termId                     String
+  term                       Term      @relation(fields: [termId], references: [id])
+  type                       TrackType
+  opensAt                    DateTime
+  closesAt                   DateTime
+  announceAt                 DateTime?
+  /// Asil / yedek kesin kayıt ve ders kaydı son tarihleri (birim takvimleri)
+  registrationDeadline       DateTime?
+  waitlistDeadline           DateTime?
+  courseRegistrationDeadline DateTime?
 
   @@unique([unitId, termId, type])
 }
 
 model RuleSet {
-  id            String        @id @default(cuid())
-  version       String        @unique
+  id            String           @id @default(cuid())
+  version       String           @unique
   type          TrackType
   effectiveFrom DateTime
-  status        RuleSetStatus @default(DRAFT)
+  status        RuleSetStatus    @default(DRAFT)
   note          String?
   createdBy     String?
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime         @default(now())
   rules         RuleDefinition[]
   applications  Application[]
   scans         TermScan[]
@@ -240,23 +293,30 @@ model RuleDefinition {
 }
 
 model Application {
-  id            String            @id @default(cuid())
-  studentNo     String
-  offeringId    String
-  offering      Offering          @relation(fields: [offeringId], references: [id])
-  ruleSetId     String
-  ruleSet       RuleSet           @relation(fields: [ruleSetId], references: [id])
-  path          ApplicationPath
-  osymDocNo     String?
-  osymVerified  Boolean           @default(false)
-  obisSnapshot  Json
-  eligibility   Json
-  status        ApplicationStatus @default(SUBMITTED)
-  submittedAt   DateTime          @default(now())
-  withdrawnAt   DateTime?
-  updatedAt     DateTime          @updatedAt
-  ranking       Ranking?
-  enrollment    Enrollment?
+  id             String            @id @default(cuid())
+  studentNo      String
+  offeringId     String
+  offering       Offering          @relation(fields: [offeringId], references: [id])
+  ruleSetId      String
+  ruleSet        RuleSet           @relation(fields: [ruleSetId], references: [id])
+  path           ApplicationPath
+  osymDocNo      String?
+  osymVerified   Boolean           @default(false)
+  /// Birime şahsen verilen dilekçenin evrak kaydı (KARARLAR K-1)
+  documentNo     String?
+  documentDate   DateTime?
+  documents      Json?
+  enteredBy      String?
+  note           String?
+  withdrawReason String?
+  obisSnapshot   Json
+  eligibility    Json
+  status         ApplicationStatus @default(SUBMITTED)
+  submittedAt    DateTime          @default(now())
+  withdrawnAt    DateTime?
+  updatedAt      DateTime          @updatedAt
+  ranking        Ranking?
+  enrollment     Enrollment?
 
   @@unique([studentNo, offeringId])
   @@index([offeringId, status])
@@ -285,49 +345,143 @@ model BoardDecision {
 }
 
 model Enrollment {
-  id               String           @id @default(cuid())
-  studentNo        String
-  offeringId       String
-  offering         Offering         @relation(fields: [offeringId], references: [id])
-  applicationId    String?          @unique
-  application      Application?     @relation(fields: [applicationId], references: [id])
-  type             TrackType
-  programId        String
-  status           EnrollmentStatus @default(ACTIVE)
-  startTermId      String
-  ganoStrikes      Int              @default(0)
-  graceUntilTermId String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  planItems        MinorPlanItem[]
-  findings         ScanFinding[]
-  withdrawals      WithdrawalRequest[]
+  id                    String               @id @default(cuid())
+  studentNo             String
+  offeringId            String
+  offering              Offering             @relation(fields: [offeringId], references: [id])
+  applicationId         String?              @unique
+  application           Application?         @relation(fields: [applicationId], references: [id])
+  type                  TrackType
+  programId             String
+  status                EnrollmentStatus     @default(ACTIVE)
+  startTermId           String
+  ganoStrikes           Int                  @default(0)
+  graceUntilTermId      String?
+  /// Kesin kayıtta teslim alınan belgeler (KARARLAR K-8)
+  registrationDocuments Json?
+  registeredBy          String?
+  /// ÇAP / yan dal programı danışmanı (Danışmanlık Yön. m.6/5)
+  trackAdvisorUsername  String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  findings              ScanFinding[]
+  withdrawals           WithdrawalRequest[]
+  protocol              Protocol?
+  courseRegistrations   CourseRegistration[]
+  leaves                TermLeave[]
 
   @@index([studentNo])
   @@index([offeringId, status])
 }
 
-model MinorPlanItem {
-  id           String          @id @default(cuid())
-  enrollmentId String
-  enrollment   Enrollment      @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  poolCourseId String
-  poolCourse   MinorPoolCourse @relation(fields: [poolCourseId], references: [id])
-  status       PlanItemStatus  @default(PROPOSED)
-  approvedBy   String?
+/**
+ * Kabul ve Ders Protokolü (Esaslar m.3; KARARLAR K-9)
+ */
+model Protocol {
+  id           String           @id @default(cuid())
+  enrollmentId String           @unique
+  enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  status       FormStatus       @default(DRAFT)
+  round        Int              @default(1)
+  commonEcts   Int              @default(0)
+  createdBy    String
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  filedAt      DateTime?
+  filedBy      String?
+  updatedAt    DateTime         @updatedAt
+  courses      ProtocolCourse[]
+}
 
-  @@unique([enrollmentId, poolCourseId])
+model ProtocolCourse {
+  id         String   @id @default(cuid())
+  protocolId String
+  protocol   Protocol @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+  code       String
+  name       String
+  ects       Int
+
+  @@unique([protocolId, code])
+}
+
+/**
+ * Dönemlik ÇAP / yan dal ders kayıt formu (Esaslar m.4; KARARLAR K-10)
+ */
+model CourseRegistration {
+  id           String                   @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment               @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  termId       String
+  status       FormStatus               @default(DRAFT)
+  round        Int                      @default(1)
+  createdBy    String
+  approvedAt   DateTime?
+  submittedAt  DateTime?
+  submittedBy  String?
+  enteredAt    DateTime?
+  enteredBy    String?
+  updatedAt    DateTime                 @updatedAt
+  items        CourseRegistrationItem[]
+
+  @@unique([enrollmentId, termId])
+}
+
+model CourseRegistrationItem {
+  id                   String             @id @default(cuid())
+  courseRegistrationId String
+  courseRegistration   CourseRegistration @relation(fields: [courseRegistrationId], references: [id], onDelete: Cascade)
+  code                 String
+  name                 String
+  ects                 Int
+
+  @@unique([courseRegistrationId, code])
+}
+
+/**
+ * Protokol ve ders kayıt formu imzaları; her imzacı için bir satır
+ */
+model Approval {
+  id               String           @id @default(cuid())
+  subjectType      ApprovalSubject
+  subjectId        String
+  round            Int
+  role             ApprovalRole
+  assigneeUsername String?
+  decision         ApprovalDecision @default(PENDING)
+  decidedBy        String?
+  decidedAt        DateTime?
+  comment          String?
+  createdAt        DateTime         @default(now())
+
+  @@index([subjectType, subjectId])
+  @@index([assigneeUsername, decision])
+}
+
+/**
+ * Dönem izni: Erasmus/Farabi, dersin açılmaması vb. (Yönerge m.9/ç, İİBF ilkeleri)
+ */
+model TermLeave {
+  id           String      @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  termId       String
+  reason       LeaveReason
+  note         String?
+  createdBy    String
+  createdAt    DateTime    @default(now())
+
+  @@unique([enrollmentId, termId])
 }
 
 model TermScan {
-  id         String     @id @default(cuid())
+  id         String        @id @default(cuid())
   termId     String
-  term       Term       @relation(fields: [termId], references: [id])
+  term       Term          @relation(fields: [termId], references: [id])
   unitId     String?
   startedBy  String
-  status     ScanStatus @default(QUEUED)
+  status     ScanStatus    @default(QUEUED)
   error      String?
-  createdAt  DateTime   @default(now())
+  createdAt  DateTime      @default(now())
   finishedAt DateTime?
   ruleSets   RuleSet[]
   findings   ScanFinding[]

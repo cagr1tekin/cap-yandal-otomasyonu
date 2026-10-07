@@ -31,8 +31,6 @@ export interface AuthUser {
   email: string | null;
   roles: Role[];
   assignments: Assignment[];
-  /** Öğrenci rolünde öğrenci numarası (kullanıcı adı ile aynıdır). */
-  studentNo: string | null;
 }
 
 const IS_PUBLIC = 'isPublic';
@@ -84,12 +82,7 @@ export class AuthGuard implements CanActivate {
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) throw new UnauthorizedException('Oturum açmanız gerekiyor.');
 
-    let payload: JWTPayload & {
-      preferred_username?: string;
-      name?: string;
-      email?: string;
-      realm_access?: { roles?: string[] };
-    };
+    let payload: JWTPayload & { preferred_username?: string; name?: string; email?: string };
     try {
       payload = await this.verifier.verify(token);
     } catch {
@@ -98,48 +91,32 @@ export class AuthGuard implements CanActivate {
 
     const username = payload.preferred_username;
     if (!username || !payload.sub) throw new UnauthorizedException('Belirteçte kullanıcı bilgisi yok.');
-    const tokenRoles = (payload.realm_access?.roles ?? []).filter((r): r is Role =>
-      (ROLES as readonly string[]).includes(r),
-    );
-
-    // Kullanıcı kaydı yoksa ilk girişte oluşturulur; kapsam atamaları yöneticiye bırakılır.
+    // Keycloak yalnızca kimlik doğrular. Yetkinin tek kaynağı ÖİDB'nin yönettiği rol atamalarıdır;
+    // atanmamış kullanıcı ilk girişte kayıt olur ama hiçbir işlem yapamaz.
     const user = await this.prisma.user.upsert({
       where: { username },
-      create: {
-        username,
-        oidcSub: payload.sub,
-        displayName: payload.name ?? username,
-        email: payload.email ?? null,
-        lastLoginAt: new Date(),
-        assignments: { create: tokenRoles.map((role) => ({ role })) },
-      },
+      create: { username, oidcSub: payload.sub, displayName: payload.name ?? username, email: payload.email ?? null, lastLoginAt: new Date() },
       update: { oidcSub: payload.sub, lastLoginAt: new Date() },
       include: { assignments: true },
     });
 
-    const roles = [...new Set(tokenRoles)];
+    const assignments = user.assignments
+      .filter((a) => (ROLES as readonly string[]).includes(a.role))
+      .map((a) => ({ role: a.role as Role, unitId: a.unitId, programId: a.programId }));
     req.user = {
       username,
       sub: payload.sub,
       displayName: user.displayName,
       email: user.email,
-      roles,
-      // Yalnızca belirteçte de bulunan roller için kapsam geçerlidir.
-      assignments: user.assignments
-        .filter((a) => roles.includes(a.role))
-        .map((a) => ({ role: a.role, unitId: a.unitId, programId: a.programId })),
-      studentNo: roles.includes('OGRENCI') ? username : null,
+      roles: [...new Set(assignments.map((a) => a.role))],
+      assignments,
     };
+    const roles = req.user.roles;
 
     const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [ctx.getHandler(), ctx.getClass()]);
     if (required?.length && !required.some((r) => roles.includes(r))) throw forbidden();
     return true;
   }
-}
-
-export function requireStudent(user: AuthUser): string {
-  if (!user.studentNo) throw forbidden('Bu işlem yalnızca öğrenciler içindir.');
-  return user.studentNo;
 }
 
 @Global()

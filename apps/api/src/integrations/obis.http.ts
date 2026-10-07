@@ -75,13 +75,6 @@ export class HttpObisAdapter extends ObisPort {
     return r.baseScore;
   }
 
-  async isRegistered(no: string, programId: string) {
-    const r = await this.request<{ registered: boolean }>(
-      `/registrations?studentNo=${encodeURIComponent(no)}&programId=${encodeURIComponent(programId)}`,
-    );
-    return r.registered;
-  }
-
   async getAdvisees(username: string) {
     const r = await this.request<{ studentNos: string[] }>(`/advisors/${encodeURIComponent(username)}/students`);
     return r.studentNos;

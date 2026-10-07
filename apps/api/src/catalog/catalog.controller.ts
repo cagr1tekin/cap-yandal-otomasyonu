@@ -43,6 +43,12 @@ export class CatalogController {
     return this.prisma.program.findMany({ include: { unit: true }, orderBy: [{ unit: { name: 'asc' } }, { name: 'asc' }] });
   }
 
+  @Public()
+  @Get('programs/:id/courses')
+  courses(@Param('id') id: string) {
+    return this.prisma.programCourse.findMany({ where: { programId: id }, orderBy: [{ semester: 'asc' }, { code: 'asc' }] });
+  }
+
   @Get('offerings')
   @Roles(...STAFF)
   list(@CurrentUser() user: AuthUser, @Query('termId') termId?: string, @Query('type') type?: string) {

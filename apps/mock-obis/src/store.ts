@@ -1,9 +1,8 @@
-import { COURSES, PROGRAMS, STUDENTS, type SeedStudent, type SeedTrack, studentEmail } from '@cap/seed-data';
+import { CURRICULA, PROGRAMS, STUDENTS, type SeedStudent, type SeedTrack, studentEmail } from '@cap/seed-data';
 
 /** Bellek içi, değiştirilebilir OBİS durumu. Senaryo uçlarıyla ve /_admin/reset ile yönetilir. */
 class ObisStore {
   students = new Map<string, SeedStudent>();
-  registrations = new Set<string>();
 
   constructor() {
     this.reset();
@@ -11,11 +10,6 @@ class ObisStore {
 
   reset() {
     this.students = new Map(STUDENTS.map((s) => [s.studentNo, structuredClone(s)]));
-    this.registrations = new Set();
-    // Mevcut kayıtlı öğrenciler OBİS'te de kayıtlıdır.
-    for (const s of STUDENTS) {
-      for (const t of s.tracks) this.registrations.add(`${s.studentNo}:${t.programId}`);
-    }
   }
 
   get(no: string): SeedStudent | undefined {
@@ -66,7 +60,7 @@ class ObisStore {
       gpaByTerm: t.gpaByTerm,
       consecutiveTermsWithoutCourse: t.consecutiveTermsWithoutCourse,
       results: t.results.map((r) => {
-        const c = COURSES.find((x) => x.code === r.code);
+        const c = CURRICULA[programId]?.find((x) => x.code === r.code);
         return { ...r, name: c?.name ?? r.code, ects: c?.ects ?? 0 };
       }),
     };

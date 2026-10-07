@@ -5,6 +5,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { UserThrottlerGuard } from './common/throttle';
 import { LoggerModule } from 'nestjs-pino';
+import { AdminController, TasksService } from './admin/admin';
 import { ApplicationsController } from './applications/applications.controller';
 import { ApplicationsService } from './applications/applications.service';
 import { AuditModule } from './audit/audit.service';
@@ -15,6 +16,7 @@ import { CatalogService } from './catalog/catalog.service';
 import { APP_CONFIG, loadConfig, type AppConfig } from './config';
 import { EnrollmentsController } from './enrollments/enrollments.controller';
 import { EnrollmentsService } from './enrollments/enrollments.service';
+import { FormsService } from './forms/forms.service';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { HealthController, MeController, ReportsController } from './misc/misc';
 import { MonitoringController, MonitoringService, SCAN_QUEUE, ScanProcessor } from './monitoring/monitoring';
@@ -76,6 +78,7 @@ const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcesso
     EnrollmentsController,
     MonitoringController,
     NotificationsController,
+    AdminController,
   ],
   providers: [
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
@@ -86,6 +89,8 @@ const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcesso
     ApplicationsService,
     ReviewService,
     EnrollmentsService,
+    FormsService,
+    TasksService,
     MonitoringService,
     ...workers,
   ],

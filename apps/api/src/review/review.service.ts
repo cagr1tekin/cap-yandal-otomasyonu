@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import type { EvaluationContext } from '@cap/rules';
-import { LABELS, type Proposal } from '@cap/contracts';
+import { LABELS, REGISTRATION_DOCUMENTS, type Proposal } from '@cap/contracts';
 import ExcelJS from 'exceljs';
 import type { AuthUser } from '../auth/auth';
 import { AccessService } from '../auth/access.service';
 import { AuditService } from '../audit/audit.service';
 import { CatalogService, windowState, type OfferingFull } from '../catalog/catalog.service';
-import { badRequest, conflict, notFound } from '../common/http';
+import { badRequest, conflict, notFound, unprocessable } from '../common/http';
 import { ObisPort } from '../integrations/obis.port';
 import { NotificationsService } from '../notifications/notifications';
 import { PrismaService } from '../prisma/prisma.service';
@@ -192,48 +192,71 @@ export class ReviewService {
     for (const a of apps) {
       const text =
         a.status === 'ACCEPTED'
-          ? `${o.program.name} ${track} programına asil olarak kabul edildiniz. Kesin kaydınızı OBİS'te yaptırmanız gerekiyor.`
+          ? `${o.program.name} ${track} programına asil olarak kabul edildiniz. Kesin kayıt için belgelerinizle ${o.program.unit.name} öğrenci işlerine başvurunuz.`
           : a.status === 'WAITLISTED'
             ? `${o.program.name} ${track} programında ${a.ranking?.rank ?? '-'}. sıradan yedeksiniz. Kontenjan açılırsa bildirim alacaksınız.`
             : `${o.program.name} ${track} başvurunuz kabul edilmedi.`;
-      await this.notifications.notify(a.studentNo, 'Başvuru sonucunuz ilan edildi', text, '/ogrenci/basvurularim');
+      const info = await this.obis.getStudent(a.studentNo);
+      await this.notifications.emailStudent(info.email, 'Başvuru sonucunuz ilan edildi', text);
     }
     return { ok: true, notified: apps.length };
   }
 
-  /** OBİS'te kesin kaydını yaptıran asil öğrencilerin kaydını oluşturur. */
-  async syncRegistrations(user: AuthUser, offeringId: string) {
-    const o = await this.offeringFor(user, offeringId, ['BIRIM', 'OIDB']);
-    const accepted = await this.prisma.application.findMany({ where: { offeringId, status: 'ACCEPTED' } });
-    const result = { enrolled: [] as string[], waiting: [] as string[], conflicts: [] as string[] };
-    for (const a of accepted) {
-      if (!(await this.obis.isRegistered(a.studentNo, o.programId))) {
-        result.waiting.push(a.studentNo);
-        continue;
-      }
-      try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.application.update({ where: { id: a.id }, data: { status: 'ENROLLED' } });
-          const e = await tx.enrollment.create({
-            data: { studentNo: a.studentNo, offeringId, applicationId: a.id, type: o.type, programId: o.programId, startTermId: o.termId },
-          });
-          await this.audit.log({ actor: user.username, action: 'ENROLLMENT_CREATE', entity: 'Enrollment', entityId: e.id, after: { applicationId: a.id } }, tx);
-        });
-        result.enrolled.push(a.studentNo);
-        await this.notifications.notify(a.studentNo, 'Kaydınız tamamlandı', `${o.program.name} ${LABELS.track[o.type].toLowerCase()} kaydınız etkinleşti.`, '/ogrenci/programlarim');
-      } catch {
-        // Kısmi benzersiz indeks: öğrencinin aynı türde etkin kaydı var.
-        result.conflicts.push(a.studentNo);
-      }
+  /**
+   * Kesin kayıt (KARARLAR K-8): öğrenci belgelerle birime şahsen gelir, birim belge kontrolüyle kaydı işler.
+   * Belge listesi İİBF 2023-24 kayıt duyurusundan alınmıştır.
+   */
+  async register(user: AuthUser, applicationId: string, documents: string[], note?: string) {
+    const app = await this.prisma.application.findUnique({ where: { id: applicationId }, include: { ranking: true } });
+    if (!app) throw notFound('Başvuru');
+    const o = await this.offeringFor(user, app.offeringId, ['BIRIM', 'OIDB']);
+    if (app.status !== 'ACCEPTED') throw conflict('Yalnızca kabul edilen (asil ya da yedekten çağrılan) başvurular için kesin kayıt yapılır.');
+    if (o.registrationClosedAt) throw conflict('Kayıt dönemi kapatıldı.');
+    const missing = REGISTRATION_DOCUMENTS.filter((d) => !documents.includes(d.key));
+    if (missing.length) {
+      throw unprocessable('Kesin kayıt belgeleri eksik.', { errors: missing.map((d) => ({ path: d.key, message: d.label })) });
     }
-    return result;
+    const enrollment = await this.prisma.$transaction(async (tx) => {
+      await tx.application.update({ where: { id: app.id }, data: { status: 'ENROLLED' } });
+      const e = await tx.enrollment.create({
+        data: {
+          studentNo: app.studentNo,
+          offeringId: o.id,
+          applicationId: app.id,
+          type: o.type,
+          programId: o.programId,
+          startTermId: o.termId,
+          registrationDocuments: documents,
+          registeredBy: user.username,
+          // ÇAP/yan dal programı danışmanı (Danışmanlık Yön. m.6/5); bölüm başkanı değiştirebilir.
+          trackAdvisorUsername: o.coordinatorUsername,
+        },
+      });
+      await this.audit.log(
+        { actor: user.username, action: 'ENROLLMENT_CREATE', entity: 'Enrollment', entityId: e.id, after: { applicationId: app.id, documents }, reason: note },
+        tx,
+      );
+      return e;
+    });
+    const info = await this.obis.getStudent(app.studentNo);
+    await this.notifications.emailStudent(
+      info.email,
+      'Kesin kaydınız yapıldı',
+      `${o.program.name} ${LABELS.track[o.type].toLowerCase()} kesin kaydınız yapıldı. Kabul ve Ders Protokolünüz için koordinatörünüzle görüşünüz.`,
+    );
+    await this.notifications.notify(
+      o.coordinatorUsername,
+      'Yeni kayıt: protokol hazırlanmalı',
+      `${app.studentNo} numaralı öğrencinin ${o.program.name} ${LABELS.track[o.type].toLowerCase()} kesin kaydı yapıldı.`,
+      `/kayitlar/${enrollment.id}`,
+    );
+    return enrollment;
   }
 
   /** FR-16: kayıt süresi biter; kaydolmayan asiller düşer, sıradaki yedekler çağrılır. */
   async closeRegistration(user: AuthUser, offeringId: string) {
     const o = await this.offeringFor(user, offeringId, ['BIRIM', 'OIDB']);
     if (o.registrationClosedAt) throw conflict('Kayıt dönemi zaten kapatıldı.');
-    await this.syncRegistrations(user, offeringId);
     const dropped = await this.prisma.application.findMany({ where: { offeringId, status: 'ACCEPTED' } });
     await this.prisma.application.updateMany({ where: { offeringId, status: 'ACCEPTED' }, data: { status: 'NOT_ENROLLED' } });
     const enrolled = await this.prisma.application.count({ where: { offeringId, status: 'ENROLLED' } });
@@ -253,11 +276,11 @@ export class ReviewService {
       );
     });
     for (const w of waitlist) {
-      await this.notifications.notify(
-        w.studentNo,
+      const info = await this.obis.getStudent(w.studentNo);
+      await this.notifications.emailStudent(
+        info.email,
         'Yedekten asil listeye geçtiniz',
-        `${o.program.name} ${LABELS.track[o.type].toLowerCase()} programında kontenjan açıldı. Kesin kaydınızı OBİS'te yaptırın.`,
-        '/ogrenci/basvurularim',
+        `${o.program.name} ${LABELS.track[o.type].toLowerCase()} programında kontenjan açıldı. Kesin kayıt için belgelerinizle ${o.program.unit.name} öğrenci işlerine başvurunuz.`,
       );
     }
     return { dropped: dropped.length, promoted: waitlist.map((w) => w.studentNo) };

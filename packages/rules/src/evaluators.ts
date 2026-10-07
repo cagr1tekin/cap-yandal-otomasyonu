@@ -193,6 +193,7 @@ const minQuotaRatio: Evaluator = (rule, { offering }) => {
 const consecutiveTermsNoCourse: Evaluator = (rule, { history, student }) => {
   if (!history) return na(rule);
   if (student?.frozen) return na(rule, 'Kayıt dondurulmuş; ders almama sayılmaz.');
+  if (history.onLeave) return na(rule, 'Bu dönem için dönem izni kayıtlı; ders almama sayılmaz.');
   const terms = num(rule, 'terms');
   const n = history.consecutiveTermsWithoutCourse;
   if (n >= terms) {
@@ -300,6 +301,30 @@ const minorPlanLimits: Evaluator = (rule, { minorPlan }) => {
     : make(rule, 'FAIL', `Plan: ${actual}; ${expected} gerekli.`, { actual, expected });
 };
 
+const protocolTotalEcts: Evaluator = (rule, { protocol }) => {
+  if (!protocol) return na(rule);
+  const byLevel = rule.params.byLevel as Record<string, number>;
+  const key = protocol.level === 'ONLISANS' ? 'ONLISANS' : String(protocol.durationYears);
+  const required = byLevel[key];
+  if (required === undefined) {
+    return na(rule, `Yönergede ${protocol.durationYears} yıllık programlar için AKTS toplamı tanımlı değil.`);
+  }
+  const total = protocol.courseEcts + protocol.commonEcts;
+  const detail = `${protocol.courseEcts} protokol + ${protocol.commonEcts} ortak = ${total} AKTS`;
+  return total >= required
+    ? make(rule, 'PASS', `${detail} ≥ ${required}.`, { actual: total, expected: required })
+    : make(rule, 'FAIL', `${detail}; en az ${required} AKTS gerekli.`, { actual: total, expected: required });
+};
+
+const noMainOverlap: Evaluator = (rule, { protocol }) => {
+  if (!protocol) return na(rule);
+  return protocol.overlapCodes.length === 0
+    ? make(rule, 'PASS', 'Protokolde ana dal müfredatındaki bir ders yok.')
+    : make(rule, 'FAIL', `Ana dalda bulunan dersler protokole yazılamaz: ${protocol.overlapCodes.join(', ')}.`, {
+        actual: protocol.overlapCodes.join(', '),
+      });
+};
+
 const graduationCap: Evaluator = (rule, { graduation }) => {
   if (!graduation) return na(rule);
   const minMainGano = num(rule, 'minMainGano');
@@ -381,6 +406,8 @@ export const evaluators: Record<string, Evaluator> = {
   GRADUATION_CAP: graduationCap,
   GRADUATION_MINOR: graduationMinor,
   FROZEN_WITH_MAIN: frozenWithMain,
+  PROTOCOL_TOTAL_ECTS: protocolTotalEcts,
+  NO_MAIN_OVERLAP: noMainOverlap,
 };
 
 export function evaluateRule(rule: RuleDefinition, ctx: EvaluationContext): RuleResult {

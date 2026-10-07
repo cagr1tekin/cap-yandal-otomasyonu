@@ -62,6 +62,7 @@ export class MonitoringService {
       });
 
       const perStudent = new Map<string, RuleResult[]>();
+      const leaves = await this.prisma.termLeave.findMany({ where: { termId: scan.termId, enrollmentId: { in: enrollments.map((e) => e.id) } } });
       for (const e of enrollments) {
         const [student, track] = await Promise.all([this.context.student(e.studentNo, true), this.obis.getTrack(e.studentNo, e.programId)]);
         const out = evaluate(sets[e.type].def, 'TERM_END', {
@@ -71,6 +72,7 @@ export class MonitoringService {
             trackGpaByTerm: track.gpaByTerm,
             consecutiveTermsWithoutCourse: track.consecutiveTermsWithoutCourse,
             ganoStrikes: e.ganoStrikes,
+            onLeave: leaves.some((l) => l.enrollmentId === e.id),
           },
         });
 
@@ -103,14 +105,12 @@ export class MonitoringService {
         if (flagged.length) perStudent.set(e.studentNo, [...(perStudent.get(e.studentNo) ?? []), ...flagged]);
       }
 
+      // Öğrenciye yalnızca uyarılar e-postayla bildirilir; kayıt silme adayları birim kararından sonra bildirilir.
       for (const [studentNo, results] of perStudent) {
-        const warn = results.some((r) => r.status === 'WARN');
-        await this.notifications.notify(
-          studentNo,
-          warn ? 'Dönem sonu uyarısı' : 'Kaydınızı etkileyen durum',
-          results.map((r) => `• ${r.title}: ${r.message}`).join('\n'),
-          '/ogrenci/programlarim',
-        );
+        const warns = results.filter((r) => r.status === 'WARN' && !r.effects?.freezeEnrollment);
+        if (!warns.length) continue;
+        const info = await this.obis.getStudent(studentNo);
+        await this.notifications.emailStudent(info.email, 'Dönem sonu uyarısı', warns.map((r) => `- ${r.title}: ${r.message} (${r.article})`).join('\n'));
       }
       const coordinators = [...new Set(enrollments.map((e) => e.offering.coordinatorUsername))];
       await this.notifications.notifyMany(
@@ -205,11 +205,11 @@ export class MonitoringService {
     });
 
     if (decision === 'CONFIRMED' && f.status === 'FAIL') {
-      await this.notifications.notify(
-        f.enrollment.studentNo,
+      const info = await this.obis.getStudent(f.enrollment.studentNo);
+      await this.notifications.emailStudent(
+        info.email,
         'Kaydınız silindi',
-        `${f.enrollment.offering.program.name} ${LABELS.track[f.enrollment.type].toLowerCase()} kaydınız birim kararıyla silindi. Gerekçe: ${result.title} — ${result.message}`,
-        '/ogrenci/programlarim',
+        `${f.enrollment.offering.program.name} ${LABELS.track[f.enrollment.type].toLowerCase()} kaydınız birim kararıyla silindi.\nGerekçe: ${result.title} — ${result.message} (${result.article})\nKarar: ${reason}`,
       );
     }
     return { ok: true };

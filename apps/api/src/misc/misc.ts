@@ -19,12 +19,6 @@ export class MeController {
 
   @Get('me')
   async me(@CurrentUser() user: AuthUser) {
-    let student = null;
-    if (user.studentNo) {
-      const [info, standing] = await Promise.all([this.obis.getStudent(user.studentNo), this.obis.getStanding(user.studentNo)]);
-      const program = await this.prisma.program.findUnique({ where: { id: info.programId }, include: { unit: true } });
-      student = { ...info, programName: program?.name, unitName: program?.unit.name, semesterNo: standing.semesterNo, gano: standing.gano };
-    }
     const unitIds = user.assignments.map((a) => a.unitId).filter(Boolean) as string[];
     const programIds = user.assignments.map((a) => a.programId).filter(Boolean) as string[];
     const [units, programs, coordinated, term] = await Promise.all([
@@ -39,7 +33,7 @@ export class MeController {
         : [],
       this.catalog.currentTerm(),
     ]);
-    return { ...user, student, units, programs, coordinated, currentTerm: term };
+    return { ...user, units, programs, coordinated, currentTerm: term };
   }
 
   @Public()

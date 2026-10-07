@@ -1,73 +1,63 @@
 import { OFFERINGS, PROGRAMS, UNITS } from './catalog';
-import { STUDENTS, studentEmail } from './students';
+import { STUDENTS } from './students';
 
-export type Role = 'OGRENCI' | 'KOORDINATOR' | 'DANISMAN' | 'BOLUM_BASKANI' | 'BIRIM' | 'OIDB';
+/**
+ * Panel yalnızca personel içindir (docs/KARARLAR.md K-1). Öğrenciler kullanıcı değildir;
+ * öğrenci verisi sahte OBİS'tedir.
+ */
+export type Role = 'KOORDINATOR' | 'DANISMAN' | 'BOLUM_BASKANI' | 'BIRIM' | 'OIDB';
 
 export interface SeedUser {
   username: string;
   displayName: string;
   email: string;
-  roles: Role[];
-  /** Kapsam: birim veya program. */
+  /** Kapsamlı rol atamaları; yetkinin tek kaynağı (Keycloak yalnızca kimlik doğrular). */
   assignments: { role: Role; unitId?: string; programId?: string }[];
 }
 
 /** Yerel geliştirme için ortak deneme şifresi; yalnızca infra/keycloak/realm.json içinde kullanılır. */
 export const DEV_PASSWORD = 'Deneme.2026';
 
-export const coordinatorUsername = (programId: string) =>
-  `koord.${PROGRAMS.find((p) => p.id === programId)!.slug}`;
+const slug = (programId: string) => PROGRAMS.find((p) => p.id === programId)!.slug;
 
-const staff: SeedUser[] = [
-  { username: 'oidb.yonetici', displayName: 'ÖİDB Yöneticisi', email: 'oidb@personel.test', roles: ['OIDB'], assignments: [{ role: 'OIDB' }] },
-  ...UNITS.map((u) => ({
-    username: `birim.${u.code.toLowerCase()}`,
-    displayName: `${u.name} Öğrenci İşleri`,
-    email: `birim.${u.code.toLowerCase()}@personel.test`,
-    roles: ['BIRIM' as Role],
-    assignments: [{ role: 'BIRIM' as Role, unitId: u.id }],
-  })),
-  {
-    username: 'bolum.iktisat',
-    displayName: 'İktisat Bölüm Başkanı',
-    email: 'bolum.iktisat@personel.test',
-    roles: ['BOLUM_BASKANI'],
-    assignments: [{ role: 'BOLUM_BASKANI', programId: 'P-IIBF-IKT' }],
-  },
-  {
-    username: 'bolum.bilgisayar',
-    displayName: 'Bilgisayar Mühendisliği Bölüm Başkanı',
-    email: 'bolum.bilgisayar@personel.test',
-    roles: ['BOLUM_BASKANI'],
-    assignments: [{ role: 'BOLUM_BASKANI', programId: 'P-TF-BIL' }],
-  },
+export const coordinatorUsername = (programId: string) => `koord.${slug(programId)}`;
+export const headUsername = (programId: string) => `bolum.${slug(programId)}`;
+
+const oidb: SeedUser[] = [
+  { username: 'oidb.yonetici', displayName: 'ÖİDB Yöneticisi', email: 'oidb@personel.test', assignments: [{ role: 'OIDB' }] },
 ];
+
+const unitStaff: SeedUser[] = UNITS.map((u) => ({
+  username: `birim.${u.code.toLowerCase()}`,
+  displayName: `${u.name} Öğrenci İşleri`,
+  email: `birim.${u.code.toLowerCase()}@personel.test`,
+  assignments: [{ role: 'BIRIM', unitId: u.id }],
+}));
+
+/** Her programın bölüm başkanı: hem hedef (ÇAP/yan dal) hem ana dal onaylarında imzacıdır. */
+const heads: SeedUser[] = PROGRAMS.map((p) => ({
+  username: headUsername(p.id),
+  displayName: `${p.name} Bölüm Başkanı`,
+  email: `${headUsername(p.id)}@personel.test`,
+  assignments: [{ role: 'BOLUM_BASKANI', programId: p.id }],
+}));
 
 const coordinators: SeedUser[] = [...new Set(OFFERINGS.map((o) => o.programId))].map((programId) => {
   const prog = PROGRAMS.find((p) => p.id === programId)!;
   return {
     username: coordinatorUsername(programId),
-    displayName: `ÇAP/Yan Dal Koordinatörü — ${prog.name}`,
+    displayName: `ÇAP ve Yan Dal Koordinatörü ${prog.name}`,
     email: `${coordinatorUsername(programId)}@personel.test`,
-    roles: ['KOORDINATOR'],
     assignments: [{ role: 'KOORDINATOR', programId }],
   };
 });
 
+/** Ana dal danışmanları (OBİS'teki danışman kullanıcı adlarıyla aynı). */
 const advisors: SeedUser[] = [...new Set(STUDENTS.map((s) => s.advisorUsername))].map((username) => ({
   username,
-  displayName: `Danışman (${username.split('.')[1]})`,
+  displayName: `Danışman ${username.split('.')[1]}`,
   email: `${username}@personel.test`,
-  roles: ['DANISMAN'],
   assignments: [{ role: 'DANISMAN' }],
 }));
 
-const students: SeedUser[] = STUDENTS.map((s) => ({
-  username: s.studentNo,
-  displayName: s.fullName,
-  email: studentEmail(s.studentNo),
-  roles: ['OGRENCI'],
-  assignments: [{ role: 'OGRENCI' }],
-}));
-
-export const USERS: SeedUser[] = [...staff, ...coordinators, ...advisors, ...students];
+export const USERS: SeedUser[] = [...oidb, ...unitStaff, ...heads, ...coordinators, ...advisors];

@@ -1,4 +1,4 @@
-import { COURSES, PROGRAMS, STUDENTS, USERS, studentEmail, type SeedStudent } from '@cap/seed-data';
+import { CURRICULA, PROGRAMS, STUDENTS, USERS, studentEmail, type SeedStudent } from '@cap/seed-data';
 import type { JWTPayload } from 'jose';
 import { TokenVerifier } from '../src/auth/auth';
 import {
@@ -9,17 +9,17 @@ import {
   type OsymVerification,
 } from '../src/integrations/obis.port';
 
-/** Testte belirteç = kullanıcı adı; roller seed verisinden gelir. */
+/** Testte belirteç = kullanıcı adı. Yetki veritabanındaki rol atamalarından gelir. */
 export class FakeTokenVerifier extends TokenVerifier {
   async verify(token: string): Promise<JWTPayload> {
-    const u = USERS.find((x) => x.username === token);
+    const u = USERS.find((x) => x.username === token) ?? (token.startsWith('yeni.') ? { username: token, displayName: token, email: `${token}@personel.test`, assignments: [] } : null);
     if (!u) throw new Error('bilinmeyen kullanıcı');
     return {
       sub: `sub-${u.username}`,
       preferred_username: u.username,
       name: u.displayName,
       email: u.email,
-      realm_access: { roles: u.roles },
+      realm_access: { roles: [...new Set(u.assignments.map((a) => a.role))] },
     } as JWTPayload;
   }
 }
@@ -27,7 +27,6 @@ export class FakeTokenVerifier extends TokenVerifier {
 /** Bellek içi OBİS (apps/mock-obis ile aynı veri). */
 export class FakeObis extends ObisPort {
   students = new Map<string, SeedStudent>(STUDENTS.map((s) => [s.studentNo, structuredClone(s)]));
-  registrations = new Set<string>();
 
   private s(no: string) {
     const s = this.students.get(no);
@@ -64,7 +63,7 @@ export class FakeObis extends ObisPort {
       gpaByTerm: t?.gpaByTerm ?? [],
       consecutiveTermsWithoutCourse: t?.consecutiveTermsWithoutCourse ?? 0,
       results: (t?.results ?? []).map((r) => {
-        const c = COURSES.find((x) => x.code === r.code);
+        const c = CURRICULA[programId]?.find((x) => x.code === r.code);
         return { ...r, name: c?.name ?? r.code, ects: c?.ects ?? 0 };
       }),
     };
@@ -72,10 +71,6 @@ export class FakeObis extends ObisPort {
 
   async getProgramBaseScore(programId: string, year: number) {
     return PROGRAMS.find((p) => p.id === programId)?.baseScores[year] ?? null;
-  }
-
-  async isRegistered(no: string, programId: string) {
-    return this.registrations.has(`${no}:${programId}`);
   }
 
   async getAdvisees(username: string) {

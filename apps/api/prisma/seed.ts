@@ -7,6 +7,7 @@ import { DEFAULT_RULE_SETS } from '@cap/rules';
 import {
   COURSES,
   CURRENT_TERM_ID,
+  CURRICULA,
   EXISTING_ENROLLMENTS,
   OFFERINGS,
   PROGRAMS,
@@ -14,6 +15,7 @@ import {
   UNITS,
   USERS,
   coordinatorUsername,
+  STUDENTS,
 } from '@cap/seed-data';
 
 const prisma = new PrismaClient();
@@ -21,7 +23,8 @@ const prisma = new PrismaClient();
 async function main() {
   const tables = [
     'AuditLog', 'Notification', 'WithdrawalRequest', 'ScanFinding', '_RuleSetToTermScan', 'TermScan',
-    'MinorPlanItem', 'Enrollment', 'BoardDecision', 'Ranking', 'Application', 'RuleDefinition', 'RuleSet',
+    'Approval', 'CourseRegistrationItem', 'CourseRegistration', 'ProtocolCourse', 'Protocol', 'TermLeave',
+    'ProgramCourse', 'Enrollment', 'BoardDecision', 'Ranking', 'Application', 'RuleDefinition', 'RuleSet',
     'ApplicationWindow', 'MinorPoolCourse', 'OfferingSourceProgram', 'Offering', 'Term', 'Program', 'Unit',
     'RoleAssignment', 'User',
   ];
@@ -41,6 +44,11 @@ async function main() {
       requiresTalentExam: p.requiresTalentExam ?? false,
       requiresSuccessRank: p.requiresSuccessRank ?? false,
     })),
+  });
+  await prisma.programCourse.createMany({
+    data: Object.entries(CURRICULA).flatMap(([programId, list]) =>
+      list.map((c) => ({ programId, code: c.code, name: c.name, ects: c.ects, semester: c.semester, common: c.common })),
+    ),
   });
   await prisma.term.createMany({
     data: TERMS.map((t) => ({
@@ -88,6 +96,9 @@ async function main() {
           opensAt: new Date('2025-08-01T09:00:00+03:00'),
           closesAt: new Date('2025-08-15T17:00:00+03:00'),
           announceAt: new Date('2025-09-01T09:00:00+03:00'),
+          registrationDeadline: new Date('2025-09-08T17:00:00+03:00'),
+          waitlistDeadline: new Date('2025-09-10T17:00:00+03:00'),
+          courseRegistrationDeadline: new Date('2025-09-12T17:00:00+03:00'),
         },
       });
       await prisma.applicationWindow.create({
@@ -98,6 +109,9 @@ async function main() {
           opensAt: new Date('2026-09-01T09:00:00+03:00'),
           closesAt: new Date('2026-12-31T17:00:00+03:00'),
           announceAt: new Date('2027-01-05T09:00:00+03:00'),
+          registrationDeadline: new Date('2027-01-12T17:00:00+03:00'),
+          waitlistDeadline: new Date('2027-01-15T17:00:00+03:00'),
+          courseRegistrationDeadline: new Date('2027-01-19T17:00:00+03:00'),
         },
       });
     }
@@ -150,7 +164,47 @@ async function main() {
         programId: o.programId,
         startTermId: o.termId,
         ganoStrikes: e.ganoStrikes,
+        trackAdvisorUsername: coordinatorUsername(o.programId),
       },
+    });
+  }
+
+  // Önceki dönemden gelen kayıtların imzaları tamamlanmış ve dosyalanmış protokolleri.
+  const enrollments = await prisma.enrollment.findMany();
+  for (const e of enrollments) {
+    const student = STUDENTS.find((s) => s.studentNo === e.studentNo)!;
+    const target = CURRICULA[e.programId];
+    const main = CURRICULA[student.programId];
+    const mainCodes = new Set(main.map((c) => c.code));
+    const pool = OFFERINGS.find((o) => o.id === e.offeringId)?.pool ?? [];
+    const courses =
+      e.type === 'CAP'
+        ? target.filter((c) => !c.common && !mainCodes.has(c.code))
+        : target.filter((c) => pool.includes(c.code)).slice(0, 6);
+    const commonEcts = e.type === 'CAP' ? target.filter((c) => c.common && mainCodes.has(c.code)).reduce((t, c) => t + c.ects, 0) : 0;
+    const p = await prisma.protocol.create({
+      data: {
+        enrollmentId: e.id,
+        status: 'FILED',
+        commonEcts,
+        createdBy: 'seed',
+        submittedAt: new Date('2025-09-20T10:00:00+03:00'),
+        approvedAt: new Date('2025-09-25T10:00:00+03:00'),
+        filedAt: new Date('2025-09-26T10:00:00+03:00'),
+        filedBy: 'seed',
+        courses: { create: courses.map((c) => ({ code: c.code, name: c.name, ects: c.ects })) },
+      },
+    });
+    await prisma.approval.createMany({
+      data: (['OGRENCI_IMZA', 'ANA_DAL_DANISMANI', 'ANA_DAL_BOLUM_BASKANI', 'KOORDINATOR', 'HEDEF_BOLUM_BASKANI'] as const).map((role) => ({
+        subjectType: 'PROTOCOL' as const,
+        subjectId: p.id,
+        round: 1,
+        role,
+        decision: 'APPROVED' as const,
+        decidedBy: 'seed',
+        decidedAt: new Date('2025-09-25T10:00:00+03:00'),
+      })),
     });
   }
 

@@ -6,7 +6,8 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DEV_PASSWORD, USERS } from './users';
 
-const ROLES = ['OGRENCI', 'KOORDINATOR', 'DANISMAN', 'BOLUM_BASKANI', 'BIRIM', 'OIDB'];
+// Keycloak yalnızca kimlik doğrular; yetki uygulamadaki rol atamalarından gelir. Roller bilgi amaçlı eklenir.
+const ROLES = ['KOORDINATOR', 'DANISMAN', 'BOLUM_BASKANI', 'BIRIM', 'OIDB'];
 
 const realm = {
   realm: 'selcuk',
@@ -54,7 +55,7 @@ const realm = {
       firstName,
       lastName: rest.join(' ') || '-',
       credentials: [{ type: 'password', value: DEV_PASSWORD, temporary: false }],
-      realmRoles: u.roles,
+      realmRoles: [...new Set(u.assignments.map((a) => a.role))],
     };
   }),
 };

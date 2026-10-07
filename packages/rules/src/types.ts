@@ -1,7 +1,7 @@
 export type TrackType = 'CAP' | 'YANDAL';
 export type ProgramLevel = 'ONLISANS' | 'LISANS';
 export type ProgramCategory = 'MUHENDISLIK' | 'HUKUK' | 'TIP' | 'SAGLIK' | 'DIGER';
-export type RulePhase = 'APPLICATION' | 'TERM_END' | 'GRADUATION' | 'CONFIGURATION' | 'MINOR_PLAN';
+export type RulePhase = 'APPLICATION' | 'TERM_END' | 'GRADUATION' | 'CONFIGURATION' | 'PROTOCOL';
 
 /** PASS: sağlandı, FAIL: sağlanmadı, WARN: uyarı (engellemez), CONDITIONAL: ek bilgi/doğrulama gerekiyor. */
 export type RuleStatus = 'PASS' | 'FAIL' | 'WARN' | 'CONDITIONAL' | 'NOT_APPLICABLE';
@@ -92,12 +92,27 @@ export interface TrackHistory {
   trackGpaByTerm: number[];
   consecutiveTermsWithoutCourse: number;
   ganoStrikes: number;
+  /** Bu dönem için kayıtlı dönem izni (Erasmus/Farabi, dersin açılmaması vb.) var mı. */
+  onLeave?: boolean;
 }
 
 export interface MinorPlanInfo {
   poolEcts: number;
   planEcts: number;
   planCourseCount: number;
+}
+
+/** Kabul ve Ders Protokolü (Esaslar m.3, Yönerge m.7/2). */
+export interface ProtocolInfo {
+  level: ProgramLevel;
+  durationYears: number;
+  /** Protokoldeki derslerin AKTS toplamı. */
+  courseEcts: number;
+  courseCount: number;
+  /** Ana dalda alınan ve iki programda ortak sayılan derslerin AKTS toplamı. */
+  commonEcts: number;
+  /** Ana dal müfredatında da bulunan, protokole yazılmış ders kodları. */
+  overlapCodes: string[];
 }
 
 export interface GraduationInfo {
@@ -118,6 +133,7 @@ export interface EvaluationContext {
   osymVerified?: boolean;
   history?: TrackHistory;
   minorPlan?: MinorPlanInfo;
+  protocol?: ProtocolInfo;
   graduation?: GraduationInfo;
 }
 

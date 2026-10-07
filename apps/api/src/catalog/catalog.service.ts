@@ -114,7 +114,7 @@ export class CatalogService {
         await tx.offeringSourceProgram.createMany({ data: patch.sourceProgramIds.map((programId) => ({ offeringId: id, programId })) });
       }
       if (patch.poolCourses) {
-        await tx.minorPoolCourse.deleteMany({ where: { offeringId: id, planItems: { none: {} } } });
+        await tx.minorPoolCourse.deleteMany({ where: { offeringId: id, courseCode: { notIn: patch.poolCourses.map((c) => c.courseCode) } } });
         for (const c of patch.poolCourses) {
           await tx.minorPoolCourse.upsert({
             where: { offeringId_courseCode: { offeringId: id, courseCode: c.courseCode } },
@@ -162,7 +162,14 @@ export class CatalogService {
     const w = await this.prisma.applicationWindow.upsert({
       where: { unitId_termId_type: { unitId, termId: input.termId, type: input.type } },
       create: { unitId, ...input },
-      update: { opensAt: input.opensAt, closesAt: input.closesAt, announceAt: input.announceAt },
+      update: {
+        opensAt: input.opensAt,
+        closesAt: input.closesAt,
+        announceAt: input.announceAt,
+        registrationDeadline: input.registrationDeadline,
+        waitlistDeadline: input.waitlistDeadline,
+        courseRegistrationDeadline: input.courseRegistrationDeadline,
+      },
     });
     await this.audit.log({ actor: user.username, action: 'WINDOW_UPSERT', entity: 'ApplicationWindow', entityId: w.id, before, after: input });
     return w;
