@@ -252,8 +252,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.bilgisayar@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Bilgisayar Mühendisliği",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Bilgisayar Mühendisliği",
       "credentials": [
         {
           "type": "password",
@@ -270,8 +270,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.eem@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Elektrik-Elektronik Mühendisliği",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Elektrik-Elektronik Mühendisliği",
       "credentials": [
         {
           "type": "password",
@@ -288,8 +288,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.makine@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Makine Mühendisliği",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Makine Mühendisliği",
       "credentials": [
         {
           "type": "password",
@@ -306,8 +306,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.mekatronik@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Mekatronik Mühendisliği",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Mekatronik Mühendisliği",
       "credentials": [
         {
           "type": "password",
@@ -324,8 +324,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.metalurji@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Metalurji ve Malzeme Mühendisliği",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Metalurji ve Malzeme Mühendisliği",
       "credentials": [
         {
           "type": "password",
@@ -342,8 +342,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.biyoloji@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Biyoloji",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Biyoloji",
       "credentials": [
         {
           "type": "password",
@@ -360,8 +360,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.matematik@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Matematik",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Matematik",
       "credentials": [
         {
           "type": "password",
@@ -378,8 +378,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.istatistik@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — İstatistik",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü İstatistik",
       "credentials": [
         {
           "type": "password",
@@ -396,8 +396,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.kimya@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Kimya",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Kimya",
       "credentials": [
         {
           "type": "password",
@@ -414,8 +414,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.fizik@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Fizik",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Fizik",
       "credentials": [
         {
           "type": "password",
@@ -432,8 +432,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.akturya@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Aktüerya Bilimleri",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Aktüerya Bilimleri",
       "credentials": [
         {
           "type": "password",
@@ -450,8 +450,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.tarih@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Tarih",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Tarih",
       "credentials": [
         {
           "type": "password",
@@ -468,8 +468,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.felsefe@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Felsefe",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Felsefe",
       "credentials": [
         {
           "type": "password",
@@ -486,8 +486,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.sanat-tarihi@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Sanat Tarihi",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Sanat Tarihi",
       "credentials": [
         {
           "type": "password",
@@ -504,8 +504,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.iktisat@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — İktisat",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü İktisat",
       "credentials": [
         {
           "type": "password",
@@ -522,8 +522,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.isletme@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — İşletme",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü İşletme",
       "credentials": [
         {
           "type": "password",
@@ -540,8 +540,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.uluslararasi-iliskiler@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Uluslararası İlişkiler",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Uluslararası İlişkiler",
       "credentials": [
         {
           "type": "password",
@@ -558,8 +558,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.gazetecilik@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Gazetecilik",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Gazetecilik",
       "credentials": [
         {
           "type": "password",
@@ -576,8 +576,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.halkla-iliskiler@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Halkla İlişkiler ve Tanıtım",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Halkla İlişkiler ve Tanıtım",
       "credentials": [
         {
           "type": "password",
@@ -594,8 +594,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.reklamcilik@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Reklamcılık",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Reklamcılık",
       "credentials": [
         {
           "type": "password",
@@ -612,8 +612,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.moda@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Moda Tasarımı",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Moda Tasarımı",
       "credentials": [
         {
           "type": "password",
@@ -630,8 +630,8 @@
       "enabled": true,
       "emailVerified": true,
       "email": "koord.sinif-ogretmenligi@personel.test",
-      "firstName": "ÇAP/Yan",
-      "lastName": "Dal Koordinatörü — Sınıf Öğretmenliği",
+      "firstName": "ÇAP",
+      "lastName": "Yan Dal Koordinatörü Sınıf Öğretmenliği",
       "credentials": [
         {
           "type": "password",
@@ -649,7 +649,7 @@
       "emailVerified": true,
       "email": "danisman.isletme@personel.test",
       "firstName": "Danışman",
-      "lastName": "(isletme)",
+      "lastName": "isletme",
       "credentials": [
         {
           "type": "password",
@@ -667,7 +667,7 @@
       "emailVerified": true,
       "email": "danisman.tarih@personel.test",
       "firstName": "Danışman",
-      "lastName": "(tarih)",
+      "lastName": "tarih",
       "credentials": [
         {
           "type": "password",
@@ -685,7 +685,7 @@
       "emailVerified": true,
       "email": "danisman.makine@personel.test",
       "firstName": "Danışman",
-      "lastName": "(makine)",
+      "lastName": "makine",
       "credentials": [
         {
           "type": "password",
@@ -703,7 +703,7 @@
       "emailVerified": true,
       "email": "danisman.gazetecilik@personel.test",
       "firstName": "Danışman",
-      "lastName": "(gazetecilik)",
+      "lastName": "gazetecilik",
       "credentials": [
         {
           "type": "password",
@@ -721,7 +721,7 @@
       "emailVerified": true,
       "email": "danisman.matematik@personel.test",
       "firstName": "Danışman",
-      "lastName": "(matematik)",
+      "lastName": "matematik",
       "credentials": [
         {
           "type": "password",
@@ -739,7 +739,7 @@
       "emailVerified": true,
       "email": "danisman.eem@personel.test",
       "firstName": "Danışman",
-      "lastName": "(eem)",
+      "lastName": "eem",
       "credentials": [
         {
           "type": "password",
@@ -757,7 +757,7 @@
       "emailVerified": true,
       "email": "danisman.turkce@personel.test",
       "firstName": "Danışman",
-      "lastName": "(turkce)",
+      "lastName": "turkce",
       "credentials": [
         {
           "type": "password",

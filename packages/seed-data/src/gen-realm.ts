@@ -43,7 +43,9 @@ const realm = {
     },
   ],
   users: USERS.map((u) => {
-    const [firstName, ...rest] = u.displayName.split(' ');
+    // Keycloak kişi adı alanlarında / ( ) — gibi karakterlere izin vermez.
+    const clean = u.displayName.replace(/[^\p{L}\p{N} .'-]/gu, ' ').replace(/\s+/g, ' ').trim();
+    const [firstName, ...rest] = clean.split(' ');
     return {
       username: u.username,
       enabled: true,
