@@ -246,8 +246,8 @@ describe('CONSECUTIVE_TERMS_NO_COURSE', () => {
   });
 });
 
-describe('GANO_DROP_STRIKES (KR-ÇAP-11)', () => {
-  const r = rule('GANO_DROP_STRIKES', { threshold: 2.72, allowedStrikes: 1 });
+describe('GANO_DROP_STRIKES (KR-ÇAP-11, YÖK m.17/4)', () => {
+  const r = rule('GANO_DROP_STRIKES', { threshold: 2.72, floor: 2.5, allowedStrikes: 1 });
   it('2.72 → PASS', () => {
     expect(evaluateRule(r, { history: history({ mainGano: 2.72 }) }).status).toBe('PASS');
   });
@@ -255,6 +255,14 @@ describe('GANO_DROP_STRIKES (KR-ÇAP-11)', () => {
     const res = evaluateRule(r, { history: history({ mainGano: 2.71 }) });
     expect(res.status).toBe('WARN');
     expect(res.effects?.incrementGanoStrikes).toBe(true);
+  });
+  it('ilk düşüş tam 2.50 → WARN (65\'e kadar izinli)', () => {
+    expect(evaluateRule(r, { history: history({ mainGano: 2.5 }) }).status).toBe('WARN');
+  });
+  it('ilk düşüş 2.49 → FAIL (izin 2,50\'ye kadar)', () => {
+    const res = evaluateRule(r, { history: history({ mainGano: 2.49 }) });
+    expect(res.status).toBe('FAIL');
+    expect(res.expected).toBe(2.5);
   });
   it('ikinci düşüş → FAIL', () => {
     expect(evaluateRule(r, { history: history({ mainGano: 2.6, ganoStrikes: 1 }) }).status).toBe('FAIL');

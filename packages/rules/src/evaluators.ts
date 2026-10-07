@@ -209,13 +209,22 @@ const consecutiveTermsNoCourse: Evaluator = (rule, { history, student }) => {
 
 const ganoDropStrikes: Evaluator = (rule, { history }) => {
   if (!history) return na(rule);
+  // YÖK Geçiş Yön. m.17/4: bir defaya mahsus 65'e (2,50) kadar düşebilir; ikinci kez 70'in (2,72) altı kayıt silme.
   const threshold = num(rule, 'threshold');
+  const floor = num(rule, 'floor');
   const allowed = num(rule, 'allowedStrikes');
   const g = history.mainGano;
   if (g >= threshold) {
     return make(rule, 'PASS', `Ana dal GNO ${fmt(g)} ≥ ${fmt(threshold)}`, { actual: g, expected: threshold });
   }
   const effects: RuleEffects = { incrementGanoStrikes: true };
+  if (g < floor) {
+    return make(rule, 'FAIL', `Ana dal GNO ${fmt(g)} < ${fmt(floor)}; izin verilen düşüş ${fmt(floor)}'e kadardır.`, {
+      actual: g,
+      expected: floor,
+      effects,
+    });
+  }
   if (history.ganoStrikes < allowed) {
     return make(
       rule,

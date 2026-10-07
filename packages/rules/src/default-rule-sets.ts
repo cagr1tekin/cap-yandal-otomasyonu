@@ -60,8 +60,8 @@ export const CAP_RULE_SET_V1: RuleSetDefinition = {
       title: 'Ana dal GNO düşüşü',
       appliesTo: 'CAP',
       phase: 'TERM_END',
-      // AS-1 yanıtlanana kadar yorum: eşik 2.72, bir defaya mahsus izin.
-      params: { threshold: 2.72, allowedStrikes: 1 },
+      // YÖK Geçiş Yön. m.17/4 (docs/KARARLAR.md K-2): bir defa 2,50'ye kadar; ikinci kez 2,72 altı kayıt silme.
+      params: { threshold: 2.72, floor: 2.5, allowedStrikes: 1 },
     },
     { code: 'KR-ÇAP-12', kind: 'FROZEN_WITH_MAIN', article: `${CAP} m.9/1-ç`, title: 'Ana dalla birlikte dondurma', appliesTo: 'CAP', phase: 'TERM_END', params: {} },
     { code: 'KR-ÇAP-13', kind: 'GRADUATION_CAP', article: `${CAP} m.7/2, m.8/1-c,ç`, title: 'Çift ana dal diploması', appliesTo: 'CAP', phase: 'GRADUATION', params: { minMainGano: 2.72 } },

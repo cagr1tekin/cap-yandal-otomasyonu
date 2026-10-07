@@ -325,3 +325,18 @@ Bitirme teslimi 2027 bahar dönemi sonu varsayılmıştır, danışmanla netleş
 - **EBYS:** Elektronik Belge Yönetim Sistemi
 - **Birim:** Fakülte, yüksekokul, konservatuvar ya da meslek yüksekokulu
 - **Koordinatör:** Bölüm başkanınca atanan ÇAP veya yan dal program koordinatörü
+
+---
+
+## Güncelleme (v0.2, 2026-10-08)
+
+Açık soruların yanıtları ve kapsam kararı [KARARLAR.md](KARARLAR.md) dosyasındadır. Özet:
+
+- **Kapsam (K-1):** Ürün, **rol bazlı personel paneli**dir (ÖİDB, birim öğrenci işleri, bölüm başkanı, koordinatör, danışmanlar). Başvuru kâğıtla birime gelir ve öğrenci işlerince panele girilir; öğrenci ekranları kapsam dışıdır. Bölüm 4'teki "Öğrenci" rolü ve US-01…US-06 bu nedenle "ileride" kapsamına alınmıştır.
+- **AS-1 (K-2), kesin:** YÖK m.17/4. KR-ÇAP-11 güncellendi: bir defa 2,50'ye kadar düşebilir, 2,50'nin altı ya da ikinci kez 2,72'nin altı kayıt silme adayı.
+- **AS-2 (K-3):** Mevzuatta ölçüt yok, yetki kurulda. Uygulamada GNO'ya göre azalan sıralama (İİBF 2023-24, 5 bölüm). Eşitlik ölçütü açık.
+- **AS-3 (K-4), kesin:** Birden fazla programa başvurulabilir.
+- **AS-4 (K-5), kesin:** OBİS'te başvuru modülü yok; ÇAP/yan dal ders kaydını öğrenci işleri kâğıt formdan elle girer.
+- **AS-5 (K-6):** Belgeyi birim öğrenci işleri verir; hesaplama yöntemi açık.
+- **Yeni gereksinimler:** başvuru girişi ve belge kontrolü (K-1), belge listeli kesin kayıt (K-8), 5 onaylı Kabul ve Ders Protokolü (K-9), dönemlik ders kayıt formu ve OBİS listesi (K-10).
+- **Mevcut süreç:** [kaynaklar/mevcut-surec/MEVCUT-SUREC.md](../kaynaklar/mevcut-surec/MEVCUT-SUREC.md).
