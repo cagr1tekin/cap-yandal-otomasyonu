@@ -34,7 +34,8 @@ class ConfigModule {}
 
 function redisConnection(c: AppConfig) {
   const u = new URL(c.REDIS_URL);
-  return { host: u.hostname, port: Number(u.port || 6379) };
+  // redis://host:port/1 → 1 numaralı veritabanı (testler ayrı veritabanı kullanır)
+  return { host: u.hostname, port: Number(u.port || 6379), db: Number(u.pathname.slice(1) || 0) };
 }
 
 const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcessor] : [];
