@@ -1,0 +1,408 @@
+// Çift Ana Dal ve Yan Dal Başvuru ve Takip Sistemi — veri modeli
+// Teknik doküman bölüm 6. Öğrencinin kişisel/akademik verisi OBİS'te kalır;
+// burada yalnızca öğrenci numarası ve karar anlarının anlık görüntüleri tutulur.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UnitKind {
+  FAKULTE
+  YUKSEKOKUL
+  MYO
+  KONSERVATUVAR
+}
+
+enum ProgramLevel {
+  ONLISANS
+  LISANS
+}
+
+enum ProgramCategory {
+  MUHENDISLIK
+  HUKUK
+  TIP
+  SAGLIK
+  DIGER
+}
+
+enum Season {
+  GUZ
+  BAHAR
+}
+
+enum TrackType {
+  CAP
+  YANDAL
+}
+
+enum OfferingStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum RuleSetStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum ApplicationPath {
+  RANK
+  ENTRY_SCORE
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  WITHDRAWN
+  UNDER_REVIEW
+  PROPOSED
+  ACCEPTED
+  WAITLISTED
+  REJECTED
+  ENROLLED
+  NOT_ENROLLED
+}
+
+enum Proposal {
+  ASIL
+  YEDEK
+  RET
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  FROZEN
+  WITHDRAWN
+  REMOVED
+  COMPLETED
+}
+
+enum PlanItemStatus {
+  PROPOSED
+  APPROVED
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum FindingDecision {
+  PENDING
+  CONFIRMED
+  DISMISSED
+}
+
+enum Role {
+  OGRENCI
+  KOORDINATOR
+  DANISMAN
+  BOLUM_BASKANI
+  BIRIM
+  OIDB
+}
+
+model Unit {
+  id       String   @id
+  code     String   @unique
+  name     String
+  kind     UnitKind
+  programs Program[]
+  windows  ApplicationWindow[]
+}
+
+model Program {
+  id                  String          @id
+  unitId              String
+  unit                Unit            @relation(fields: [unitId], references: [id])
+  obisProgramId       String          @unique
+  name                String
+  level               ProgramLevel
+  durationYears       Int
+  category            ProgramCategory
+  requiresTalentExam  Boolean         @default(false)
+  requiresSuccessRank Boolean         @default(false)
+  offerings           Offering[]
+  sourceFor           OfferingSourceProgram[]
+}
+
+model Term {
+  id        String   @id
+  year      String
+  season    Season
+  startsAt  DateTime
+  endsAt    DateTime
+  isCurrent Boolean  @default(false)
+  offerings Offering[]
+  windows   ApplicationWindow[]
+  scans     TermScan[]
+
+  @@unique([year, season])
+}
+
+model Offering {
+  id                  String          @id @default(cuid())
+  programId           String
+  program             Program         @relation(fields: [programId], references: [id])
+  termId              String
+  term                Term            @relation(fields: [termId], references: [id])
+  type                TrackType
+  quota               Int
+  coordinatorUsername String
+  firstYearIntake     Int?
+  quotaJustification  String?
+  status              OfferingStatus  @default(DRAFT)
+  rankingLockedAt     DateTime?
+  registrationClosedAt DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  sourcePrograms      OfferingSourceProgram[]
+  poolCourses         MinorPoolCourse[]
+  applications        Application[]
+  decisions           BoardDecision[]
+  enrollments         Enrollment[]
+
+  @@unique([programId, termId, type])
+  @@index([termId, type, status])
+}
+
+model OfferingSourceProgram {
+  offeringId String
+  offering   Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  programId  String
+  program    Program  @relation(fields: [programId], references: [id])
+
+  @@id([offeringId, programId])
+}
+
+model MinorPoolCourse {
+  id         String   @id @default(cuid())
+  offeringId String
+  offering   Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  courseCode String
+  name       String
+  ects       Int
+  planItems  MinorPlanItem[]
+
+  @@unique([offeringId, courseCode])
+}
+
+model ApplicationWindow {
+  id         String    @id @default(cuid())
+  unitId     String
+  unit       Unit      @relation(fields: [unitId], references: [id])
+  termId     String
+  term       Term      @relation(fields: [termId], references: [id])
+  type       TrackType
+  opensAt    DateTime
+  closesAt   DateTime
+  announceAt DateTime?
+
+  @@unique([unitId, termId, type])
+}
+
+model RuleSet {
+  id            String        @id @default(cuid())
+  version       String        @unique
+  type          TrackType
+  effectiveFrom DateTime
+  status        RuleSetStatus @default(DRAFT)
+  note          String?
+  createdBy     String?
+  createdAt     DateTime      @default(now())
+  rules         RuleDefinition[]
+  applications  Application[]
+  scans         TermScan[]
+}
+
+model RuleDefinition {
+  id        String  @id @default(cuid())
+  ruleSetId String
+  ruleSet   RuleSet @relation(fields: [ruleSetId], references: [id], onDelete: Cascade)
+  code      String
+  kind      String
+  article   String
+  title     String
+  phase     String
+  params    Json
+  position  Int
+
+  @@unique([ruleSetId, code])
+}
+
+model Application {
+  id            String            @id @default(cuid())
+  studentNo     String
+  offeringId    String
+  offering      Offering          @relation(fields: [offeringId], references: [id])
+  ruleSetId     String
+  ruleSet       RuleSet           @relation(fields: [ruleSetId], references: [id])
+  path          ApplicationPath
+  osymDocNo     String?
+  osymVerified  Boolean           @default(false)
+  obisSnapshot  Json
+  eligibility   Json
+  status        ApplicationStatus @default(SUBMITTED)
+  submittedAt   DateTime          @default(now())
+  withdrawnAt   DateTime?
+  updatedAt     DateTime          @updatedAt
+  ranking       Ranking?
+  enrollment    Enrollment?
+
+  @@unique([studentNo, offeringId])
+  @@index([offeringId, status])
+}
+
+model Ranking {
+  applicationId  String      @id
+  application    Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  score          Float
+  rank           Int
+  proposal       Proposal
+  overriddenBy   String?
+  overrideReason String?
+  updatedAt      DateTime    @updatedAt
+}
+
+model BoardDecision {
+  id           String    @id @default(cuid())
+  offeringId   String
+  offering     Offering  @relation(fields: [offeringId], references: [id])
+  decisionDate DateTime
+  decisionNo   String
+  recordedBy   String
+  recordedAt   DateTime  @default(now())
+  publishedAt  DateTime?
+}
+
+model Enrollment {
+  id               String           @id @default(cuid())
+  studentNo        String
+  offeringId       String
+  offering         Offering         @relation(fields: [offeringId], references: [id])
+  applicationId    String?          @unique
+  application      Application?     @relation(fields: [applicationId], references: [id])
+  type             TrackType
+  programId        String
+  status           EnrollmentStatus @default(ACTIVE)
+  startTermId      String
+  ganoStrikes      Int              @default(0)
+  graceUntilTermId String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  planItems        MinorPlanItem[]
+  findings         ScanFinding[]
+  withdrawals      WithdrawalRequest[]
+
+  @@index([studentNo])
+  @@index([offeringId, status])
+}
+
+model MinorPlanItem {
+  id           String          @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment      @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  poolCourseId String
+  poolCourse   MinorPoolCourse @relation(fields: [poolCourseId], references: [id])
+  status       PlanItemStatus  @default(PROPOSED)
+  approvedBy   String?
+
+  @@unique([enrollmentId, poolCourseId])
+}
+
+model TermScan {
+  id         String     @id @default(cuid())
+  termId     String
+  term       Term       @relation(fields: [termId], references: [id])
+  unitId     String?
+  startedBy  String
+  status     ScanStatus @default(QUEUED)
+  error      String?
+  createdAt  DateTime   @default(now())
+  finishedAt DateTime?
+  ruleSets   RuleSet[]
+  findings   ScanFinding[]
+}
+
+model ScanFinding {
+  id           String          @id @default(cuid())
+  scanId       String
+  scan         TermScan        @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  enrollmentId String
+  enrollment   Enrollment      @relation(fields: [enrollmentId], references: [id])
+  ruleCode     String
+  status       String
+  result       Json
+  decision     FindingDecision @default(PENDING)
+  decidedBy    String?
+  decidedAt    DateTime?
+  reason       String?
+
+  @@index([scanId])
+}
+
+model WithdrawalRequest {
+  id                String     @id @default(cuid())
+  enrollmentId      String
+  enrollment        Enrollment @relation(fields: [enrollmentId], references: [id])
+  reason            String
+  capToMinorOutcome Json?
+  createdAt         DateTime   @default(now())
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  username  String
+  title     String
+  body      String
+  link      String?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([username, readAt])
+}
+
+model User {
+  id          String           @id @default(cuid())
+  username    String           @unique
+  oidcSub     String?          @unique
+  displayName String
+  email       String?
+  lastLoginAt DateTime?
+  assignments RoleAssignment[]
+}
+
+model RoleAssignment {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role
+  unitId    String?
+  programId String?
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id       BigInt   @id @default(autoincrement())
+  at       DateTime @default(now())
+  actor    String
+  action   String
+  entity   String
+  entityId String
+  before   Json?
+  after    Json?
+  reason   String?
+  ip       String?
+
+  @@index([entity, entityId])
+}
