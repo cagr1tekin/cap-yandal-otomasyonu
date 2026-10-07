@@ -475,3 +475,23 @@ Temel yol `/api/v1`. Kimlik doğrulama: OIDC erişim belirteci (Bearer). Hatalar
 | T-4 | Sınıf başarı yüzdeliğini OBİS'ten okumak mı, kohort verisinden hesaplamak mı | AS-5 |
 | T-5 | Saklama süreleri | ÖİDB |
 | T-6 | Gerçek SSO protokolü (OIDC / SAML / CAS) | Bilgi İşlem; port sayesinde etkisi sınırlı |
+
+## 16. Uygulama notları (v0.2, 2026-10-07)
+
+Uygulama sırasında tasarımdan şu noktalarda ayrılındı:
+
+| Konu | Tasarım (v0.1) | Uygulama | Gerekçe |
+|---|---|---|---|
+| Sürümler | Node 24, güncel kararlı | Node 22, Next.js 15.5, NestJS 11, Prisma 6, TypeScript 5.9, Zod 3 | Bir sonraki ana sürümler (Next 16, Nest 12, Prisma 7, TS 7) kırıcı değişiklik getiriyor |
+| Kural mesajı | `messageKey` → `tr.json` | Değerlendirici Türkçe `message` üretir | Mesajlar kural değerine bağlı; tek yerde kalması daha az hataya açık |
+| Worker | Ayrı giriş noktası | API süreci içinde, `WORKER_ENABLED` ile açılıp kapanır | Tek geliştirici, tek süreç; ölçek gerekirse ikinci süreç aynı bayrakla başlatılır |
+| Entegrasyon testi | Testcontainers | docker-compose'taki PostgreSQL'de ayrı `cap_test` veritabanı, sahte OBİS/belirteç | Windows'ta daha hızlı ve kararlı |
+| Web kimlik | Auth.js | next-auth v4 + Keycloak. Erişim belirteci yalnızca sunucuda çerezden çözülür, istemciye gönderilmez | |
+| Formlar | react-hook-form | Sunucu eylemleri + `ActionForm`. Hata durumunda girilen değerler korunur | JS'siz de çalışan formlar, daha az istemci kodu |
+| Oran sınırı | Kullanıcı başına | Belirteçteki `sub` ile; belirteç yoksa IP | Aynı ağdan gelen kullanıcılar birbirini engellemesin |
+| Tarama kapsamı | — | Tüm birimleri kapsayan taramada birim personeli yalnızca kendi biriminin bulgularını görür | Testte bulunan veri sızıntısı düzeltildi |
+
+**Test sonuçları:**
+- `packages/rules`: 116 test, %100 satır ve dal kapsamı.
+- `apps/api`: 12 entegrasyon testi (tam akış, yetki ve kısıtlar).
+- `e2e`: 18 Playwright testi (11 adımlı arayüz akışı, ekran görüntüleri, 4 mobil kontrol).
