@@ -1,0 +1,25 @@
+{
+  "name": "cap-yandal-otomasyonu",
+  "private": true,
+  "packageManager": "pnpm@10.34.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --concurrency 20",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @cap/api db:migrate",
+    "db:seed": "pnpm --filter @cap/api db:seed",
+    "db:reset": "pnpm --filter @cap/api db:reset",
+    "e2e": "pnpm --filter @cap/e2e test"
+  },
+  "devDependencies": {
+    "turbo": "2.11.7",
+    "typescript": "5.9.3",
+    "prettier": "3.6.2"
+  }
+}
