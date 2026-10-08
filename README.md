@@ -1,43 +1,46 @@
-# Bilgisayar Mühendisliği Çift Ana Dal ve Yan Dal Otomasyonu
+# Bilgisayar Mühendisliği ÇAP ve YDP Öğrenci Takip Sistemi
 
-Selçuk Üniversitesi bitirme projesi. Teknoloji Fakültesi **Bilgisayar Mühendisliği Bölümünde** çift ana dal (ÇAP) ya da yan dal yapmak isteyen öğrencilerin ve bölümün ÇAP komisyonunun kullandığı web uygulaması.
+Selçuk Üniversitesi bitirme projesi. Teknoloji Fakültesi **Bilgisayar Mühendisliği Bölümüne** gelen çift ana dal (ÇAP) ve yan dal (YDP) öğrencilerinin bugün kâğıt ve formla yapılan takibini tek bir web uygulamasına taşır:
 
-- Öğrenci hesabını açar, **bilgilerini kendisi girer**, belgesini yükler, uygunluğunu kural kural görür ve çevrim içi başvurur.
-- Komisyon beyanı belgeyle doğrular, sıralar, kurul kararını işler ve sonucu ilan eder.
-- Protokol bölümün gerçek protokollerinden üretilir ve beş imzayla; ders kayıt formu ve özel şartlı ders muafiyeti formu üç imzayla tamamlanır.
-- Not girişi, dönem sonu beyanı ve taraması, izinler, ayrılma, mezuniyet denetimi.
+- öğrencinin alacağı dersler, her dersin hangi dönemde alındığı, notu ve kaçıncı denemede geçildiği,
+- tamamlanan ve kalan dersler (AKTS ile), mezuniyete ya da sertifikaya ne kadar kaldığı,
+- belgeler (imzalı formlar, not belgeleri, resmî yazılar) ve sürümleri,
+- öğrenciyle kalıcı yazışma,
+- yönerge kurallarına göre uyarılar; kararı koordinatör verir.
 
-OBİS bağlantısı yoktur; veriler sistemde tutulur. Kapsam ve kararların kaynakları [docs/KARARLAR.md](docs/KARARLAR.md) dosyasındadır (K-12 ve sonrası).
+Sistemin tek esas kaynağı danışman hocanın [çerçeve e-postasıdır](kaynaklar/hoca-materyalleri/cerceve-eposta.md). Başvuru değerlendirme ve öğrenci seçimi sistemde yapılmaz (dekanlıkta); koordinatör kabul edilen öğrenciyi ekler. OBİS bağlantısı yoktur, veri elle ya da CSV ile girilir; tasarım ileride OBİS'ten veri alınabilecek biçimdedir. Kararların kaynakları: [docs/KARARLAR.md](docs/KARARLAR.md) (güncel kapsam K-18 ve sonrası).
 
-> Bitirme projesidir, resmî sistem değildir. Arayüz selcuk.edu.tr'deki renk, yazı tipi ve bileşen ölçüleriyle yeniden yazılmıştır; sitenin kodu ve logosu kullanılmaz.
+> Bitirme projesidir, resmî sistem değildir. Bütün öğrenci ve personel verisi sentetiktir. Arayüz selcuk.edu.tr'deki renk, yazı tipi ve bileşen ölçüleriyle yeniden yazılmıştır; sitenin kodu ve logosu kullanılmaz.
 
 | Belge | İçerik |
 |---|---|
-| [docs/taslak/Proje-Taslak-Dosyasi.pdf](docs/taslak/Proje-Taslak-Dosyasi.pdf) | Proje taslak dosyası: teknolojiler, roller, ekranlar, veriler, **veritabanı şeması**, kurallar |
-| [docs/KARARLAR.md](docs/KARARLAR.md) | Kapsam ve kuralların kaynaklı kararları |
+| [docs/taslak/Proje-Taslak-Dosyasi.pdf](docs/taslak/Proje-Taslak-Dosyasi.pdf) | Proje taslak dosyası: roller, ekranlar, akış, kurallar, güvenlik, **veritabanı şeması** |
+| [docs/KARARLAR.md](docs/KARARLAR.md) | Kaynaklı kararlar ve hocaya bildirilecek çelişkiler |
+| [docs/GUVENLIK.md](docs/GUVENLIK.md) | Sızma testleri ve alınan önlemler |
 | [docs/PRD.md](docs/PRD.md), [docs/TEKNIK-DOKUMAN.md](docs/TEKNIK-DOKUMAN.md) | Gereksinimler ve mimari (son bölümleri güncel kapsamı anlatır) |
-| [kaynaklar/](kaynaklar/KAYNAKLAR.md) | Yönergeler, YÖK yönetmeliği, [bölüm sitesindeki belgeler](kaynaklar/bolum-sitesi/README.md), hocanın verdiği materyaller |
+| [kaynaklar/](kaynaklar/KAYNAKLAR.md) | Yönergeler, bölüm sitesindeki belgeler, hocanın verdiği materyaller |
 | [docs/ekranlar/](docs/ekranlar) | Uçtan uca testin ürettiği ekran görüntüleri |
 
 ## Roller
 
+Üç giriş vardır, başka rol yoktur. Hesapları koordinatör açar; kendi kendine kayıt kapalıdır.
+
 | Rol | Yaptığı |
 |---|---|
-| Öğrenci | Bilgi ve belge girişi, başvuru, kesin kayıt onayı, protokol imzası, ders kayıt formu, muafiyet başvurusu, dönem sonu beyanı, ayrılma |
-| Koordinatör (ÇAP komisyonu) | Kontenjan ve takvim, beyan doğrulama, sıralama, karar ve ilan, protokol şablonları, protokol, imza, not girişi, tarama ve bulgu kararı, kural setleri |
-| Bölüm başkanı (Bilgisayar Müh.) | Protokol imzası, kullanıcı ve rol yönetimi, denetim kaydı, raporlar |
-| Ana dal danışmanı / ana dal bölüm başkanı | Yalnız kendi bölümünün öğrencilerini görür ve formlarını imzalar |
+| Koordinatör | Öğrenci ve hesap ekler; öğrencinin girdiği kayıtları ve belgeleri onaylar ya da gerekçeyle reddeder; ek belge ister; öğrencinin göremediği not yazar; ders kataloğu, ders listesi şablonları, dönemler, ayarlar ve kural sürümleri; GANO girişi (kaynağıyla); düzeltme ve iptal (gerekçeyle); geriye dönük giriş ve CSV aktarımı; mezuniyet, sertifika ve kayıt silme kararı |
+| Öğrenci | Yalnız kendi kartı: imzalı formları yükler, ders listesine katalogdan ders ekler (katalogda yoksa talep gönderir), her dönem aldığı dersleri ve dönem sonu notlarını girer (ÇAP/YDP not belgesi zorunlu), mesajlaşır, durumunu görür |
+| Bölüm başkanı | Yalnız izler: bütün kartlar, kural kontrolleri, işlem kaydı. Hiçbir şeyi değiştiremez |
 
-Personel rolünü Bilgisayar Mühendisliği bölüm başkanı atar; rolü olmayan her hesap öğrenci hesabıdır. Keycloak yalnızca kimlik doğrular.
+Öğrencinin girdiği her kayıt **onay bekliyor** başlar, onaylanınca kilitlenir ve ancak o zaman kural hesabına girer. Hiçbir kayıt silinmez; yanlış kayıt gerekçeyle **iptal** edilir.
 
 ## Yapı
 
 ```
-apps/web            Next.js 15: öğrenci ve personel ekranları, yazdırılabilir formlar, next-auth (Keycloak)
-apps/api            NestJS 11: REST API, BullMQ (e-posta, tarama), Prisma/PostgreSQL, belge deposu
-packages/rules      Kural motoru (saf TypeScript, 126 test, %100 kapsam)
-packages/contracts  Ortak şemalar, imzacı tanımları, Türkçe etiketler
-packages/seed-data  Gerçek müfredat ve protokoller; uydurma öğrenciler ve personel
+apps/web            Next.js 15: üç rolün ekranları, yazdırılabilir formlar, next-auth (Keycloak)
+apps/api            NestJS 11: REST API, Prisma/PostgreSQL, belge deposu, BullMQ e-posta kuyruğu, Keycloak yönetim istemcisi
+packages/rules      Kural motoru (saf TypeScript, 135 test, %100 kapsam)
+packages/contracts  Ortak şemalar, durumlar, ayarlar, Türkçe etiketler
+packages/seed-data  Gerçek müfredat ve ders listesi şablonları; sentetik öğrenciler ve personel; Keycloak realm üreteci
 e2e                 Playwright uçtan uca testleri
 infra               docker-compose (PostgreSQL, Redis, Keycloak, Mailpit) + realm
 docs/taslak         Taslak dosyası ve üretim betiği (veritabanı bölümü şemadan üretilir)
@@ -51,7 +54,7 @@ Gerekenler: Node 22+, pnpm 10, Docker.
 pnpm install
 pnpm --filter @cap/seed-data build && pnpm --filter @cap/seed-data realm   # infra/keycloak/realm.json
 pnpm infra:up                       # PostgreSQL 5442, Redis 6389, Keycloak 8088, Mailpit 8035
-docker exec cap-yandal-postgres-1 psql -U cap -d postgres -c "CREATE DATABASE cap_bm" -c "CREATE DATABASE cap_bm_test"
+docker exec cap-yandal-postgres-1 psql -U cap -d postgres -c "CREATE DATABASE cap_takip" -c "CREATE DATABASE cap_takip_test"
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local   # NEXTAUTH_SECRET'a uzun rastgele bir değer girin
 pnpm build
@@ -63,47 +66,56 @@ pnpm dev                            # web :3000, api :4000
 |---|---|
 | http://localhost:3000 | Uygulama |
 | http://localhost:4000/api/docs | API belgeleri (OpenAPI) |
-| http://localhost:8035 | Mailpit: gönderilen e-postalar |
+| http://localhost:8035 | Mailpit: şifre belirleme ve bildirim e-postaları |
 | http://localhost:8088 | Keycloak (yönetici: admin/admin, yalnızca yerel) |
 
 ### Deneme hesapları
 
-Bütün deneme hesapları aynı yerel şifreyi kullanır: `packages/seed-data/src/users.ts` içindeki `DEV_PASSWORD`. Yalnızca yerel Keycloak realm'inde geçerlidir. Yeni öğrenci hesabı, giriş ekranındaki "Kayıt ol" bağlantısıyla da açılabilir.
+Seed hesapları aynı yerel şifreyi kullanır: `packages/seed-data/src/users.ts` içindeki `DEV_PASSWORD`. Yalnızca yerel Keycloak realm'inde geçerlidir. Koordinatörün yeni eklediği öğrenci şifresini Mailpit'e düşen bağlantıyla kendisi belirler.
 
 | Kullanıcı | Rol |
 |---|---|
-| `koord.bilgisayar`, `koord.uye` | ÇAP / yan dal komisyonu |
-| `bolum.bilgisayar` | Bilgisayar Mühendisliği bölüm başkanı (yönetici) |
-| `danisman.eem`, `bolum.eem` | Elektrik-Elektronik Müh. danışmanı ve bölüm başkanı (imzacı) |
-| `danisman.makine`, `bolum.makine` | Makine Müh. danışmanı ve bölüm başkanı (imzacı) |
-| `253302001` … `243303017` | Öğrenciler (kullanıcı adı = öğrenci numarası) |
+| `koord.bilgisayar` | Koordinatör |
+| `bolum.bilgisayar` | Bölüm başkanı |
+| öğrenci numarası (ör. `253302009`) | Öğrenci |
 
-Öğrenci senaryoları `packages/seed-data/src/students.ts` dosyasındadır. Örnekler: `253302001` (uygun), `253302003` (GNO 2,74: ÇAP'a uygun değil, yan dala uygun), `253302004` (taban puan yolu), `253303008` (Makine: 2026-27 güzde ÇAP yalnız EEM'ye açık), `253302012` (bilgilerini henüz girmemiş), `243302013` (geçen yıldan kayıtlı).
+Öğrenci senaryoları (`packages/seed-data/src/students.ts`):
+
+| No | Durum |
+|---|---|
+| `253302001` | Yeni ÇAP öğrencisi; imzalı protokolü onay bekliyor |
+| `253302009` | Ders listesi şablondan; onay bekleyen dönem dersleri |
+| `253303008` | YDP; ders listesi onay bekliyor |
+| `243302013` | Olağan ÇAP; bir dersi tekrar alıyor |
+| `243303014` | GANO uyarısı (ilk düşüş hakkı) |
+| `243302015` | GANO kural dışı (ikinci düşüş) |
+| `243302016` | Hiç ders almamış; hesabına davet gönderilmemiş |
+| `243303017` | Olağan YDP |
+| `233302020` | YDP; sertifika koşulları sağlanıyor |
 
 ### Gösterim akışı
 
-1. `253302012` → **Bilgilerim**: bilgileri gir, YKS belgesini yükle → **Başvuru**: kuralları gör, başvur.
-2. `koord.bilgisayar` → **Başvurular**: beyanı belgeyle karşılaştır, doğrula → **Kontenjan ve takvim**: başvuruyu kapat.
-3. `koord.bilgisayar` → **Sıralama ve karar**: öneriyi kilitle, karar sayısını gir, sonucu yayımla.
-4. `253302001` → **Başvuru**: kesin kaydı onayla.
-5. `koord.bilgisayar` → öğrencinin kayıt sayfası: **protokolü şablondan üret**, imzaya gönder.
-6. `253302001`, `danisman.eem`, `bolum.eem`, `bolum.bilgisayar` → **İmzalarım**: imzala.
-7. `253302001` → kayıt sayfası: **ders kayıt formu** (dersler ve teknik seçmeli), imzaya gönder → danışman ve komisyon imzalar.
-8. `koord.bilgisayar` → **not girişi**; `253302001` → **özel şartlı ders muafiyeti** başvurusu.
-9. `koord.bilgisayar` → **Dönem sonu taramaları**: 2025-2026 Bahar taraması, bulgulara karar.
-10. `bolum.bilgisayar` → **Kullanıcılar ve roller**, **Denetim kaydı**, **Raporlar**.
+1. `koord.bilgisayar` → **Öğrenciler** → "Kabul edilen öğrenciyi ekle". Mailpit'teki bağlantıyla öğrenci şifresini belirler.
+2. Öğrenci → **Belgeler**: imzalı protokolü yükler. **Dersler**: katalogdan ders ekler.
+3. Koordinatör → **Onay bekleyenler**: onaylar ya da gerekçeyle reddeder. Öğrenci kartında "Şablondaki eksik dersleri ekle".
+4. Öğrenci → **Dersler**: bu dönem aldığı dersi girer; koordinatör onaylar.
+5. Öğrenci → **Dönem sonu notları**: ÇAP/YDP not belgesini yükler, notları gönderir; koordinatör belgeyle karşılaştırıp onaylar.
+6. Mesajlar ve koordinatör notları; belge isteği.
+7. Koordinatör → `243302013` kartında GANO girer → uyarı; `233302020` kartında sertifika kararını dayanağıyla kaydeder.
+8. Koordinatör → **Yönerge kuralları**: yeni sürüm, taslakta dene, yürürlüğe koy. **İçeri aktar (CSV)**: dene, sonra yaz.
+9. `bolum.bilgisayar` → her şeyi görür, hiçbir şeyi değiştiremez; **İşlem kaydı**.
 
 ## Testler
 
 ```bash
-pnpm --filter @cap/rules test    # 126 birim testi, %100 kapsam
-pnpm --filter @cap/api test      # 19 entegrasyon testi (cap_bm_test veritabanı)
+pnpm --filter @cap/rules test    # 135 birim testi, %100 kapsam
+pnpm --filter @cap/api test      # 35 entegrasyon testi: 17 akış + 18 sızma testi (cap_takip_test veritabanı)
 pnpm e2e                         # 18 Playwright testi: altyapı + api + web çalışıyor olmalı
 node docs/taslak/build.cjs       # taslak dosyasını (HTML + PDF) şemadan yeniden üretir
 ```
 
-Uçtan uca test her koşudan önce veritabanını seed durumuna döndürür. Playwright tarayıcısı ilk seferde `pnpm --filter @cap/e2e exec playwright install chromium` ile kurulur.
+Uçtan uca test her koşudan önce veritabanını seed durumuna döndürür ve Mailpit'teki gerçek davet e-postasıyla şifre belirler. Playwright tarayıcısı ilk seferde `pnpm --filter @cap/e2e exec playwright install chromium` ile kurulur.
 
-## Gerçek ve temsilî veri
+## Gerçek ve sentetik veri
 
-Müfredat (118 ders) Bologna ders paketinden, iki ÇAP protokolü (EEM 135 AKTS ve 8 özel şart; Makine 171 AKTS ve 2 özel şart) bölüm sitesinden bire bir alınmıştır. Kontenjan sayıları, taban puanlar ve yan dal ders havuzu temsilîdir; öğrenci ve personel adları uydurmadır. Ayrıntı: KARARLAR K-16.
+Müfredat (118 ders) Bologna ders paketinden, ÇAP ders listesi şablonları (EEM 135 AKTS, Makine 171 AKTS) bölüm sitesindeki protokollerden alınmıştır. Yan dal ders listesi şablonu temsilîdir. Öğrenciler, personel, notlar ve belgeler sentetiktir. Ayrıntı: KARARLAR K-16.

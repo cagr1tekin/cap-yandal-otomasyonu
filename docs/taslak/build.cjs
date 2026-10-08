@@ -13,20 +13,11 @@ const schema = fs.readFileSync(path.join(root, 'apps/api/prisma/schema.prisma'),
 
 const TYPE_TR = { String: 'metin', Int: 'tam sayı', Float: 'ondalık', Boolean: 'mantıksal', DateTime: 'tarih-saat', Json: 'JSON', BigInt: 'büyük sayı' };
 const DESCRIPTIONS = {
-  Term: 'Akademik dönem (yıl + güz/bahar).',
-  RuleSet: 'Sürümlü kural seti; her başvuru değerlendirildiği sürümü saklar.',
-  RuleDefinition: 'Kural setindeki tek kural: kod, tür, dayanak madde, aşama, parametreler.',
-  User: 'Kimlik servisinden gelen hesap (öğrenci ya da personel).',
-  Application: 'Öğrencinin bir teklife başvurusu; beyanın ve kural sonuçlarının anlık görüntüsü.',
-  ApplicationDocument: 'Başvuruya eklenen belgeler (çoka çok).',
-  Ranking: 'Başvurunun sırası ve asil / yedek / ret önerisi.',
-  Enrollment: 'Kesin kaydı yapılmış ÇAP / yan dal öğrenciliği.',
+  Term: 'Akademik dönem (yıl + güz/bahar); biri içinde bulunulan dönemdir.',
+  RuleDefinition: 'Kural sürümündeki tek kural: kod, tür, dayanak madde, aşama, değerler.',
+  GradeSubmissionItem: 'Not gönderimindeki tek ders ve notu; ders denemesine bağlanır.',
   ProtocolTemplateItem: 'Şablon satırı: ders ya da teknik seçmeli ders yeri.',
-  CourseRegistrationItem: 'Ders kayıt formundaki ders; protokol satırına bağlanır.',
-  TermScan: 'Dönem sonu taraması çalıştırması.',
-  ScanFinding: 'Taramanın bir kayıt için ürettiği bulgu (uyarı ya da kayıt silme adayı) ve komisyon kararı.',
-  WithdrawalRequest: 'Programdan ayrılma kaydı ve ÇAP’tan ayrılanın yan dal sertifikası sonucu.',
-  Notification: 'Sistem içi bildirim.',
+  Notification: 'Sistem içi bildirim (yeni mesaj, ret, belge isteği, kural uyarısı).',
 };
 
 const enums = new Set([...schema.matchAll(/^enum (\w+)/gm)].map((m) => m[1]));
@@ -68,8 +59,7 @@ for (const m of models) {
     if (m.compositePk.includes(c.name)) c.pk = true;
   }
 }
-// Prisma'nın örtük çoka çok tablosu (RuleSet ↔ TermScan)
-const TABLE_COUNT = models.length + 1;
+const TABLE_COUNT = models.length;
 
 // ---------------------------------------------------------------- İlişki çizimi (SVG)
 
@@ -163,96 +153,85 @@ function node(name, col, row, extra = []) {
   return { name, col, row, lines: [...lines, ...extra] };
 }
 
+const ref = (name, col, row) => ({ ...node(name, col, row, ['(bkz. 6.1)']), muted: true });
+
 const erA = diagram(
   [
-    node('User', 0, 0, ['username, displayName, email']),
-    node('RoleAssignment', 1, 0, ['role (rol + bölüm kapsamı)']),
-    node('Program', 2, 0, ['name, faculty, isHome']),
-    node('OfferingSourceProgram', 3, 0, ['(kabul edilen bölümler)']),
-    node('StudentProfile', 0, 1, ['gano, semesterNo, classRank,', 'classSize, entryScore, successRank']),
-    node('Document', 1, 1, ['kind, fileName, sha256']),
-    node('Term', 2, 1, ['year, season, isCurrent']),
-    node('Offering', 3, 1, ['type, quota, opensAt, closesAt']),
-    node('ApplicationDocument', 1, 2),
-    node('Application', 2, 2, ['snapshot, eligibility,', 'status, verification']),
-    node('BoardDecision', 3, 2, ['decisionNo, decisionDate']),
-    node('RuleDefinition', 0, 3, ['code, kind, article, params']),
-    node('RuleSet', 1, 3, ['version, type, status']),
-    node('Ranking', 2, 3, ['rank, proposal, overrideReason']),
-    node('Enrollment', 3, 3, ['(bkz. 6.2)']),
+    node('Program', 0, 0, ['name, faculty, isHome']),
+    node('Student', 1, 0, ['fullName, schoolEmail, track,', 'status, source, externalRef']),
+    node('User', 2, 0, ['username, role, active, invitedAt']),
+    node('Term', 3, 0, ['year, season, isCurrent']),
+    node('CourseRequest', 0, 1, ['code, name, note, status']),
+    node('PlanItem', 1, 1, ['kind, semester, status,', 'addReason, removedAt, exemptAt']),
+    node('GanoRecord', 2, 1, ['gano, source, sourceNote, cancelledAt']),
+    node('TermLeave', 3, 1, ['reason, note, cancelledAt']),
+    node('Course', 0, 2, ['name, ects, semester, kind, active']),
+    node('CourseAttempt', 1, 2, ['grade, result, status, source']),
+    node('GradeSubmissionItem', 2, 2, ['grade']),
+    node('GradeSubmission', 3, 2, ['status, submittedAt']),
   ],
   [
-    ['User', 'RoleAssignment'],
-    ['Program', 'RoleAssignment'],
-    ['User', 'StudentProfile', '1'],
-    ['Program', 'StudentProfile'],
-    ['StudentProfile', 'Application'],
-    ['RuleSet', 'Application'],
-    ['Program', 'OfferingSourceProgram'],
-    ['Offering', 'OfferingSourceProgram'],
-    ['StudentProfile', 'Document'],
-    ['Term', 'Offering'],
-    ['Document', 'ApplicationDocument'],
-    ['Application', 'ApplicationDocument'],
-    ['Offering', 'Application'],
-    ['Offering', 'BoardDecision'],
-    ['RuleSet', 'RuleDefinition'],
-    ['Application', 'Ranking', '1'],
-    ['Application', 'Enrollment', '1'],
+    ['Program', 'Student'],
+    ['User', 'Student', '1'],
+    ['Student', 'CourseRequest'],
+    ['Student', 'PlanItem'],
+    ['Student', 'GanoRecord'],
+    ['Term', 'TermLeave'],
+    ['Course', 'PlanItem'],
+    ['Course', 'CourseAttempt'],
+    ['PlanItem', 'CourseAttempt'],
+    ['CourseAttempt', 'GradeSubmissionItem'],
+    ['GradeSubmission', 'GradeSubmissionItem'],
   ],
   4,
 );
 
 const erB = diagram(
   [
-    node('ProtocolTemplateItem', 0, 0, ['kind, code, name, ects, semester']),
-    node('ProtocolTemplate', 1, 0, ['type, title, commonEcts']),
-    node('ProtocolCondition', 2, 0, ['no, sourceCourseCode,', 'targetCourseCode']),
-    node('Course', 3, 0, ['name, ects, semester, kind', '(müfredat)']),
-    node('Protocol', 0, 1, ['status, round, commonEcts']),
-    node('ProtocolCourse', 1, 1, ['kind, code, ects, status,', 'grade, fulfilledCode']),
-    node('ExemptionRequest', 2, 1, ['sourceGrade, sourceTerm, status']),
-    { name: 'Approval', col: 3, row: 1, muted: true, lines: ['PK id', 'subjectType, subjectId, round', 'role, assigneeUsername', 'decision, decidedBy, decidedAt'] },
-    node('Enrollment', 0, 2, ['type, status, ganoStrikes,', 'mainAdvisorUsername']),
-    node('CourseRegistration', 1, 2, ['status, round']),
-    node('CourseRegistrationItem', 2, 2, ['code, name, ects']),
-    node('StudentProfile', 3, 2, ['(bkz. 6.1)']),
+    ref('User', 0, 0),
+    node('Message', 1, 0, ['body, readAt']),
+    ref('Student', 2, 0),
+    node('StudentNote', 3, 0, ['body, cancelledAt']),
+    ref('GradeSubmission', 0, 1),
+    node('Document', 1, 1, ['kind, fileName, mimeType, size,', 'sha256, status, previousId']),
+    node('DocumentRequest', 2, 1, ['kind, message, status']),
   ],
   [
-    ['ProtocolTemplate', 'ProtocolTemplateItem'],
-    ['ProtocolTemplate', 'ProtocolCondition'],
-    ['ProtocolTemplate', 'Protocol'],
-    ['Protocol', 'ProtocolCourse'],
-    ['ProtocolCourse', 'ExemptionRequest'],
-    ['ProtocolCondition', 'ExemptionRequest'],
-    ['Enrollment', 'Protocol', '1'],
-    ['Enrollment', 'CourseRegistration'],
-    ['CourseRegistration', 'CourseRegistrationItem'],
-    ['ProtocolCourse', 'CourseRegistrationItem'],
+    ['User', 'Message'],
+    ['Student', 'Message'],
+    ['Student', 'StudentNote'],
+    ['Student', 'DocumentRequest'],
+    ['Student', 'Document'],
+    ['Message', 'Document'],
+    ['DocumentRequest', 'Document'],
+    ['Document', 'GradeSubmission'],
   ],
   4,
 );
 
 const erC = diagram(
   [
-    node('TermRecord', 0, 0, ['mainGano, mainFrozen,', 'verifiedBy, verifiedAt']),
-    node('Enrollment', 1, 0, ['(bkz. 6.2)']),
-    node('TermLeave', 2, 0, ['reason, note']),
-    node('YearStat', 3, 0, ['baseScore, successRankLimit']),
-    node('WithdrawalRequest', 0, 1, ['reason, capToMinorOutcome']),
-    node('ScanFinding', 1, 1, ['ruleCode, status, result,', 'decision, reason']),
-    node('TermScan', 2, 1, ['status, startedBy']),
-    node('Term', 3, 1, ['(bkz. 6.1)']),
-    { ...node('Notification', 0, 2, ['username, title, body, readAt']), muted: true },
-    { ...node('AuditLog', 1, 2, ['at, actor, action, entity,', 'entityId, before, after, reason']), muted: true },
+    node('RuleDefinition', 0, 0, ['code, kind, article, phase, params']),
+    node('RuleSet', 1, 0, ['version, type, status, effectiveFrom']),
+    node('RuleCheck', 2, 0, ['trigger, inputs, results, worst']),
+    node('StudentDecision', 3, 0, ['type, reference, reason,', 'newStatus, cancelledAt']),
+    { ...node('AuditLog', 0, 1, ['at, actor, actorRole, action,', 'entity, before, after, reason']), muted: true },
+    { ...node('ImportBatch', 1, 1, ['kind, rowCount, okCount, summary']), muted: true },
+    ref('Student', 2, 1),
+    { ...node('Notification', 3, 1, ['username, title, body, readAt']), muted: true },
+    node('ProtocolTemplateItem', 0, 2, ['kind, code, name, ects, semester']),
+    node('ProtocolTemplate', 1, 2, ['type, title, commonEcts']),
+    node('ProtocolCondition', 2, 2, ['no, sourceCourseCode,', 'targetCourseCode']),
+    ref('Program', 3, 2),
   ],
   [
-    ['Enrollment', 'TermRecord'],
-    ['Enrollment', 'TermLeave'],
-    ['Enrollment', 'WithdrawalRequest'],
-    ['Enrollment', 'ScanFinding'],
-    ['TermScan', 'ScanFinding'],
-    ['Term', 'TermScan'],
+    ['RuleSet', 'RuleDefinition'],
+    ['RuleSet', 'RuleCheck'],
+    ['RuleCheck', 'StudentDecision'],
+    ['Student', 'RuleCheck'],
+    ['Student', 'StudentDecision'],
+    ['ProtocolTemplate', 'ProtocolTemplateItem'],
+    ['ProtocolTemplate', 'ProtocolCondition'],
   ],
   4,
 );
@@ -270,7 +249,6 @@ const tables =
   models
     .map((m) => `<tr><td class="code"><b>${m.name}</b></td><td>${esc(m.doc || DESCRIPTIONS[m.name] || '')}</td><td>${m.columns.map(columnHtml).join(' · ')}</td></tr>`)
     .join('') +
-  '<tr><td class="code"><b>_RuleSetToTermScan</b></td><td>Taramanın kullandığı kural seti sürümleri (çoka çok; Prisma üretir).</td><td><span class="code">A</span> <b class="fk">FK→RuleSet</b> · <span class="code">B</span> <b class="fk">FK→TermScan</b></td></tr>' +
   '</tbody></table>';
 
 const undocumented = models.filter((m) => !m.doc && !DESCRIPTIONS[m.name]).map((m) => m.name);
@@ -300,7 +278,7 @@ fs.writeFileSync(htmlPath, html);
     displayHeaderFooter: true,
     headerTemplate: '<span></span>',
     footerTemplate:
-      '<div style="width:100%;font-size:8px;color:#475569;padding:0 16mm;display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif"><span>Bilgisayar Mühendisliği Çift Ana Dal ve Yan Dal Otomasyonu — Proje Taslak Dosyası</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+      '<div style="width:100%;font-size:8px;color:#475569;padding:0 16mm;display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif"><span>Bilgisayar Mühendisliği ÇAP ve YDP Öğrenci Takip Sistemi — Proje Taslak Dosyası</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
     margin: { top: '18mm', bottom: '18mm', left: '16mm', right: '16mm' },
   });
   await browser.close();

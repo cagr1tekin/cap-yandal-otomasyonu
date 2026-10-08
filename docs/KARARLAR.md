@@ -1,6 +1,6 @@
 # Kararlar ve kaynakları
 
-Tarih: 2026-10-07; kapsam değişikliği 2026-10-08 (K-12 ve sonrası; K-1, K-5, K-6, K-8, K-9, K-10 yerine geçer). Her kararın yanında **kesinlik düzeyi** ve **kaynağı** yazılıdır.
+Tarih: 2026-10-07; kapsam değişiklikleri 2026-10-08 (K-12) ve **2026-10-09 (K-18: danışmanın çerçeve e-postası, tek esas kaynak; güncel kapsam K-18…K-24'tür)**. Her kararın yanında **kesinlik düzeyi** ve **kaynağı** yazılıdır.
 
 | Düzey | Anlamı |
 |---|---|
@@ -177,10 +177,112 @@ Rehber, "Başvuru": dilekçe; transkript ve ilk %20 belgesi (fakülte içi böl�
 - "Ana dal dersi protokole yazılamaz" denetimi (KR-ÇAP-19, KR-YD-13): ana dal müfredatı sistemde tutulmuyor; protokol zaten bölümler arası belgede sabit.
 - İmzalanmış protokolün değiştirilmesi (şablon değişikliği yalnız yeni protokolleri etkiler).
 
-## Hâlâ açık olanlar (hocaya ve komisyona sorulacak)
+## K-18 Çerçeve e-postası (9/10/2026): tek esas kaynak — **Kesin (danışman kararı)**
 
-1. Eşit GNO'da ikincil sıralama ölçütü (K-3).
-2. Bilgisayar Mühendisliğinin gerçek taban puanları ve kontenjanları (K-16).
-3. Bölümün yan dal programı ve ders havuzu var mı (K-16).
-4. Ana dal danışmanı ve ana dal bölüm başkanı sisteme hesapla mı girecek, yoksa imzaları hep ıslak imza olarak mı işlenecek (K-15).
-5. Fakülte içi öğrencide GNO ve sıra teyidi nasıl yapılacak (K-13).
+Danışman hocanın çerçeve e-postası ([metni](../kaynaklar/hoca-materyalleri/cerceve-eposta.md)) sistemin tek esas kaynağıdır. **K-1, K-3, K-4, K-6, K-7, K-12, K-13, K-14 ve K-15'in iş akışına dair kısımlarının yerine geçer**; o maddeler önceki kapsamların kaydı olarak durur. Kural sayıları ve form içerikleri için yönergeler (K-2, K-11) ve bölüm belgeleri geçerliliğini korur; e-posta da "yönergeyle çelişirse yönerge esas alınır" der.
+
+| E-postadaki çerçeve | Sistemdeki karşılığı |
+|---|---|
+| Sistem bölüme gelen ÇAP ve YDP öğrencilerini **takip** içindir; başvuru değerlendirme ve seçim dekanlıkta | Başvuru, sıralama, kontenjan, ilan ve kesin kayıt ekranları ve tabloları kaldırıldı. Kabul edilen öğrenciyi koordinatör ekler: öğrenci no, ad soyad, okul e-postası, ÇAP/YDP, kabul dönemi. |
+| Ana dal dersleri ve süreçleri takip edilmez | Yalnızca bölümde alınan ÇAP/YDP dersleri tutulur. Ana daldan yalnız koordinatörün girdiği GANO gelir. |
+| OBİS yok, ileride olabilir | Bütün veri girişi aynı servislerden geçer; anahtar öğrenci numarasıdır; her kayıtta `source` (elle, geriye dönük, aktarım) ve `externalRef` alanı vardır. CSV içeri aktarma önce dener, sonra elle girişle aynı yoldan yazar (K-23). |
+| Üç giriş: koordinatör, öğrenci, bölüm başkanı | Rol veritabanında (`User.role`) tutulur, başka rol yoktur. Ana dal imzacıları, komisyon üyesi ve öğrenci işleri rolleri kaldırıldı. |
+| Hesapları koordinatör açar, kendi kendine kayıt yok | Keycloak'ta kayıt kapalı. Koordinatör öğrenciyi eklerken hesap açılır ve okul e-postasına şifre belirleme bağlantısı gider (K-19). |
+| Onay mantığı | K-20. |
+| Ders takibi sistemin merkezidir | K-21. |
+| Belge yönetimi, mesajlaşma, işlem kaydı | K-22. |
+| Kural sayıları koda gömülmez, sürümlüdür; geçmiş kontrol yeniden yazılmaz | K-24. |
+| Mevcut öğrenciler geriye dönük girilir, onay kilidine takılmaz | Koordinatörün "geriye dönük giriş"i doğrudan onaylı yazılır, kaynağı `GERIYE_DONUK` olarak işaretlenir. |
+| Yalnızca sentetik veri; sızma testleri kendi ortamımızda | Bütün öğrenci ve personel verisi uydurmadır. Testler ve önlemler: [GUVENLIK.md](GUVENLIK.md). |
+
+**Rollerin yetkileri:**
+
+| Rol | Yapabildiği | Yapamadığı |
+|---|---|---|
+| Koordinatör | Öğrenci ve personel hesabı açar, pasife alır; kayıtları onaylar, gerekçeyle reddeder, düzeltir, iptal eder; ek belge ister; gizli not yazar; ders kataloğu, ders listesi şablonları, dönemler, ayarlar ve kural setleri; GANO girişi; geriye dönük giriş; içeri aktarma; mezuniyet, sertifika ve kayıt silme kararı | Hiçbir kaydı silemez; işlem kaydını değiştiremez; son etkin koordinatörü pasife alamaz |
+| Öğrenci | Yalnızca kendi kartı: belge yükler, ders listesine katalogdan ders ekler ya da katalogda olmayan ders için talep gönderir, dönem derslerini ve dönem sonu notlarını girer, mesajlaşır, durumunu görür | Başkasının kaydını göremez (varlığı bile sızdırılmaz, 404); onaylanmış kaydı değiştiremez; belge silemez; GANO giremez; koordinatör notlarını göremez |
+| Bölüm başkanı | Bütün kartları, koordinatör notlarını, kural kontrollerini ve işlem kaydını görür | Hiçbir veriyi değiştiremez: API, okuma dışındaki her isteği 403 ile reddeder |
+
+## K-19 Giriş yöntemi — **Karar (tasarım)**
+
+E-posta giriş yöntemini bize bırakır, "güvenli olmasına dikkat edin" der.
+
+- Kimlik doğrulama Keycloak (OpenID Connect, PKCE) ile yapılır. Rol ve hesabın etkin olup olmadığı **uygulama veritabanındadır**; Keycloak'ta tanımlı ama sistemde olmayan ya da pasif hesap girişte 403 alır.
+- Koordinatör hesap açınca okul e-postasına **şifre belirleme bağlantısı** gider (72 saat geçerli). Şifre sistemde hiç görünmez, koordinatör de bilmez.
+- Şifre politikası: en az 10 karakter, büyük ve küçük harf, rakam, kullanıcı adı ya da e-posta olamaz, son 3 şifre tekrar edilemez. Kaba kuvvet koruması ve "şifremi unuttum" açık.
+- Geriye dönük girilen öğrencide bağlantı sonra gönderilebilir ("Davet yok" rozeti).
+
+## K-20 Onay mantığı — **Kesin (e-posta)**
+
+- Öğrencinin girdiği ders listesi satırı, dönem dersi, dönem sonu notları ve belge **"onay bekliyor"** durumunda başlar ve onaylanana kadar kural hesabına girmez.
+- Onaylanan kayıt **kilitlenir**: öğrencinin değiştirme isteği reddedilir. Düzeltmeyi yalnız koordinatör, gerekçe yazarak yapar; eski ve yeni değer işlem kaydına yazılır.
+- Reddedilen ya da iptal edilen kayıt silinmez, durumuyla kalır. Ret ve iptal gerekçesi zorunludur ve öğrenciye bildirilir.
+- Koordinatörün kendi girdiği kayıt doğrudan onaylıdır; ders listesine eklerken gerekçe zorunludur.
+- Dönem sonu notları **ÇAP/YDP not belgesi** (transkript) yüklenmeden onaya gönderilemez; ana dal transkripti isteğe bağlıdır. Koordinatör notları belgeyle karşılaştırıp onaylar.
+- **DC notu:** Ön Lisans ve Lisans Eğitim-Öğretim ve Sınav Yönetmeliği m.13/3-b ve m.15/1: DC "şartlı geçer", yarıyıl ortalaması 2,50 ve üzerindeyse başarılı. Sistem ana dal yarıyıl ortalamasını tutmadığından DC'li dersin geçip geçmediğini koordinatör onay sırasında işaretler.
+
+## K-21 Ders takibi — **Kesin (e-posta)**
+
+- Her öğrencinin **ders listesi** (alacağı dersler) yarıyıl yarıyıl görünür. Satır durumu: planlandı, alındı, geçti, kaldı, muaf, çıkarıldı.
+- Her satırın **denemeleri** ayrı tutulur: alındığı dönem (ör. 2025-2026 Güz), notu, sonucu. Tekrar alınan ders ikinci deneme olarak görünür.
+- Tamamlanan ve kalan ders sayısı ile AKTS her ekranın üstündedir.
+- Ders yalnızca **katalogdan** seçilir (koda ya da ada göre arama). Serbest metin kabul edilmez; katalogda olmayan ders için öğrenci koordinatöre **talep** gönderir, koordinatör talebi kataloğa ekleyerek ya da gerekçeyle reddederek kapatır.
+- Koordinatör listeye ders ekler ya da listeden çıkarır; her değişiklik gerekçe ve tarihle saklanır. **Geçilmiş ders listeden çıkarılamaz**, notları değişmez.
+- Ders kataloğu düzenlenir; ders silinmez, **pasife alınır** (pasif ders yeni listeye eklenemez, eski kayıtlarda görünür).
+- Ders listesi şablonları (bölümler arası protokoller) koordinatörün eksik dersleri tek seferde eklemesi içindir; öğrencinin listesi şablondan bağımsız kayıttır.
+- ÇAP'ta 240 AKTS koşulu (ÇAP Yön. m.7/2) liste + ortak AKTS ile denetlenir (K-15).
+
+## K-22 Belgeler, mesajlar, işlem kaydı — **Kesin (e-posta)**
+
+- Her kartta belge arşivi: tür (imzalı protokol, ders kayıt formu, ÇAP/YDP not belgesi, ana dal transkripti, yönetim kurulu kararı, resmî yazı, diğer), dönem, durum (bekliyor, onaylandı, reddedildi). Yönetim kurulu kararı ve resmî yazıyı yalnız koordinatör yükler.
+- Yenilenen belge eskisinin **yeni sürümüdür**; eski sürüm arşivde kalır. Öğrenci belge silemez; silme uç noktası yoktur ve veritabanı silmeyi reddeder.
+- Koordinatörün **belge isteği** izlenir: bekliyor → yüklendi → onaylandı / reddedildi.
+- Dosya denetimi ve izin verilen türler: [GUVENLIK.md](GUVENLIK.md).
+- Mesajlar kalıcıdır: değiştirilemez, silinemez (yalnız okundu bilgisi işlenir). Mesaja belge eklenebilir; ek, öğrencinin arşivine "diğer" türünde düşer. Yeni mesaj karşı tarafa bildirim ve e-posta olarak gider.
+- **İşlem kaydı:** kim, ne zaman, hangi rolle, neyi, eski ve yeni değeriyle. Veritabanı tetikleyicisi kaydın değiştirilmesini ve silinmesini engeller. Bölüm başkanı ve koordinatör görür; öğrenci kartında "İşlem geçmişi" sekmesi vardır.
+- **Hiçbir tablo satır silmez**; her tabloda silmeyi reddeden tetikleyici vardır. Yanlış kayıt "iptal" olarak işaretlenir.
+
+## K-23 OBİS'e hazırlık — **Karar (tasarım)**
+
+- Öğrencinin birincil anahtarı **öğrenci numarasıdır**; bütün kayıtlar ona bağlıdır.
+- Dışarıdan veri **içeri aktarma** ekranından gelir (CSV: ders kataloğu, öğrenciler, ders denemeleri). Aktarma önce **deneme** yapar ve satır satır hata gösterir; yazma, elle girişin kullandığı aynı servis fonksiyonlarından geçer, böylece aynı denetimler ve aynı işlem kaydı uygulanır.
+- İleride OBİS bağlantısı yeni bir aktarım kaynağı olarak eklenir; ekranlar ve kurallar değişmez.
+
+## K-24 Kural sürümleri ve kontrolleri — **Kesin (e-posta) + yönergeler**
+
+- Kural değerleri (GNO eşikleri, AKTS ve ders sayıları, süreler) **kural setinde** tutulur, kodda değil. Varsayılan setler: `CAP-2026.4` (ÇAP Yönergesi 2026) ve `YANDAL-2023.4` (Yan Dal Yönergesi 2023).
+- Koordinatör yeni değerle **yeni sürüm** oluşturur; önce taslak üzerinde "dene" ile kimin durumunun değişeceğini görür, sonra yürürlüğe koyar. Eski sürüm silinmez.
+- Her kontrol, hangi kural sürümüyle yapıldığıyla birlikte **saklanır**; yeni sürüm eski kontrolleri yeniden yazmaz.
+- Kontrol yalnızca **onaylı** kayıtları kullanır. Yeni uyarı ya da kural dışı durum çıkınca öğrenciye ve koordinatöre bildirim gider.
+- Uyarı karar değildir. Mezuniyet, sertifika ve kayıt silme **kararını koordinatör kaydeder** (dayanak, örneğin yönetim kurulu karar sayısı, ve gerekçeyle); karar da gerekçeyle iptal edilebilir.
+- GANO'yu yalnız koordinatör girer, kaynağı (transkript, öğrenci işleri, diğer) ve notuyla. GANO girilmemişse GANO kuralları çalışmaz, "veri eksik" uyarısı yazılır.
+- Başvuru dönemine ve başvuru koşullarına dair kurallar (KR-ÇAP-01…09, KR-YD-01…04) başvuru sistemde olmadığı için setlerden çıkarıldı; değerlendiricileri pakette durur.
+
+| Kural | Yönerge | Değer |
+|---|---|---|
+| KR-ÇAP-10 Üst üste ders almama | ÇAP m.9/1-d | 2 dönem (izinli ve dondurulan dönemler sayılmaz) |
+| KR-ÇAP-11 Ana dal GNO düşüşü | ÇAP m.9/1-e | 2,72 eşik, 2,50 taban, 1 hak (K-2) |
+| KR-ÇAP-12 Ana dalla birlikte dondurma | ÇAP m.9/1-ç | — |
+| KR-ÇAP-14 Azami süre | ÇAP m.8/1-d, m.9/1-g | kabulden itibaren 14 yarıyıl (2547 s. Kanun m.44/c'den; doğrulanmalı) |
+| KR-ÇAP-18 Liste AKTS toplamı | ÇAP m.7/2 | lisans 240 |
+| KR-ÇAP-13 ÇAP diploması | ÇAP m.7/2, m.8/1-c,ç | ana dal GANO ≥ 2,72 ve liste tamam |
+| KR-YD-06 Ana dal GNO alt sınırı | Yan Dal m.7/5 | 2,30 |
+| KR-YD-07 Yan dal ortalaması | Yan Dal m.7/6 | 2,00, üst üste 2 dönem |
+| KR-YD-08 Üst üste ders almama | Yan Dal m.7/4 | 2 dönem |
+| KR-YD-12 Ana dalla birlikte izin | Yan Dal m.7/2 | — |
+| KR-YD-14 Mezuniyet sonrası ek süre | Yan Dal m.7/9 | 2 yarıyıl |
+| KR-YD-05 Yan dal listesi | Yan Dal m.5/1-g | en az 30 AKTS, 6 ders |
+| KR-YD-10 Yan dal sertifikası | Yan Dal m.7/8 | yan dal ortalaması ≥ 2,00 ve liste tamam |
+
+## Hocaya bildirilecek çelişkiler ve sorular
+
+E-posta "yönergeyle çelişirse yönerge esas alınır, bana da haber verin" der. Bulunanlar:
+
+1. **Kayıt silme "kararı":** E-postaya göre kararı koordinatör verir. ÇAP Yönergesi m.9/1-d ve m.9/1-e ise koşul oluşunca "kaydı silinir" der; takdir yoktur. Dondurma (m.9/1-ç) ve kabul (m.5/1-g) birim yönetim kurulu kararıyladır. **Uygulama:** sistem koşulu kural dışı olarak gösterir, koordinatör kararı **dayanağıyla** (yönetim kurulu karar sayısı) kaydeder. Sistem kararı kendisi uygulamaz.
+2. **Mezuniyet ve sertifika:** Diploma ve sertifikayı üniversite verir (Diploma ve Belgeler Yönergesi). Sistemdeki "mezuniyet kararı" bölümün tespiti ve kaydıdır, diploma işlemi değildir.
+3. **"Başvuru dönemleri" kural olarak:** E-posta ayarlanabilir sayılar arasında başvuru dönemlerini sayar; ama başvuru sistemde yoktur. Bu kurallar kural setlerinden çıkarıldı. Hocanın başka bir şey kastedip kastetmediği sorulmalı.
+4. **DC notu:** Yönetmeliğe göre DC'nin başarılı sayılması yarıyıl ortalamasına bağlıdır; sistem ana dal yarıyıl ortalamasını tutmaz. Koordinatör onayda işaretler (K-20). Uygun mu?
+5. **Azami süre (KR-ÇAP-14):** Yönerge ek süreden söz eder ama ÇAP için yarıyıl sayısı vermez; 14 yarıyıl 2547 sayılı Kanundan alındı. Doğrulanmalı.
+6. **Bölüm başkanının imzası:** Protokolde "çift ana dal bölüm başkanı" imzası vardır (K-15); sistemde bölüm başkanı yalnızca izler. İmza kâğıt üzerinde kalır, imzalı form taranıp yüklenir. Çelişki değil, not olarak bildirilecek.
+
+Önceki listeden hâlâ açık olanlar: bölümün yan dal ders havuzu (K-16) ve gerçek ders listesi şablonlarının güncelliği.

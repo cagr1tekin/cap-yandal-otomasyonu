@@ -51,3 +51,16 @@ Her aşama bir sonraki başlamadan önce kendi "bitti" ölçütünü sağlar.
 ## 4. Kapsam değişikliği (2026-10-08)
 
 Danışman kararıyla proje yalnız Bilgisayar Mühendisliği Bölümünü kapsayacak, öğrenci girişi içerecek ve OBİS'siz çalışacak biçimde yeniden düzenlendi. Yukarıdaki aşamalar ilk kapsamın kaydıdır; güncel kapsam için [KARARLAR.md](KARARLAR.md) K-12 – K-17 ve [TEKNIK-DOKUMAN.md](TEKNIK-DOKUMAN.md) bölüm 18'e bakın. Arayüz teması (bölüm 1) aynen geçerlidir.
+
+## 5. Çerçeve e-postasına göre yeniden kurgu (2026-10-09)
+
+Danışmanın çerçeve e-postası geldi; sistem bir takip sistemine dönüştürüldü (KARARLAR K-18…K-24, TEKNIK-DOKUMAN §19).
+
+| Aşama | Durum |
+|---|---|
+| Kural motoru: başvuru kuralları çıkarıldı, `MAX_DURATION` eklendi | Bitti (135 test) |
+| API: yeni şema, üç rol, onay mantığı, ders takibi, belgeler, mesajlar, kural sürümleri, CSV aktarımı | Bitti (35 test) |
+| Keycloak: kendi kendine kayıt kapalı, şifre politikası, davet e-postası | Bitti |
+| Web: üç rolün ekranları | Bitti |
+| Uçtan uca testler ve ekran görüntüleri | Bitti (18 test) |
+| Belgeler ve taslak dosyası | Bitti |

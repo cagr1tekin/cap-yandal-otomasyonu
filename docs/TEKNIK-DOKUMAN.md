@@ -564,3 +564,23 @@ Kararlar: [KARARLAR.md](KARARLAR.md) K-12 – K-17. Bu bölüm, önceki bölüml
 **Testler.** 126 kural testi (%100 kapsam), 19 API entegrasyon testi, 18 Playwright testi (10 akış, 2 ekran görüntüsü, 6 mobil).
 
 **Bilinen sınırlar.** İmzalanmış protokol değiştirilemez (şablon değişikliği yalnız yeni protokolleri etkiler). Ortak AKTS şablonda sayı olarak tutulur; ortak derslerin listesi tutulmaz. Kontenjan, taban puan ve yan dal havuzu temsilîdir (K-16).
+
+## 19. Yeniden kurgu: çerçeve e-postasına göre takip sistemi (v0.5, 2026-10-09)
+
+Danışmanın çerçeve e-postası tek esas kaynaktır (KARARLAR K-18…K-24). Bu bölüm 16–18. bölümlerin yerine geçer; başvuru, sıralama, protokol imza akışı ve dönem sonu taraması modülleri kaldırıldı.
+
+**Roller:** `User.role` ∈ {KOORDINATOR, OGRENCI, BOLUM_BASKANI}. Keycloak yalnızca kimlik doğrular; `AuthGuard` hesabı veritabanında arar (yoksa ya da pasifse 403, `sub` uyuşmazsa 401) ve bölüm başkanının okuma dışındaki her isteğini reddeder. Öğrenci kapsamı `AccessService.student()` ile her sorguda öğrenci numarasına bağlanır (başkasının kaydı 404).
+
+**Kimlik yönetimi:** `IdentityPort` (Keycloak yönetim API'si, `cap-api` servis istemcisi): hesap açma, şifre belirleme e-postası (`execute-actions-email`, UPDATE_PASSWORD, 72 saat), etkinleştirme / pasife alma. Testlerde sahte uygulaması kullanılır.
+
+**Modüller (apps/api/src):** `catalog` (dönem, program, ders kataloğu, ayarlar) · `curriculum` (ders listesi, dönem dersleri, geriye dönük giriş, dönem sonu not gönderimi, ders talepleri, ders listesi şablonları) · `documents` (arşiv, sürümler, belge istekleri, dosya denetimi) · `messages` (mesajlar, koordinatör notları) · `students` (öğrenci, davet, GANO, izin, karar, işlem geçmişi) · `reviews` (tek onay kuyruğu: plan, deneme, not, belge) · `rules` (kural sürümleri, deneme, kontroller) · `imports` (CSV dene / yaz) · `users` · `audit` · `notifications` · `misc` (/me, görevler, raporlar).
+
+**Veri modeli:** Program, Course, Term, Setting, User, Student (anahtar `studentNo`; `source`, `externalRef`), PlanItem (ders listesi satırı; durum, ekleme / çıkarma gerekçesi ve tarihi, muafiyet), CourseAttempt (her deneme ayrı; dönem, not, sonuç, onay durumu, kaynak), GradeSubmission + Item (dönem sonu notları; not belgesine bağlı), CourseRequest, Document (`previousId` ile sürüm zinciri), DocumentRequest, Message, StudentNote, GanoRecord (kaynak zorunlu), TermLeave, RuleSet / RuleDefinition (sürümlü), RuleCheck (kural sürümüyle saklanan kontrol), StudentDecision, ProtocolTemplate + Item + Condition, ImportBatch, Notification, AuditLog. Şema: `apps/api/prisma/schema.prisma`; ER çizimleri taslak dosyasında.
+
+**Veritabanı güvenceleri:** her tabloda `DELETE` reddeden tetikleyici; AuditLog değiştirilemez; Message yalnız `readAt` alanında güncellenebilir; Document'in dosya alanları değiştirilemez; kısmi tekil indeksler (ör. bir ders listesinde aynı dersin tek etkin satırı).
+
+**Kural kontrolleri:** `ChecksService` yalnızca onaylı kayıtlardan geçmiş üretir (üst üste ders alınmayan dönemler — izinli dönemler hariç —, GANO geçmişi ve düşüş sayısı, yarıyıl ortalamaları, kabul ve ana dal mezuniyetinden geçen yarıyıl), etkin kural sürümüyle değerlendirir ve sonucu `RuleCheck` olarak saklar. Yeni uyarı ya da kural dışı durumda öğrenciye ve koordinatöre bildirim gider. Taslak sürüm `dry-run` ile kaydetmeden denenir. Yeni değerlendirici: `MAX_DURATION` (kabulden ya da ana dal mezuniyetinden itibaren yarıyıl sınırı).
+
+**Güvenlik:** [GUVENLIK.md](GUVENLIK.md).
+
+**Testler:** kural motoru 135 test (%100 kapsam); API 35 entegrasyon testi (17 akış, 18 sızma testi; `cap_takip_test`); Playwright 18 test (akış, 21 ekran görüntüsü, mobil).

@@ -27,3 +27,7 @@ Selçuk Üniversitesi resmî sitesinden 2026-10-07'de indirildi. `pdf/` asıl be
 ## Bölüm sitesi ve müfredat (2026-10-08)
 
 Bilgisayar Mühendisliği Bölümünün "Çift Anadal" sayfasındaki rehber ve iki protokol `bolum-sitesi/` altındadır; ayrıntı [bolum-sitesi/README.md](bolum-sitesi/README.md). Hocanın verdiği dosyalar `hoca-materyalleri/` altındadır. Müfredat Bologna ders paketinden alınmıştır.
+
+## Çerçeve e-postası (2026-10-09)
+
+Danışman hocanın sistemi tanımlayan e-postası: [hoca-materyalleri/cerceve-eposta.md](hoca-materyalleri/cerceve-eposta.md). Önceki kapsam belgelerinin yerine geçer; yönergeyle çelişen noktada yönerge esastır.

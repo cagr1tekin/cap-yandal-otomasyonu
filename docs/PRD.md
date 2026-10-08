@@ -351,3 +351,29 @@ Danışman kararıyla kapsam değişti; ayrıntı ve kaynaklar [KARARLAR.md](KAR
 - **Yeni gereksinimler:** öğrenci bilgi ve belge girişi; çevrim içi başvuru ve dilekçe üretimi; beyan doğrulama; öğrencinin kesin kayıt onayı; bölümler arası protokol şablonu ve teknik seçmeli ders yerleri; öğrencinin hazırladığı üç imzalı ders kayıt formu; özel şartlı ders muafiyeti; komisyonun not girişi; öğrencinin dönem sonu GNO beyanı.
 - **Kaldırılanlar:** birimin dilekçe girişi, belge kontrol listesiyle kesin kayıt, protokol dosyalama, ders kayıt formlarının toplu teslimi ve OBİS listesi, çok birimli ve çok programlı yapı.
 - **Kurallar:** bölüm 5'teki kural kimlikleri geçerlidir; KR-ÇAP-07 (yetenek sınavı), KR-ÇAP-19 ve KR-YD-13 (ana dal dersiyle çakışma) kural setinden çıkarıldı. Sistemin kendi denetimleri taslak dosyasının 7.3 bölümündedir.
+
+## Güncelleme (v0.5, 2026-10-09): çerçeve e-postasına göre takip sistemi
+
+Danışman hocanın çerçeve e-postası ([metni](../kaynaklar/hoca-materyalleri/cerceve-eposta.md)) bu belgenin önceki bütün kapsam tanımlarının yerine geçer.
+
+**Problem:** Bölüme gelen ÇAP ve YDP öğrencileri form ve kâğıtla elle takip ediliyor: hangi dersin hangi dönem alınıp geçildiği, belgeler, yazışmalar ve yönerge kurallarına uygunluk tek yerde görülemiyor.
+
+**Kapsam:** yalnız Bilgisayar Mühendisliği; ÇAP ve YDP aynı sistemde. Başvuru değerlendirme ve seçim, ana dal dersleri ve OBİS bağlantısı kapsam dışı.
+
+**Kullanıcı hikâyeleri (kabul ölçütü uçtan uca testlerdedir):**
+
+| # | Hikâye |
+|---|---|
+| H-1 | Koordinatör olarak kabul edilen öğrenciyi no, ad soyad, okul e-postası, ÇAP/YDP ve kabul dönemiyle eklerim; öğrenciye şifre belirleme bağlantısı gider. |
+| H-2 | Öğrenci olarak imzalı formlarımı yüklerim; koordinatör onaylar ya da gerekçeyle reddeder. |
+| H-3 | Öğrenci olarak alacağım dersleri yalnız katalogdan seçerim; katalogda olmayan ders için talep gönderirim. |
+| H-4 | Öğrenci olarak her dönem aldığım dersleri, dönem sonunda notlarımı girerim; ÇAP/YDP not belgesini yüklemeden notları gönderemem. |
+| H-5 | Koordinatör olarak onaylanan kaydın kilitlendiğini, düzeltmeyi yalnız benim gerekçeyle yaptığımı ve hiçbir kaydın silinmediğini bilirim. |
+| H-6 | Koordinatör olarak öğrencinin ders listesine ders ekler ya da çıkarırım; geçilmiş ders etkilenmez. |
+| H-7 | Koordinatör olarak GANO'yu kaynağıyla girerim; sistem kurala göre beni ve öğrenciyi uyarır; kararı ben kaydederim. |
+| H-8 | Koordinatör olarak kural değerlerini yeni sürümle değiştiririm; geçmiş kontroller değişmez. |
+| H-9 | Koordinatör olarak mevcut öğrencilerin geçmiş derslerini ve notlarını onay kilidine takılmadan girer, CSV ile aktarırım. |
+| H-10 | Bölüm başkanı olarak her şeyi ve işlem kaydını görürüm, hiçbir şeyi değiştiremem. |
+| H-11 | Öğrenci ve koordinatör olarak kalıcı, ekli mesajlaşırız; yeni mesajdan haberdar oluruz. |
+
+**Başarı ölçütleri:** e-postadaki her madde için en az bir otomatik test (API akış testleri ve Playwright); sızma testlerinin tamamı yeşil; öğrenci ekranlarında telefonda yatay kaydırma yok.
