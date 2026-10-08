@@ -2,38 +2,33 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { HealthCheck, HealthCheckService, type HealthIndicatorResult } from '@nestjs/terminus';
 import { CurrentUser, Public, Roles, type AuthUser } from '../auth/auth';
 import { AccessService } from '../auth/access.service';
-import { CatalogService } from '../catalog/catalog.service';
+import { CatalogService, windowState } from '../catalog/catalog.service';
 import { CacheService } from '../integrations/cache.service';
 import { LinkRegistry } from '../integrations/integrations.module';
-import { ObisPort } from '../integrations/obis.port';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller()
 export class MeController {
   constructor(
-    private readonly obis: ObisPort,
     private readonly prisma: PrismaService,
     private readonly links: LinkRegistry,
     private readonly catalog: CatalogService,
+    private readonly access: AccessService,
   ) {}
 
   @Get('me')
   async me(@CurrentUser() user: AuthUser) {
-    const unitIds = user.assignments.map((a) => a.unitId).filter(Boolean) as string[];
     const programIds = user.assignments.map((a) => a.programId).filter(Boolean) as string[];
-    const [units, programs, coordinated, term] = await Promise.all([
-      this.prisma.unit.findMany({ where: { id: { in: unitIds } } }),
-      this.prisma.program.findMany({ where: { id: { in: programIds } } }),
-      user.roles.includes('KOORDINATOR')
-        ? this.prisma.offering.findMany({
-            where: { coordinatorUsername: user.username },
-            include: { program: true, term: true },
-            orderBy: { term: { startsAt: 'desc' } },
-          })
-        : [],
-      this.catalog.currentTerm(),
-    ]);
-    return { ...user, units, programs, coordinated, currentTerm: term };
+    const [programs, term, home] = await Promise.all([this.prisma.program.findMany({ where: { id: { in: programIds } } }), this.catalog.currentTerm(), this.access.home()]);
+    return {
+      ...user,
+      programs,
+      home,
+      // Bilgisayar Mühendisliği bölüm başkanı (yönetici) ya da yalnızca ana dal bölümünün imzacısı
+      homeHead: this.access.headProgramIds(user).includes(home.id),
+      mainDepartmentSigner: user.assignments.some((a) => a.role !== 'KOORDINATOR' && a.programId !== home.id),
+      currentTerm: term,
+    };
   }
 
   @Public()
@@ -44,73 +39,62 @@ export class MeController {
 }
 
 @Controller('reports')
-@Roles('BIRIM', 'OIDB', 'BOLUM_BASKANI', 'KOORDINATOR')
+@Roles('BOLUM_BASKANI', 'KOORDINATOR')
 export class ReportsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: AccessService,
   ) {}
 
-  /** US-31: program bazında başvuru, kabul, kontenjan doluluğu, kayıt durumu ve bekleyen bulgular. */
+  /** Dönem özeti: teklif bazında başvuru, kabul, doluluk; ana dal bölümüne göre dağılım; kayıt durumları. */
   @Get('summary')
   async summary(@CurrentUser() user: AuthUser, @Query('termId') termId?: string) {
-    const term = termId
-      ? await this.prisma.term.findUnique({ where: { id: termId } })
-      : await this.prisma.term.findFirst({ where: { isCurrent: true } });
-    const offerings = await this.prisma.offering.findMany({
-      where: { AND: [this.access.offeringWhere(user), { termId: term?.id }] },
-      include: { program: { include: { unit: true } } },
-      orderBy: [{ program: { unit: { name: 'asc' } } }, { program: { name: 'asc' } }],
-    });
+    await this.access.assertDepartmentStaff(user);
+    const term = termId ? await this.prisma.term.findUnique({ where: { id: termId } }) : await this.prisma.term.findFirst({ where: { isCurrent: true } });
+    const offerings = await this.prisma.offering.findMany({ where: { termId: term?.id }, orderBy: { type: 'asc' } });
     const ids = offerings.map((o) => o.id);
-    const programIds = [...new Set(offerings.map((o) => o.programId))];
-    const [appCounts, enrollCounts, pending] = await Promise.all([
+    const [appCounts, enrollCounts, pending, byProgram, programs] = await Promise.all([
       this.prisma.application.groupBy({ by: ['offeringId', 'status'], where: { offeringId: { in: ids } }, _count: true }),
-      this.prisma.enrollment.groupBy({ by: ['programId', 'type', 'status'], where: { programId: { in: programIds } }, _count: true }),
-      this.prisma.scanFinding.count({
-        where: { decision: 'PENDING', enrollment: { programId: { in: programIds } } },
-      }),
+      this.prisma.enrollment.groupBy({ by: ['type', 'status'], _count: true }),
+      this.prisma.scanFinding.count({ where: { decision: 'PENDING' } }),
+      this.prisma.enrollment.findMany({ where: { status: { in: ['ACTIVE', 'FROZEN'] } }, select: { type: true, student: { select: { programId: true } } } }),
+      this.prisma.program.findMany({ where: { isHome: false }, orderBy: { name: 'asc' } }),
     ]);
     const rows = offerings.map((o) => {
       const c = (s: string) => appCounts.find((x) => x.offeringId === o.id && x.status === s)?._count ?? 0;
       const total = appCounts.filter((x) => x.offeringId === o.id && x.status !== 'WITHDRAWN').reduce((t, x) => t + x._count, 0);
       const enrolled = c('ENROLLED');
       const accepted = c('ACCEPTED') + enrolled;
-      const active = enrollCounts
-        .filter((x) => x.programId === o.programId && x.type === o.type && (x.status === 'ACTIVE' || x.status === 'FROZEN'))
-        .reduce((t, x) => t + x._count, 0);
-      const removed = enrollCounts
-        .filter((x) => x.programId === o.programId && x.type === o.type && x.status === 'REMOVED')
-        .reduce((t, x) => t + x._count, 0);
       return {
         offeringId: o.id,
-        unitName: o.program.unit.name,
-        programName: o.program.name,
         type: o.type,
         quota: o.quota,
+        window: windowState(o),
         applications: total,
+        ineligible: c('INELIGIBLE'),
         accepted,
+        waitlisted: c('WAITLISTED'),
         enrolled,
         fillRate: o.quota ? Math.round((accepted / o.quota) * 100) : 0,
-        activeEnrollments: active,
-        removedEnrollments: removed,
       };
     });
-    const sum = (k: 'applications' | 'accepted' | 'enrolled' | 'quota' | 'activeEnrollments' | 'removedEnrollments') =>
-      rows.reduce((t, r) => t + r[k], 0);
+    const count = (type: string, ...statuses: string[]) => enrollCounts.filter((x) => x.type === type && statuses.includes(x.status)).reduce((t, x) => t + x._count, 0);
     return {
       term,
-      totals: {
-        offerings: rows.length,
-        quota: sum('quota'),
-        applications: sum('applications'),
-        accepted: sum('accepted'),
-        enrolled: sum('enrolled'),
-        activeEnrollments: sum('activeEnrollments'),
-        removedEnrollments: sum('removedEnrollments'),
-        pendingFindings: pending,
-      },
       rows,
+      enrollments: (['CAP', 'YANDAL'] as const).map((type) => ({
+        type,
+        active: count(type, 'ACTIVE', 'FROZEN'),
+        completed: count(type, 'COMPLETED'),
+        withdrawn: count(type, 'WITHDRAWN'),
+        removed: count(type, 'REMOVED'),
+      })),
+      byProgram: programs.map((p) => ({
+        programName: p.name,
+        cap: byProgram.filter((e) => e.type === 'CAP' && e.student.programId === p.id).length,
+        yandal: byProgram.filter((e) => e.type === 'YANDAL' && e.student.programId === p.id).length,
+      })),
+      pendingFindings: pending,
     };
   }
 }
@@ -121,7 +105,6 @@ export class HealthController {
     private readonly health: HealthCheckService,
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
-    private readonly obis: ObisPort,
   ) {}
 
   private async check(key: string, fn: () => Promise<boolean>): Promise<HealthIndicatorResult> {
@@ -137,7 +120,6 @@ export class HealthController {
     return this.health.check([
       () => this.check('veritabani', async () => (await this.prisma.$queryRaw`SELECT 1`) !== null),
       () => this.check('redis', () => this.cache.ping()),
-      () => this.check('obis', () => this.obis.ping()),
     ]);
   }
 }

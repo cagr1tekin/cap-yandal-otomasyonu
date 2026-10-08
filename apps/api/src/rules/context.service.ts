@@ -1,94 +1,84 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  EnrollmentRef,
-  EvaluationContext,
-  OfferingSnapshot,
-  StudentSnapshot,
-} from '@cap/rules';
-import type { Offering, OfferingSourceProgram, Program } from '@prisma/client';
-import { notFound } from '../common/http';
-import { ObisPort } from '../integrations/obis.port';
+import type { EnrollmentRef, EvaluationContext, OfferingSnapshot, StudentSnapshot } from '@cap/rules';
+import type { Offering, OfferingSourceProgram, StudentProfile } from '@prisma/client';
+import { AccessService } from '../auth/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-export type OfferingWithProgram = Offering & { program: Program; sourcePrograms: OfferingSourceProgram[] };
+export type OfferingWithSources = Offering & { sourcePrograms: OfferingSourceProgram[] };
 
-/** Kural değerlendirmesi için OBİS ve veritabanından bağlam kurar. */
+/** Sınıf sırası ve mevcudundan başarı yüzdeliği: 5/82 → 6,1 (en üst %6,1). */
+export function rankPercentile(rank: number | null, size: number | null): number | null {
+  if (!rank || !size) return null;
+  return Math.round((rank / size) * 1000) / 10;
+}
+
+/**
+ * Kural değerlendirmesi için bağlam kurar. Öğrenci verisinin kaynağı öğrencinin kendi girdiği
+ * bilgilerdir (StudentProfile); OBİS bağlantısı yoktur (docs/KARARLAR.md K-12).
+ */
 @Injectable()
 export class ContextService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly obis: ObisPort,
+    private readonly access: AccessService,
   ) {}
 
-  async student(studentNo: string, fresh = false): Promise<StudentSnapshot & { fullName: string }> {
-    const [standing, info] = await Promise.all([
-      this.obis.getStanding(studentNo, { fresh }),
-      this.obis.getStudent(studentNo),
-    ]);
-    const program = await this.prisma.program.findUnique({ where: { id: standing.programId } });
-    if (!program) throw notFound('Öğrencinin ana dal programı');
+  async student(p: StudentProfile, frozen = false): Promise<StudentSnapshot> {
+    const stat = await this.prisma.yearStat.findUnique({ where: { year: p.entryYear } });
     return {
-      studentNo,
-      fullName: info.fullName,
-      programId: standing.programId,
-      level: program.level,
-      durationYears: program.durationYears,
-      semesterNo: standing.semesterNo,
-      gano: standing.gano,
-      completedAllCoursesToDate: standing.completedAllCoursesToDate,
-      classRankPercentile: standing.classRankPercentile,
-      entryScore: standing.entryScore,
-      yokRankRequirementMet: standing.yokRankRequirementMet,
-      talentExamPassedProgramIds: standing.talentExamPassedProgramIds,
-      frozen: standing.frozen,
+      studentNo: p.studentNo,
+      programId: p.programId,
+      // Kapsamdaki bütün bölümler dört yıllık lisans programıdır.
+      level: 'LISANS',
+      durationYears: 4,
+      semesterNo: p.semesterNo,
+      gano: p.gano,
+      completedAllCoursesToDate: p.completedAllCourses,
+      classRankPercentile: rankPercentile(p.classRank, p.classSize),
+      entryScore: p.entryScore !== null ? { year: p.entryYear, score: p.entryScore } : null,
+      yokRankRequirementMet: stat?.successRankLimit ? p.successRank !== null && p.successRank <= stat.successRankLimit : null,
+      talentExamPassedProgramIds: [],
+      frozen,
     };
   }
 
-  async offering(o: OfferingWithProgram, entryYear: number | null): Promise<OfferingSnapshot> {
+  async offering(o: OfferingWithSources, entryYear: number | null): Promise<OfferingSnapshot> {
+    const [home, stat] = await Promise.all([
+      this.access.home(),
+      entryYear ? this.prisma.yearStat.findUnique({ where: { year: entryYear } }) : null,
+    ]);
     return {
       id: o.id,
-      programId: o.programId,
+      programId: home.id,
       type: o.type,
       quota: o.quota,
       sourceProgramIds: o.sourcePrograms.map((s) => s.programId),
-      requiresTalentExam: o.program.requiresTalentExam,
-      requiresSuccessRank: o.program.requiresSuccessRank,
-      programBaseScore: entryYear ? await this.obis.getProgramBaseScore(o.programId, entryYear) : null,
-      programCategory: o.program.category,
+      requiresTalentExam: false,
+      requiresSuccessRank: !!stat?.successRankLimit,
+      programBaseScore: stat?.baseScore ?? null,
+      programCategory: 'MUHENDISLIK',
       firstYearIntake: o.firstYearIntake,
     };
   }
 
-  /** Sistem içi kayıtlar (OBİS'te değil, bu sistemde tutulur). */
   async enrollments(studentNo: string): Promise<{ refs: EnrollmentRef[]; removedMinorProgramIds: string[] }> {
-    const rows = await this.prisma.enrollment.findMany({ where: { studentNo } });
+    const [rows, home] = await Promise.all([this.prisma.enrollment.findMany({ where: { studentNo } }), this.access.home()]);
     return {
-      refs: rows.map((e) => ({ offeringId: e.offeringId, programId: e.programId, type: e.type, status: e.status })),
-      removedMinorProgramIds: rows.filter((e) => e.type === 'YANDAL' && e.status === 'REMOVED').map((e) => e.programId),
+      refs: rows.map((e) => ({ offeringId: e.offeringId, programId: home.id, type: e.type, status: e.status })),
+      removedMinorProgramIds: rows.some((e) => e.type === 'YANDAL' && e.status === 'REMOVED') ? [home.id] : [],
     };
   }
 
   /** Başvuru aşaması bağlamı. Saklanan anlık görüntü de budur (yeniden üretilebilirlik için). */
-  async application(
-    studentNo: string,
-    o: OfferingWithProgram,
-    opts: { fresh?: boolean; osymVerified?: boolean; student?: StudentSnapshot & { fullName: string } } = {},
-  ): Promise<{ ctx: EvaluationContext; fullName: string }> {
-    const student = opts.student ?? (await this.student(studentNo, opts.fresh));
-    const { fullName, ...snapshot } = student;
-    const [offering, enr] = await Promise.all([
-      this.offering(o, student.entryScore?.year ?? null),
-      this.enrollments(studentNo),
-    ]);
+  async application(p: StudentProfile, o: OfferingWithSources, verified: boolean): Promise<EvaluationContext> {
+    const [student, offering, enr] = await Promise.all([this.student(p), this.offering(o, p.entryYear), this.enrollments(p.studentNo)]);
     return {
-      fullName,
-      ctx: {
-        student: snapshot,
-        offering,
-        enrollments: enr.refs,
-        previouslyRemovedProgramIds: enr.removedMinorProgramIds,
-        osymVerified: opts.osymVerified ?? false,
-      },
+      student,
+      offering,
+      enrollments: enr.refs,
+      previouslyRemovedProgramIds: enr.removedMinorProgramIds,
+      // Taban puan yolunda YKS belgesinin koordinatörce doğrulanması beklenir (KR-ÇAP-03b).
+      osymVerified: verified,
     };
   }
 }

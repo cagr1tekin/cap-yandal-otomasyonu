@@ -1,64 +1,55 @@
 import { Injectable } from '@nestjs/common';
-import type { EvaluationContext } from '@cap/rules';
-import { LABELS, REGISTRATION_DOCUMENTS, type Proposal } from '@cap/contracts';
+import { LABELS, type Proposal } from '@cap/contracts';
 import ExcelJS from 'exceljs';
 import type { AuthUser } from '../auth/auth';
-import { AccessService } from '../auth/access.service';
 import { AuditService } from '../audit/audit.service';
-import { CatalogService, windowState, type OfferingFull } from '../catalog/catalog.service';
-import { badRequest, conflict, notFound, unprocessable } from '../common/http';
-import { ObisPort } from '../integrations/obis.port';
+import type { Snapshot } from '../applications/applications.service';
+import { CatalogService, windowState } from '../catalog/catalog.service';
+import { badRequest, conflict, forbidden, notFound } from '../common/http';
 import { NotificationsService } from '../notifications/notifications';
 import { PrismaService } from '../prisma/prisma.service';
 import { rank } from './ranking';
 
 const REVIEW_STATUSES = ['SUBMITTED', 'UNDER_REVIEW', 'PROPOSED', 'ACCEPTED', 'WAITLISTED', 'REJECTED', 'ENROLLED', 'NOT_ENROLLED'] as const;
 
-interface Snapshot {
-  fullName: string;
-  ctx: EvaluationContext;
-}
+/** Öğrenci numarası ve ad, ilan listesinde maskelenir (KVKK; fakülte ilanlarındaki uygulama). */
+export const maskNo = (no: string) => `${no.slice(0, 3)}***${no.slice(-3)}`;
+export const maskName = (name: string) =>
+  name
+    .split(' ')
+    .map((p) => `${p.slice(0, 2)}${'*'.repeat(Math.max(1, p.length - 2))}`)
+    .join(' ');
 
 @Injectable()
 export class ReviewService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly catalog: CatalogService,
-    private readonly access: AccessService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
-    private readonly obis: ObisPort,
   ) {}
 
-  private async offeringFor(user: AuthUser, id: string, roles: ('KOORDINATOR' | 'BOLUM_BASKANI' | 'BIRIM' | 'OIDB')[]) {
-    const o = await this.catalog.getOffering(id);
-    this.access.assertOffering(user, o, roles);
-    return o;
+  private usernames(studentNos: string[]) {
+    return this.prisma.studentProfile
+      .findMany({ where: { studentNo: { in: studentNos } }, include: { user: { select: { username: true } } } })
+      .then((rows) => new Map(rows.map((r) => [r.studentNo, r.user.username])));
   }
 
-  private async windowClosed(o: OfferingFull) {
-    const w = windowState(await this.catalog.window(o.program.unitId, o.termId, o.type));
-    return w.phase === 'KAPANDI';
-  }
-
-  /** US-11: başvurular, sıralama ve öneri. Kilitlenmemişse sıralama her istekte yeniden hesaplanır (gerekçeli değişiklikler korunur). */
-  async applications(user: AuthUser, offeringId: string) {
-    const o = await this.offeringFor(user, offeringId, ['KOORDINATOR', 'BOLUM_BASKANI', 'BIRIM', 'OIDB']);
-    const closed = await this.windowClosed(o);
+  /** Başvurular, sıralama ve öneri. Kilitlenmemişse sıralama her istekte yeniden hesaplanır (gerekçeli değişiklikler korunur). */
+  async applications(offeringId: string) {
+    const o = await this.catalog.getOffering(offeringId);
+    const closed = windowState(o).phase === 'KAPANDI';
 
     if (closed && !o.rankingLockedAt) {
       await this.prisma.application.updateMany({ where: { offeringId, status: 'SUBMITTED' }, data: { status: 'UNDER_REVIEW' } });
     }
 
-    let apps = await this.prisma.application.findMany({
-      where: { offeringId, status: { in: [...REVIEW_STATUSES] } },
-      include: { ranking: true },
-    });
+    let apps = await this.prisma.application.findMany({ where: { offeringId, status: { in: [...REVIEW_STATUSES] } }, include: { ranking: true } });
 
     if (!o.rankingLockedAt && apps.length) {
       const ranked = rank(
         apps.map((a) => {
-          const s = (a.obisSnapshot as unknown as Snapshot).ctx.student!;
+          const s = (a.snapshot as unknown as Snapshot).ctx.student!;
           return { id: a.id, gano: s.gano, classRankPercentile: s.classRankPercentile, submittedAt: a.submittedAt };
         }),
         o.quota,
@@ -75,27 +66,24 @@ export class ReviewService {
           });
         }),
       );
-      apps = await this.prisma.application.findMany({
-        where: { offeringId, status: { in: [...REVIEW_STATUSES] } },
-        include: { ranking: true },
-      });
+      apps = await this.prisma.application.findMany({ where: { offeringId, status: { in: [...REVIEW_STATUSES] } }, include: { ranking: true } });
     }
 
     const decision = await this.prisma.boardDecision.findFirst({ where: { offeringId }, orderBy: { recordedAt: 'desc' } });
     const rows = apps
       .map((a) => {
-        const snap = a.obisSnapshot as unknown as Snapshot;
+        const snap = a.snapshot as unknown as Snapshot;
         const s = snap.ctx.student!;
         return {
           id: a.id,
           studentNo: a.studentNo,
           fullName: snap.fullName,
-          mainProgramId: s.programId,
+          mainProgramName: snap.mainProgramName,
           gano: s.gano,
           classRankPercentile: s.classRankPercentile,
           semesterNo: s.semesterNo,
           path: a.path,
-          osymVerified: a.osymVerified,
+          verification: a.verification,
           status: a.status,
           submittedAt: a.submittedAt,
           ranking: a.ranking,
@@ -103,64 +91,48 @@ export class ReviewService {
       })
       .sort((x, y) => (x.ranking?.rank ?? 9999) - (y.ranking?.rank ?? 9999));
 
-    const programs = await this.prisma.program.findMany({ where: { id: { in: rows.map((r) => r.mainProgramId) } } });
     return {
       offering: o,
+      window: windowState(o),
       windowClosed: closed,
       decision,
+      unverified: rows.filter((r) => r.verification !== 'VERIFIED' && (r.status === 'SUBMITTED' || r.status === 'UNDER_REVIEW')).length,
       strategy: 'GNO azalan; eşitlikte sınıf başarı yüzdeliği, sonra başvuru zamanı',
-      rows: rows.map((r) => ({ ...r, mainProgramName: programs.find((p) => p.id === r.mainProgramId)?.name ?? r.mainProgramId })),
+      rows,
     };
   }
 
   async override(user: AuthUser, applicationId: string, proposal: Proposal, reason: string) {
-    const app = await this.prisma.application.findUnique({ where: { id: applicationId }, include: { ranking: true } });
+    const app = await this.prisma.application.findUnique({ where: { id: applicationId }, include: { ranking: true, offering: true } });
     if (!app?.ranking) throw notFound('Sıralama kaydı');
-    const o = await this.offeringFor(user, app.offeringId, ['KOORDINATOR', 'OIDB']);
-    if (o.rankingLockedAt) throw conflict('Öneri kilitlendi; değişiklik yapılamaz.');
-    const updated = await this.prisma.ranking.update({
-      where: { applicationId },
-      data: { proposal, overriddenBy: user.username, overrideReason: reason },
-    });
-    await this.audit.log({
-      actor: user.username,
-      action: 'RANKING_OVERRIDE',
-      entity: 'Application',
-      entityId: applicationId,
-      before: { proposal: app.ranking.proposal },
-      after: { proposal },
-      reason,
-    });
+    if (app.offering.rankingLockedAt) throw conflict('Öneri kilitlendi; değişiklik yapılamaz.');
+    const updated = await this.prisma.ranking.update({ where: { applicationId }, data: { proposal, overriddenBy: user.username, overrideReason: reason } });
+    await this.audit.log({ actor: user.username, action: 'RANKING_OVERRIDE', entity: 'Application', entityId: applicationId, before: { proposal: app.ranking.proposal }, after: { proposal }, reason });
     return updated;
   }
 
-  /** Bölüm önerisini kilitler: başvurular kurul kararı bekler duruma geçer. */
+  /** Komisyon önerisini kilitler: başvurular fakülte yönetim kurulu kararını bekler duruma geçer. */
   async lock(user: AuthUser, offeringId: string) {
-    const o = await this.offeringFor(user, offeringId, ['KOORDINATOR', 'OIDB']);
+    const data = await this.applications(offeringId);
+    const o = data.offering;
     if (o.rankingLockedAt) throw conflict('Öneri zaten kilitli.');
-    if (!(await this.windowClosed(o))) throw conflict('Başvuru dönemi kapanmadan öneri kilitlenemez.');
-    await this.applications(user, offeringId); // sıralamayı güncelle
-    const asil = await this.prisma.ranking.count({ where: { proposal: 'ASIL', application: { offeringId, status: 'UNDER_REVIEW' } } });
+    if (!data.windowClosed) throw conflict('Başvuru dönemi kapanmadan öneri kilitlenemez.');
+    // Öğrencinin kendi girdiği bilgiler belgeyle doğrulanmadan sıralama kesinleşmez (K-12).
+    if (data.unverified) throw conflict(`${data.unverified} başvurunun beyanı henüz doğrulanmadı. Önce doğrulayın ya da uyuşmazlık olarak işaretleyin.`);
+    const asil = data.rows.filter((r) => r.status === 'UNDER_REVIEW' && r.ranking?.proposal === 'ASIL').length;
     if (asil > o.quota) throw conflict(`Asil önerisi (${asil}) kontenjanı (${o.quota}) aşıyor.`);
     await this.prisma.$transaction(async (tx) => {
       await tx.offering.update({ where: { id: offeringId }, data: { rankingLockedAt: new Date() } });
       await tx.application.updateMany({ where: { offeringId, status: 'UNDER_REVIEW' }, data: { status: 'PROPOSED' } });
       await this.audit.log({ actor: user.username, action: 'RANKING_LOCK', entity: 'Offering', entityId: offeringId, after: { asil } }, tx);
     });
-    const unitUsers = await this.unitStaff(o.program.unitId);
-    await this.notifications.notifyMany(
-      unitUsers,
-      'Bölüm önerisi hazır',
-      `${o.program.name} ${LABELS.track[o.type].toLowerCase()} önerisi kilitlendi; yönetim kurulu kararı girilebilir.`,
-      `/birim/kararlar/${offeringId}`,
-    );
     return { ok: true };
   }
 
-  /** US-21: yönetim kurulu kararı. Öneriler karara dönüşür. */
+  /** Fakülte yönetim kurulu kararının sayısı ve tarihi girilir; öneriler karara dönüşür. */
   async decide(user: AuthUser, offeringId: string, decisionDate: Date, decisionNo: string) {
-    const o = await this.offeringFor(user, offeringId, ['BIRIM', 'OIDB']);
-    if (!o.rankingLockedAt) throw conflict('Bölüm önerisi kilitlenmeden karar girilemez.');
+    const o = await this.catalog.getOffering(offeringId);
+    if (!o.rankingLockedAt) throw conflict('Komisyon önerisi kilitlenmeden karar girilemez.');
     const existing = await this.prisma.boardDecision.findFirst({ where: { offeringId } });
     if (existing) throw conflict('Bu teklif için karar zaten girildi.');
     const apps = await this.prisma.application.findMany({ where: { offeringId, status: 'PROPOSED' }, include: { ranking: true } });
@@ -168,19 +140,16 @@ export class ReviewService {
     if (asil > o.quota) throw conflict('Kabul sayısı kontenjanı aşıyor.');
 
     const status = { ASIL: 'ACCEPTED', YEDEK: 'WAITLISTED', RET: 'REJECTED' } as const;
-    const decision = await this.prisma.$transaction(async (tx) => {
-      for (const a of apps) {
-        await tx.application.update({ where: { id: a.id }, data: { status: status[a.ranking?.proposal ?? 'RET'] } });
-      }
+    return this.prisma.$transaction(async (tx) => {
+      for (const a of apps) await tx.application.update({ where: { id: a.id }, data: { status: status[a.ranking?.proposal ?? 'RET'] } });
       const d = await tx.boardDecision.create({ data: { offeringId, decisionDate, decisionNo, recordedBy: user.username } });
       await this.audit.log({ actor: user.username, action: 'BOARD_DECISION', entity: 'Offering', entityId: offeringId, after: { decisionNo, decisionDate, asil } }, tx);
       return d;
     });
-    return decision;
   }
 
   async publish(user: AuthUser, offeringId: string) {
-    const o = await this.offeringFor(user, offeringId, ['BIRIM', 'OIDB']);
+    const o = await this.catalog.getOffering(offeringId);
     const decision = await this.prisma.boardDecision.findFirst({ where: { offeringId }, orderBy: { recordedAt: 'desc' } });
     if (!decision) throw conflict('Karar kaydedilmeden sonuç yayımlanamaz.');
     if (decision.publishedAt) throw conflict('Sonuçlar zaten yayımlandı.');
@@ -188,107 +157,103 @@ export class ReviewService {
     await this.audit.log({ actor: user.username, action: 'RESULTS_PUBLISH', entity: 'Offering', entityId: offeringId });
 
     const apps = await this.prisma.application.findMany({ where: { offeringId, status: { in: ['ACCEPTED', 'WAITLISTED', 'REJECTED'] } }, include: { ranking: true } });
+    const users = await this.usernames(apps.map((a) => a.studentNo));
     const track = LABELS.track[o.type].toLowerCase();
+    const until = o.registrationDeadline ? ` Son gün: ${o.registrationDeadline.toLocaleDateString('tr-TR')}.` : '';
     for (const a of apps) {
       const text =
         a.status === 'ACCEPTED'
-          ? `${o.program.name} ${track} programına asil olarak kabul edildiniz. Kesin kayıt için belgelerinizle ${o.program.unit.name} öğrenci işlerine başvurunuz.`
+          ? `Bilgisayar Mühendisliği ${track} programına asil olarak kabul edildiniz. Kesin kaydınızı "Başvurularım" sayfasından onaylayın.${until}`
           : a.status === 'WAITLISTED'
-            ? `${o.program.name} ${track} programında ${a.ranking?.rank ?? '-'}. sıradan yedeksiniz. Kontenjan açılırsa bildirim alacaksınız.`
-            : `${o.program.name} ${track} başvurunuz kabul edilmedi.`;
-      const info = await this.obis.getStudent(a.studentNo);
-      await this.notifications.emailStudent(info.email, 'Başvuru sonucunuz ilan edildi', text);
+            ? `Bilgisayar Mühendisliği ${track} programında ${a.ranking?.rank ?? '-'}. sıradan yedeksiniz. Kontenjan açılırsa bildirim alacaksınız.`
+            : `Bilgisayar Mühendisliği ${track} başvurunuz kabul edilmedi.`;
+      await this.notifications.notify(users.get(a.studentNo)!, 'Başvuru sonucunuz ilan edildi', text, `/ogrenci/basvuru/${a.id}`);
     }
     return { ok: true, notified: apps.length };
   }
 
   /**
-   * Kesin kayıt (KARARLAR K-8): öğrenci belgelerle birime şahsen gelir, birim belge kontrolüyle kaydı işler.
-   * Belge listesi İİBF 2023-24 kayıt duyurusundan alınmıştır.
+   * Kesin kayıt: kabul edilen öğrenci kaydını kendisi onaylar (Rehber, "Asil öğrenci kayıtları").
+   * Kayıt açılınca komisyon Kabul ve Ders Protokolünü hazırlar ve beş imzaya gönderir.
    */
-  async register(user: AuthUser, applicationId: string, documents: string[], note?: string) {
-    const app = await this.prisma.application.findUnique({ where: { id: applicationId }, include: { ranking: true } });
+  async accept(user: AuthUser, applicationId: string) {
+    const app = await this.prisma.application.findUnique({ where: { id: applicationId }, include: { offering: true, student: true } });
     if (!app) throw notFound('Başvuru');
-    const o = await this.offeringFor(user, app.offeringId, ['BIRIM', 'OIDB']);
-    if (app.status !== 'ACCEPTED') throw conflict('Yalnızca kabul edilen (asil ya da yedekten çağrılan) başvurular için kesin kayıt yapılır.');
-    if (o.registrationClosedAt) throw conflict('Kayıt dönemi kapatıldı.');
-    const missing = REGISTRATION_DOCUMENTS.filter((d) => !documents.includes(d.key));
-    if (missing.length) {
-      throw unprocessable('Kesin kayıt belgeleri eksik.', { errors: missing.map((d) => ({ path: d.key, message: d.label })) });
-    }
+    if (app.studentNo !== user.studentNo) throw forbidden();
+    const decision = await this.prisma.boardDecision.findFirst({ where: { offeringId: app.offeringId, publishedAt: { not: null } } });
+    if (app.status !== 'ACCEPTED' || !decision) throw conflict('Yalnızca kabul edilen (asil ya da yedekten çağrılan) başvurular için kesin kayıt yapılır.');
+    if (app.offering.registrationClosedAt) throw conflict('Kayıt dönemi kapatıldı.');
     const enrollment = await this.prisma.$transaction(async (tx) => {
       await tx.application.update({ where: { id: app.id }, data: { status: 'ENROLLED' } });
       const e = await tx.enrollment.create({
         data: {
           studentNo: app.studentNo,
-          offeringId: o.id,
+          offeringId: app.offeringId,
           applicationId: app.id,
-          type: o.type,
-          programId: o.programId,
-          startTermId: o.termId,
-          registrationDocuments: documents,
-          registeredBy: user.username,
-          // ÇAP/yan dal programı danışmanı (Danışmanlık Yön. m.6/5); bölüm başkanı değiştirebilir.
-          trackAdvisorUsername: o.coordinatorUsername,
+          type: app.offering.type,
+          startTermId: app.offering.termId,
+          mainAdvisorUsername: app.student.advisorUsername,
         },
       });
-      await this.audit.log(
-        { actor: user.username, action: 'ENROLLMENT_CREATE', entity: 'Enrollment', entityId: e.id, after: { applicationId: app.id, documents }, reason: note },
-        tx,
-      );
+      await this.audit.log({ actor: user.username, action: 'ENROLLMENT_CREATE', entity: 'Enrollment', entityId: e.id, after: { applicationId: app.id } }, tx);
       return e;
     });
-    const info = await this.obis.getStudent(app.studentNo);
-    await this.notifications.emailStudent(
-      info.email,
-      'Kesin kaydınız yapıldı',
-      `${o.program.name} ${LABELS.track[o.type].toLowerCase()} kesin kaydınız yapıldı. Kabul ve Ders Protokolünüz için koordinatörünüzle görüşünüz.`,
-    );
-    await this.notifications.notify(
-      o.coordinatorUsername,
+    await this.notifications.notifyCoordinators(
       'Yeni kayıt: protokol hazırlanmalı',
-      `${app.studentNo} numaralı öğrencinin ${o.program.name} ${LABELS.track[o.type].toLowerCase()} kesin kaydı yapıldı.`,
+      `${app.student.fullName} (${app.studentNo}) ${LABELS.track[app.offering.type].toLowerCase()} kesin kaydını onayladı.`,
       `/kayitlar/${enrollment.id}`,
     );
     return enrollment;
   }
 
-  /** FR-16: kayıt süresi biter; kaydolmayan asiller düşer, sıradaki yedekler çağrılır. */
+  /** Kayıt süresi biter; kaydolmayan asiller düşer, sıradaki yedekler çağrılır. */
   async closeRegistration(user: AuthUser, offeringId: string) {
-    const o = await this.offeringFor(user, offeringId, ['BIRIM', 'OIDB']);
+    const o = await this.catalog.getOffering(offeringId);
     if (o.registrationClosedAt) throw conflict('Kayıt dönemi zaten kapatıldı.');
+    const published = await this.prisma.boardDecision.findFirst({ where: { offeringId, publishedAt: { not: null } } });
+    if (!published) throw conflict('Sonuçlar yayımlanmadan kayıt dönemi kapatılamaz.');
     const dropped = await this.prisma.application.findMany({ where: { offeringId, status: 'ACCEPTED' } });
-    await this.prisma.application.updateMany({ where: { offeringId, status: 'ACCEPTED' }, data: { status: 'NOT_ENROLLED' } });
     const enrolled = await this.prisma.application.count({ where: { offeringId, status: 'ENROLLED' } });
     const seats = Math.max(0, o.quota - enrolled);
-    const waitlist = await this.prisma.application.findMany({
-      where: { offeringId, status: 'WAITLISTED' },
-      include: { ranking: true },
-      orderBy: { ranking: { rank: 'asc' } },
-      take: seats,
-    });
+    const waitlist = await this.prisma.application.findMany({ where: { offeringId, status: 'WAITLISTED' }, include: { ranking: true }, orderBy: { ranking: { rank: 'asc' } }, take: seats });
     await this.prisma.$transaction(async (tx) => {
+      await tx.application.updateMany({ where: { id: { in: dropped.map((d) => d.id) } }, data: { status: 'NOT_ENROLLED' } });
       for (const w of waitlist) await tx.application.update({ where: { id: w.id }, data: { status: 'ACCEPTED' } });
-      await tx.offering.update({ where: { id: offeringId }, data: { registrationClosedAt: new Date() } });
+      // Yedek çağrıldıysa kayıt dönemi yedekler için açık kalır; çağrılan yoksa kapanır.
+      if (!waitlist.length) await tx.offering.update({ where: { id: offeringId }, data: { registrationClosedAt: new Date() } });
       await this.audit.log(
         { actor: user.username, action: 'REGISTRATION_CLOSE', entity: 'Offering', entityId: offeringId, after: { dropped: dropped.map((d) => d.studentNo), promoted: waitlist.map((w) => w.studentNo) } },
         tx,
       );
     });
+    const users = await this.usernames(waitlist.map((w) => w.studentNo));
+    const until = o.waitlistDeadline ? ` Son gün: ${o.waitlistDeadline.toLocaleDateString('tr-TR')}.` : '';
     for (const w of waitlist) {
-      const info = await this.obis.getStudent(w.studentNo);
-      await this.notifications.emailStudent(
-        info.email,
+      await this.notifications.notify(
+        users.get(w.studentNo)!,
         'Yedekten asil listeye geçtiniz',
-        `${o.program.name} ${LABELS.track[o.type].toLowerCase()} programında kontenjan açıldı. Kesin kayıt için belgelerinizle ${o.program.unit.name} öğrenci işlerine başvurunuz.`,
+        `Bilgisayar Mühendisliği ${LABELS.track[o.type].toLowerCase()} programında kontenjan açıldı. Kesin kaydınızı "Başvurularım" sayfasından onaylayın.${until}`,
+        `/ogrenci/basvuru/${w.id}`,
       );
     }
-    return { dropped: dropped.length, promoted: waitlist.map((w) => w.studentNo) };
+    return { dropped: dropped.length, promoted: waitlist.map((w) => w.studentNo), closed: !waitlist.length };
   }
 
-  /** US-22 / FR-18: kabul listesi. */
-  async export(user: AuthUser, offeringId: string, format: 'csv' | 'xlsx') {
-    const data = await this.applications(user, offeringId);
+  /** İlan edilecek sonuç listesi (öğrenci numarası ve ad maskeli). */
+  async publicResult(offeringId: string) {
+    const data = await this.applications(offeringId);
+    if (!data.decision) throw badRequest('Karar girilmeden sonuç listesi oluşturulamaz.');
+    return {
+      offering: data.offering,
+      decision: data.decision,
+      rows: data.rows
+        .filter((r) => r.ranking && r.ranking.proposal !== 'RET')
+        .map((r) => ({ rank: r.ranking!.rank, studentNo: maskNo(r.studentNo), fullName: maskName(r.fullName), mainProgramName: r.mainProgramName, gano: r.gano, proposal: r.ranking!.proposal })),
+    };
+  }
+
+  async export(offeringId: string, format: 'csv' | 'xlsx') {
+    const data = await this.applications(offeringId);
     if (!data.decision) throw badRequest('Karar girilmeden liste dışa aktarılamaz.');
     const header = ['Sıra', 'Öğrenci No', 'Ad Soyad', 'Ana Dal', 'GNO', 'Sınıf Yüzdeliği', 'Yol', 'Öneri', 'Durum'];
     const rows = data.rows.map((r) => [
@@ -302,7 +267,7 @@ export class ReviewService {
       r.ranking ? LABELS.proposal[r.ranking.proposal] : '',
       LABELS.application[r.status],
     ]);
-    const name = `${data.offering.program.name} ${LABELS.track[data.offering.type]} ${data.offering.term.year}`;
+    const name = `Bilgisayar Muhendisligi ${LABELS.track[data.offering.type]} ${data.offering.term.year}`;
     if (format === 'csv') {
       const esc = (v: unknown) => `"${String(v).replace(/"/g, '""')}"`;
       const csv = '﻿' + [header, ...rows].map((r) => r.map(esc).join(';')).join('\r\n');
@@ -315,25 +280,5 @@ export class ReviewService {
     rows.forEach((r) => ws.addRow(r));
     ws.columns.forEach((c) => (c.width = 18));
     return { name: `${name}.xlsx`, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', body: Buffer.from(await wb.xlsx.writeBuffer()) };
-  }
-
-  private async unitStaff(unitId: string) {
-    const rows = await this.prisma.roleAssignment.findMany({ where: { role: 'BIRIM', unitId }, include: { user: true } });
-    return rows.map((r) => r.user.username);
-  }
-
-  async decisionsOverview(user: AuthUser, termId?: string) {
-    const term = termId ? { id: termId } : await this.catalog.currentTerm();
-    const offerings = await this.catalog.listForStaff(user, { termId: term?.id });
-    const ids = offerings.map((o) => o.id);
-    const [decisions, counts] = await Promise.all([
-      this.prisma.boardDecision.findMany({ where: { offeringId: { in: ids } } }),
-      this.prisma.application.groupBy({ by: ['offeringId', 'status'], where: { offeringId: { in: ids } }, _count: true }),
-    ]);
-    return offerings.map((o) => ({
-      ...o,
-      decision: decisions.find((d) => d.offeringId === o.id) ?? null,
-      counts: Object.fromEntries(counts.filter((c) => c.offeringId === o.id).map((c) => [c.status, c._count])),
-    }));
   }
 }

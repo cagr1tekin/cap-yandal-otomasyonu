@@ -17,6 +17,7 @@ import { APP_CONFIG, loadConfig, type AppConfig } from './config';
 import { EnrollmentsController } from './enrollments/enrollments.controller';
 import { EnrollmentsService } from './enrollments/enrollments.service';
 import { FormsService } from './forms/forms.service';
+import { TemplatesController, TemplatesService } from './forms/templates';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { HealthController, MeController, ReportsController } from './misc/misc';
 import { MonitoringController, MonitoringService, SCAN_QUEUE, ScanProcessor } from './monitoring/monitoring';
@@ -27,6 +28,7 @@ import { ReviewService } from './review/review.service';
 import { ContextService } from './rules/context.service';
 import { RulesController } from './rules/rules.controller';
 import { RulesService } from './rules/rules.service';
+import { StudentsController, StudentsService } from './students/students';
 
 const config = loadConfig();
 
@@ -71,8 +73,10 @@ const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcesso
     MeController,
     HealthController,
     ReportsController,
+    StudentsController,
     CatalogController,
     RulesController,
+    TemplatesController,
     ApplicationsController,
     ReviewController,
     EnrollmentsController,
@@ -86,6 +90,8 @@ const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcesso
     RulesService,
     ContextService,
     CatalogService,
+    StudentsService,
+    TemplatesService,
     ApplicationsService,
     ReviewService,
     EnrollmentsService,

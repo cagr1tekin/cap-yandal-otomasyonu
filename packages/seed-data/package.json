@@ -2,7 +2,7 @@
   "name": "@cap/seed-data",
   "version": "0.1.0",
   "private": true,
-  "description": "Sahte OBİS, veritabanı seed'i ve Keycloak realm'inin ortak kullandığı deneme verisi",
+  "description": "Veritabanı seed'i ve Keycloak realm'inin ortak kullandığı deneme verisi",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

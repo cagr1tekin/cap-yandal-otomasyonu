@@ -108,16 +108,17 @@ export class RulesService {
     const { def, row } = await this.byId(id);
     const apps = await this.prisma.application.findMany({
       where: { offering: { type: row.type }, status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'PROPOSED'] } },
-      include: { offering: { include: { program: true } } },
+      include: { offering: true },
     });
     const rows = apps.map((a) => {
-      const ctx = (a.obisSnapshot as unknown as { ctx: EvaluationContext }).ctx;
+      const snap = a.snapshot as unknown as { ctx: EvaluationContext; fullName: string };
+      const ctx = snap.ctx;
       const before = (a.eligibility as unknown as { verdict: Verdict }).verdict;
       const after = evaluate(def, 'APPLICATION', ctx);
       return {
         applicationId: a.id,
         studentNo: a.studentNo,
-        program: a.offering.program.name,
+        fullName: snap.fullName,
         before,
         after: after.verdict,
         changed: before !== after.verdict,

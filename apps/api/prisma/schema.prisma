@@ -1,6 +1,5 @@
-// Çift Ana Dal ve Yan Dal Başvuru ve Takip Sistemi — veri modeli
-// Teknik doküman bölüm 6. Öğrencinin kişisel/akademik verisi OBİS'te kalır;
-// burada yalnızca öğrenci numarası ve karar anlarının anlık görüntüleri tutulur.
+// Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonu — veri modeli (docs/KARARLAR.md K-12).
+// OBİS bağlantısı yoktur: öğrenci akademik bilgilerini kendisi girer, koordinatör belgeyle doğrular.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,26 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UnitKind {
-  FAKULTE
-  YUKSEKOKUL
-  MYO
-  KONSERVATUVAR
-}
-
-enum ProgramLevel {
-  ONLISANS
-  LISANS
-}
-
-enum ProgramCategory {
-  MUHENDISLIK
-  HUKUK
-  TIP
-  SAGLIK
-  DIGER
-}
-
 enum Season {
   GUZ
   BAHAR
@@ -39,6 +18,12 @@ enum Season {
 enum TrackType {
   CAP
   YANDAL
+}
+
+enum CourseKind {
+  ZORUNLU
+  TEKNIK_SECMELI
+  SOSYAL_SECMELI
 }
 
 enum OfferingStatus {
@@ -71,6 +56,12 @@ enum ApplicationStatus {
   NOT_ENROLLED
 }
 
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  MISMATCH
+}
+
 enum Proposal {
   ASIL
   YEDEK
@@ -85,27 +76,45 @@ enum EnrollmentStatus {
   COMPLETED
 }
 
+enum DocumentKind {
+  TRANSKRIPT
+  BASARI_BELGESI
+  YKS_BELGESI
+  DONEM_TRANSKRIPTI
+  DIGER
+}
+
+enum ProtocolItemKind {
+  COURSE
+  ELECTIVE_SLOT
+}
+
+enum ProtocolItemStatus {
+  PENDING
+  PASSED
+  FAILED
+  EXEMPT
+}
+
 enum FormStatus {
   DRAFT
   IN_APPROVAL
   APPROVED
   REJECTED
-  SUBMITTED
-  ENTERED
-  FILED
 }
 
 enum ApprovalSubject {
   PROTOCOL
   COURSE_REG
+  EXEMPTION
 }
 
 enum ApprovalRole {
-  OGRENCI_IMZA
+  OGRENCI
   ANA_DAL_DANISMANI
   ANA_DAL_BOLUM_BASKANI
   KOORDINATOR
-  HEDEF_BOLUM_BASKANI
+  CAP_BOLUM_BASKANI
 }
 
 enum ApprovalDecision {
@@ -135,96 +144,82 @@ enum FindingDecision {
   DISMISSED
 }
 
-enum Role {
-  KOORDINATOR
+/// Personel rolleri. Öğrenciye rol atanmaz; personel rolü olmayan hesap öğrencidir.
+enum StaffRole {
   DANISMAN
+  KOORDINATOR
   BOLUM_BASKANI
-  BIRIM
-  OIDB
 }
 
-model Unit {
-  id       String              @id
-  code     String              @unique
-  name     String
-  kind     UnitKind
-  programs Program[]
-  windows  ApplicationWindow[]
-}
+// ---------------------------------------------------------------- Tanımlar
 
+/// Bölümler: Bilgisayar Mühendisliği (isHome) ve öğrencilerin geldiği ana dal bölümleri.
 model Program {
-  id                  String                  @id
-  unitId              String
-  unit                Unit                    @relation(fields: [unitId], references: [id])
-  obisProgramId       String                  @unique
-  name                String
-  level               ProgramLevel
-  durationYears       Int
-  category            ProgramCategory
-  requiresTalentExam  Boolean                 @default(false)
-  requiresSuccessRank Boolean                 @default(false)
-  offerings           Offering[]
-  sourceFor           OfferingSourceProgram[]
-  courses             ProgramCourse[]
+  id         String                  @id
+  name       String
+  faculty    String
+  codePrefix String?
+  isHome     Boolean                 @default(false)
+  sourceFor  OfferingSourceProgram[]
+  students   StudentProfile[]
+  templates  ProtocolTemplate[]
+  roles      RoleAssignment[]
 }
 
-/**
- * Program müfredatı (protokol ve dönemlik ders kaydı için).
- */
-model ProgramCourse {
-  id        String  @id @default(cuid())
-  programId String
-  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
-  code      String
-  name      String
-  ects      Int
-  semester  Int
-  /// İki programda ortak sayılan genel kültür / alan dışı ders (Yönerge m.7/2)
-  common    Boolean @default(false)
-
-  @@unique([programId, code])
+/// Bilgisayar Mühendisliği müfredatı (Bologna ders paketi).
+model Course {
+  code     String     @id
+  name     String
+  ects     Int
+  semester Int
+  kind     CourseKind
 }
 
 model Term {
-  id        String              @id
-  year      String
-  season    Season
-  startsAt  DateTime
-  endsAt    DateTime
-  isCurrent Boolean             @default(false)
-  offerings Offering[]
-  windows   ApplicationWindow[]
-  scans     TermScan[]
+  id          String               @id
+  year        String
+  season      Season
+  startsAt    DateTime
+  endsAt      DateTime
+  isCurrent   Boolean              @default(false)
+  offerings   Offering[]
+  scans       TermScan[]
+  enrollments Enrollment[]
+  courseRegs  CourseRegistration[]
+  records     TermRecord[]
+  leaves      TermLeave[]
 
   @@unique([year, season])
 }
 
+/// Dönemlik ÇAP / yan dal teklifi: kontenjan, kaynak bölümler ve takvim.
 model Offering {
   id                   String                  @id @default(cuid())
-  programId            String
-  program              Program                 @relation(fields: [programId], references: [id])
   termId               String
   term                 Term                    @relation(fields: [termId], references: [id])
   type                 TrackType
   quota                Int
-  coordinatorUsername  String
   firstYearIntake      Int?
   quotaJustification   String?
   status               OfferingStatus          @default(DRAFT)
+  opensAt              DateTime
+  closesAt             DateTime
+  announceAt           DateTime?
+  registrationDeadline DateTime?
+  waitlistDeadline     DateTime?
   rankingLockedAt      DateTime?
   registrationClosedAt DateTime?
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   sourcePrograms       OfferingSourceProgram[]
-  poolCourses          MinorPoolCourse[]
   applications         Application[]
   decisions            BoardDecision[]
   enrollments          Enrollment[]
 
-  @@unique([programId, termId, type])
-  @@index([termId, type, status])
+  @@unique([termId, type])
 }
 
+/// Teklifin başvuru kabul ettiği bölümler (boşsa her bölüm).
 model OfferingSourceProgram {
   offeringId String
   offering   Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
@@ -234,33 +229,13 @@ model OfferingSourceProgram {
   @@id([offeringId, programId])
 }
 
-model MinorPoolCourse {
-  id         String   @id @default(cuid())
-  offeringId String
-  offering   Offering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
-  courseCode String
-  name       String
-  ects       Int
-
-  @@unique([offeringId, courseCode])
-}
-
-model ApplicationWindow {
-  id                         String    @id @default(cuid())
-  unitId                     String
-  unit                       Unit      @relation(fields: [unitId], references: [id])
-  termId                     String
-  term                       Term      @relation(fields: [termId], references: [id])
-  type                       TrackType
-  opensAt                    DateTime
-  closesAt                   DateTime
-  announceAt                 DateTime?
-  /// Asil / yedek kesin kayıt ve ders kaydı son tarihleri (birim takvimleri)
-  registrationDeadline       DateTime?
-  waitlistDeadline           DateTime?
-  courseRegistrationDeadline DateTime?
-
-  @@unique([unitId, termId, type])
+/// Bilgisayar Mühendisliğinin yıllara göre taban puanı ve başarı sırası şartı (KR-ÇAP-03b, KR-ÇAP-04).
+model YearStat {
+  year             Int      @id
+  baseScore        Float
+  successRankLimit Int?
+  updatedBy        String?
+  updatedAt        DateTime @updatedAt
 }
 
 model RuleSet {
@@ -292,34 +267,112 @@ model RuleDefinition {
   @@unique([ruleSetId, code])
 }
 
+// ---------------------------------------------------------------- Kullanıcılar
+
+model User {
+  id          String           @id @default(cuid())
+  username    String           @unique
+  oidcSub     String?          @unique
+  displayName String
+  email       String?
+  lastLoginAt DateTime?
+  assignments RoleAssignment[]
+  profile     StudentProfile?
+}
+
+/// Rol + kapsam. BOLUM_BASKANI ve DANISMAN için programId zorunludur.
+model RoleAssignment {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      StaffRole
+  programId String?
+  program   Program?  @relation(fields: [programId], references: [id])
+
+  @@index([userId])
+}
+
+/// Öğrencinin kendi girdiği kimlik ve akademik bilgiler.
+model StudentProfile {
+  studentNo           String        @id
+  userId              String        @unique
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName            String
+  email               String
+  phone               String?
+  programId           String
+  program             Program       @relation(fields: [programId], references: [id])
+  entryYear           Int
+  semesterNo          Int
+  gano                Float
+  completedAllCourses Boolean
+  classRank           Int?
+  classSize           Int?
+  entryScore          Float?
+  successRank         Int?
+  advisorUsername     String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  documents           Document[]
+  applications        Application[]
+  enrollments         Enrollment[]
+}
+
+/// Öğrencinin yüklediği belge. Dosya diskte, özeti ve üst verisi burada tutulur.
+model Document {
+  id           String                @id @default(cuid())
+  studentNo    String
+  student      StudentProfile        @relation(fields: [studentNo], references: [studentNo], onDelete: Cascade)
+  kind         DocumentKind
+  fileName     String
+  mimeType     String
+  size         Int
+  sha256       String
+  storageKey   String
+  uploadedAt   DateTime              @default(now())
+  applications ApplicationDocument[]
+
+  @@index([studentNo, kind])
+}
+
+// ---------------------------------------------------------------- Başvuru ve değerlendirme
+
 model Application {
-  id             String            @id @default(cuid())
-  studentNo      String
-  offeringId     String
-  offering       Offering          @relation(fields: [offeringId], references: [id])
-  ruleSetId      String
-  ruleSet        RuleSet           @relation(fields: [ruleSetId], references: [id])
-  path           ApplicationPath
-  osymDocNo      String?
-  osymVerified   Boolean           @default(false)
-  /// Birime şahsen verilen dilekçenin evrak kaydı (KARARLAR K-1)
-  documentNo     String?
-  documentDate   DateTime?
-  documents      Json?
-  enteredBy      String?
-  note           String?
-  withdrawReason String?
-  obisSnapshot   Json
-  eligibility    Json
-  status         ApplicationStatus @default(SUBMITTED)
-  submittedAt    DateTime          @default(now())
-  withdrawnAt    DateTime?
-  updatedAt      DateTime          @updatedAt
-  ranking        Ranking?
-  enrollment     Enrollment?
+  id               String                @id @default(cuid())
+  studentNo        String
+  student          StudentProfile        @relation(fields: [studentNo], references: [studentNo])
+  offeringId       String
+  offering         Offering              @relation(fields: [offeringId], references: [id])
+  ruleSetId        String
+  ruleSet          RuleSet               @relation(fields: [ruleSetId], references: [id])
+  path             ApplicationPath
+  /// Başvuru anındaki öğrenci beyanı ve kural bağlamı (yeniden üretilebilirlik için)
+  snapshot         Json
+  eligibility      Json
+  status           ApplicationStatus     @default(SUBMITTED)
+  verification     VerificationStatus    @default(PENDING)
+  verifiedBy       String?
+  verifiedAt       DateTime?
+  verificationNote String?
+  withdrawReason   String?
+  submittedAt      DateTime              @default(now())
+  withdrawnAt      DateTime?
+  updatedAt        DateTime              @updatedAt
+  documents        ApplicationDocument[]
+  ranking          Ranking?
+  enrollment       Enrollment?
 
   @@unique([studentNo, offeringId])
   @@index([offeringId, status])
+}
+
+model ApplicationDocument {
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  documentId    String
+  document      Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([applicationId, documentId])
 }
 
 model Ranking {
@@ -333,6 +386,7 @@ model Ranking {
   updatedAt      DateTime    @updatedAt
 }
 
+/// Fakülte yönetim kurulu kararının kaydı (karar EBYS'de alınır; burada sayısı ve tarihi tutulur).
 model BoardDecision {
   id           String    @id @default(cuid())
   offeringId   String
@@ -344,82 +398,139 @@ model BoardDecision {
   publishedAt  DateTime?
 }
 
+// ---------------------------------------------------------------- Kayıt, protokol, formlar
+
 model Enrollment {
-  id                    String               @id @default(cuid())
-  studentNo             String
-  offeringId            String
-  offering              Offering             @relation(fields: [offeringId], references: [id])
-  applicationId         String?              @unique
-  application           Application?         @relation(fields: [applicationId], references: [id])
-  type                  TrackType
-  programId             String
-  status                EnrollmentStatus     @default(ACTIVE)
-  startTermId           String
-  ganoStrikes           Int                  @default(0)
-  graceUntilTermId      String?
-  /// Kesin kayıtta teslim alınan belgeler (KARARLAR K-8)
-  registrationDocuments Json?
-  registeredBy          String?
-  /// ÇAP / yan dal programı danışmanı (Danışmanlık Yön. m.6/5)
-  trackAdvisorUsername  String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-  findings              ScanFinding[]
-  withdrawals           WithdrawalRequest[]
-  protocol              Protocol?
-  courseRegistrations   CourseRegistration[]
-  leaves                TermLeave[]
+  id                  String               @id @default(cuid())
+  studentNo           String
+  student             StudentProfile       @relation(fields: [studentNo], references: [studentNo])
+  offeringId          String
+  offering            Offering             @relation(fields: [offeringId], references: [id])
+  applicationId       String?              @unique
+  application         Application?         @relation(fields: [applicationId], references: [id])
+  type                TrackType
+  status              EnrollmentStatus     @default(ACTIVE)
+  startTermId         String
+  startTerm           Term                 @relation(fields: [startTermId], references: [id])
+  ganoStrikes         Int                  @default(0)
+  mainAdvisorUsername String?
+  /// Ana daldan mezuniyetteki GNO (mezuniyet denetimi için koordinatör girer)
+  mainGraduationGano  Float?
+  completedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  protocol            Protocol?
+  courseRegistrations CourseRegistration[]
+  exemptions          ExemptionRequest[]
+  termRecords         TermRecord[]
+  leaves              TermLeave[]
+  findings            ScanFinding[]
+  withdrawals         WithdrawalRequest[]
 
   @@index([studentNo])
   @@index([offeringId, status])
 }
 
-/**
- * Kabul ve Ders Protokolü (Esaslar m.3; KARARLAR K-9)
- */
+/// Bölümler arası Kabul ve Ders Protokolü şablonu (ÇAP: ana dal bölümü başına; yan dal: ders havuzu).
+model ProtocolTemplate {
+  id              String                 @id @default(cuid())
+  type            TrackType
+  sourceProgramId String?
+  sourceProgram   Program?               @relation(fields: [sourceProgramId], references: [id])
+  title           String
+  /// Ana dalda alınan ve iki program için ortak sayılan derslerin AKTS toplamı (ÇAP Yön. m.7/2)
+  commonEcts      Int                    @default(0)
+  source          String?
+  updatedBy       String?
+  updatedAt       DateTime               @updatedAt
+  items           ProtocolTemplateItem[]
+  conditions      ProtocolCondition[]
+  protocols       Protocol[]
+
+  @@unique([type, sourceProgramId])
+}
+
+model ProtocolTemplateItem {
+  id         String           @id @default(cuid())
+  templateId String
+  template   ProtocolTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  position   Int
+  kind       ProtocolItemKind
+  code       String?
+  name       String
+  ects       Int
+  semester   Int
+
+  @@index([templateId, position])
+}
+
+/// Protokolün altındaki numaralı özel şart: ana dalda alınan ders, protokoldeki dersten muaf sayar.
+model ProtocolCondition {
+  id               String             @id @default(cuid())
+  templateId       String
+  template         ProtocolTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  no               Int
+  sourceCourseCode String
+  sourceCourseName String
+  targetCourseCode String
+  note             String?
+  exemptions       ExemptionRequest[]
+
+  @@unique([templateId, no])
+}
+
+/// Öğrenciye özgü Kabul ve Ders Protokolü (şablondan üretilir, 5 imza).
 model Protocol {
   id           String           @id @default(cuid())
   enrollmentId String           @unique
   enrollment   Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  templateId   String
+  template     ProtocolTemplate @relation(fields: [templateId], references: [id])
   status       FormStatus       @default(DRAFT)
   round        Int              @default(1)
   commonEcts   Int              @default(0)
   createdBy    String
   submittedAt  DateTime?
   approvedAt   DateTime?
-  filedAt      DateTime?
-  filedBy      String?
   updatedAt    DateTime         @updatedAt
   courses      ProtocolCourse[]
 }
 
+/// Protokol satırı: ders ya da seçmeli ders yeri. Durum ve not, dönem sonunda koordinatörce girilir.
 model ProtocolCourse {
-  id         String   @id @default(cuid())
-  protocolId String
-  protocol   Protocol @relation(fields: [protocolId], references: [id], onDelete: Cascade)
-  code       String
-  name       String
-  ects       Int
+  id            String                   @id @default(cuid())
+  protocolId    String
+  protocol      Protocol                 @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+  position      Int
+  kind          ProtocolItemKind
+  code          String?
+  name          String
+  ects          Int
+  semester      Int
+  status        ProtocolItemStatus       @default(PENDING)
+  grade         String?
+  /// Seçmeli yer hangi dersle dolduruldu / hangi dersten muaf sayıldı
+  fulfilledCode String?
+  fulfilledName String?
+  termId        String?
+  registrations CourseRegistrationItem[]
+  exemptions    ExemptionRequest[]
 
-  @@unique([protocolId, code])
+  @@index([protocolId, position])
 }
 
-/**
- * Dönemlik ÇAP / yan dal ders kayıt formu (Esaslar m.4; KARARLAR K-10)
- */
+/// Dönemlik ders kayıt formu (FORM01): öğrenci hazırlar; öğrenci, ana dal danışmanı, koordinatör imzalar.
 model CourseRegistration {
   id           String                   @id @default(cuid())
   enrollmentId String
   enrollment   Enrollment               @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   termId       String
+  term         Term                     @relation(fields: [termId], references: [id])
   status       FormStatus               @default(DRAFT)
   round        Int                      @default(1)
   createdBy    String
-  approvedAt   DateTime?
   submittedAt  DateTime?
-  submittedBy  String?
-  enteredAt    DateTime?
-  enteredBy    String?
+  approvedAt   DateTime?
   updatedAt    DateTime                 @updatedAt
   items        CourseRegistrationItem[]
 
@@ -430,22 +541,43 @@ model CourseRegistrationItem {
   id                   String             @id @default(cuid())
   courseRegistrationId String
   courseRegistration   CourseRegistration @relation(fields: [courseRegistrationId], references: [id], onDelete: Cascade)
+  protocolCourseId     String
+  protocolCourse       ProtocolCourse     @relation(fields: [protocolCourseId], references: [id], onDelete: Cascade)
   code                 String
   name                 String
   ects                 Int
 
-  @@unique([courseRegistrationId, code])
+  @@unique([courseRegistrationId, protocolCourseId])
 }
 
-/**
- * Protokol ve ders kayıt formu imzaları; her imzacı için bir satır
- */
+/// Özel Şartlı Derslerin Muafiyeti Formu (Rehber): öğrenci, ana dal danışmanı, koordinatör.
+model ExemptionRequest {
+  id               String            @id @default(cuid())
+  enrollmentId     String
+  enrollment       Enrollment        @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  conditionId      String
+  condition        ProtocolCondition @relation(fields: [conditionId], references: [id])
+  protocolCourseId String
+  protocolCourse   ProtocolCourse    @relation(fields: [protocolCourseId], references: [id], onDelete: Cascade)
+  sourceGrade      String
+  sourceTerm       String
+  status           FormStatus        @default(IN_APPROVAL)
+  round            Int               @default(1)
+  createdAt        DateTime          @default(now())
+  approvedAt       DateTime?
+
+  @@unique([enrollmentId, conditionId])
+}
+
+/// Protokol, ders kayıt formu ve muafiyet formu imzaları; her imzacı için bir satır.
 model Approval {
   id               String           @id @default(cuid())
   subjectType      ApprovalSubject
   subjectId        String
   round            Int
   role             ApprovalRole
+  /// Boşsa: KOORDINATOR imzasını komisyon üyelerinden biri atar; diğer rollerde hesabı olmayan
+  /// imzacının ıslak imzasını koordinatör işler.
   assigneeUsername String?
   decision         ApprovalDecision @default(PENDING)
   decidedBy        String?
@@ -457,14 +589,32 @@ model Approval {
   @@index([assigneeUsername, decision])
 }
 
-/**
- * Dönem izni: Erasmus/Farabi, dersin açılmaması vb. (Yönerge m.9/ç, İİBF ilkeleri)
- */
+// ---------------------------------------------------------------- Dönem takibi
+
+/// Dönem sonu beyanı: öğrenci ana dal GNO'sunu girer, koordinatör transkriptle doğrular.
+model TermRecord {
+  id           String     @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  termId       String
+  term         Term       @relation(fields: [termId], references: [id])
+  mainGano     Float
+  mainFrozen   Boolean    @default(false)
+  declaredBy   String
+  declaredAt   DateTime   @default(now())
+  verifiedBy   String?
+  verifiedAt   DateTime?
+
+  @@unique([enrollmentId, termId])
+}
+
+/// Dönem izni: Erasmus/Farabi, dersin açılmaması vb. (ÇAP Yön. m.9/1-ç,d)
 model TermLeave {
   id           String      @id @default(cuid())
   enrollmentId String
   enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   termId       String
+  term         Term        @relation(fields: [termId], references: [id])
   reason       LeaveReason
   note         String?
   createdBy    String
@@ -477,7 +627,6 @@ model TermScan {
   id         String        @id @default(cuid())
   termId     String
   term       Term          @relation(fields: [termId], references: [id])
-  unitId     String?
   startedBy  String
   status     ScanStatus    @default(QUEUED)
   error      String?
@@ -509,9 +658,12 @@ model WithdrawalRequest {
   enrollmentId      String
   enrollment        Enrollment @relation(fields: [enrollmentId], references: [id])
   reason            String
+  requestedBy       String
   capToMinorOutcome Json?
   createdAt         DateTime   @default(now())
 }
+
+// ---------------------------------------------------------------- Bildirim ve denetim
 
 model Notification {
   id        String    @id @default(cuid())
@@ -525,27 +677,7 @@ model Notification {
   @@index([username, readAt])
 }
 
-model User {
-  id          String           @id @default(cuid())
-  username    String           @unique
-  oidcSub     String?          @unique
-  displayName String
-  email       String?
-  lastLoginAt DateTime?
-  assignments RoleAssignment[]
-}
-
-model RoleAssignment {
-  id        String  @id @default(cuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role
-  unitId    String?
-  programId String?
-
-  @@index([userId])
-}
-
+/// Yalnızca ekleme yapılır; UPDATE ve DELETE veritabanı tetikleyicisiyle engellenir.
 model AuditLog {
   id       BigInt   @id @default(autoincrement())
   at       DateTime @default(now())

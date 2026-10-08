@@ -11,29 +11,14 @@
   "accessTokenLifespan": 3600,
   "ssoSessionIdleTimeout": 28800,
   "sslRequired": "none",
-  "roles": {
-    "realm": [
-      {
-        "name": "KOORDINATOR"
-      },
-      {
-        "name": "DANISMAN"
-      },
-      {
-        "name": "BOLUM_BASKANI"
-      },
-      {
-        "name": "BIRIM"
-      },
-      {
-        "name": "OIDB"
-      }
-    ]
-  },
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "editUsernameAllowed": false,
+  "verifyEmail": false,
   "clients": [
     {
       "clientId": "cap-web",
-      "name": "ÇAP / Yan Dal Sistemi",
+      "name": "Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonu",
       "enabled": true,
       "publicClient": false,
       "secret": "cap-web-dev-secret",
@@ -65,150 +50,6 @@
   ],
   "users": [
     {
-      "username": "oidb.yonetici",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "oidb@personel.test",
-      "firstName": "ÖİDB",
-      "lastName": "Yöneticisi",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "OIDB"
-      ]
-    },
-    {
-      "username": "birim.teknoloji",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.teknoloji@personel.test",
-      "firstName": "Teknoloji",
-      "lastName": "Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
-      "username": "birim.fen",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.fen@personel.test",
-      "firstName": "Fen",
-      "lastName": "Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
-      "username": "birim.edebiyat",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.edebiyat@personel.test",
-      "firstName": "Edebiyat",
-      "lastName": "Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
-      "username": "birim.iibf",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.iibf@personel.test",
-      "firstName": "İktisadi",
-      "lastName": "ve İdari Bilimler Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
-      "username": "birim.iletisim",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.iletisim@personel.test",
-      "firstName": "İletişim",
-      "lastName": "Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
-      "username": "birim.mimarlik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.mimarlik@personel.test",
-      "firstName": "Mimarlık",
-      "lastName": "ve Tasarım Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
-      "username": "birim.egitim",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "birim.egitim@personel.test",
-      "firstName": "Eğitim",
-      "lastName": "Fakültesi Öğrenci İşleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BIRIM"
-      ]
-    },
-    {
       "username": "bolum.bilgisayar",
       "enabled": true,
       "emailVerified": true,
@@ -221,9 +62,36 @@
           "value": "Deneme.2026",
           "temporary": false
         }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
+      ]
+    },
+    {
+      "username": "koord.bilgisayar",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "koord.bilgisayar@personel.test",
+      "firstName": "ÇAP",
+      "lastName": "ve Yan Dal Komisyonu Başkanı",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "koord.uye",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "koord.uye@personel.test",
+      "firstName": "ÇAP",
+      "lastName": "ve Yan Dal Komisyonu Üyesi",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
       ]
     },
     {
@@ -239,9 +107,6 @@
           "value": "Deneme.2026",
           "temporary": false
         }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
       ]
     },
     {
@@ -257,891 +122,6 @@
           "value": "Deneme.2026",
           "temporary": false
         }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.mekatronik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.mekatronik@personel.test",
-      "firstName": "Mekatronik",
-      "lastName": "Mühendisliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.metalurji",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.metalurji@personel.test",
-      "firstName": "Metalurji",
-      "lastName": "ve Malzeme Mühendisliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.biyoloji",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.biyoloji@personel.test",
-      "firstName": "Biyoloji",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.matematik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.matematik@personel.test",
-      "firstName": "Matematik",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.istatistik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.istatistik@personel.test",
-      "firstName": "İstatistik",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.kimya",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.kimya@personel.test",
-      "firstName": "Kimya",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.fizik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.fizik@personel.test",
-      "firstName": "Fizik",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.akturya",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.akturya@personel.test",
-      "firstName": "Aktüerya",
-      "lastName": "Bilimleri Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.tarih",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.tarih@personel.test",
-      "firstName": "Tarih",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.felsefe",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.felsefe@personel.test",
-      "firstName": "Felsefe",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.sanat-tarihi",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.sanat-tarihi@personel.test",
-      "firstName": "Sanat",
-      "lastName": "Tarihi Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.iktisat",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.iktisat@personel.test",
-      "firstName": "İktisat",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.isletme",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.isletme@personel.test",
-      "firstName": "İşletme",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.sbky",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.sbky@personel.test",
-      "firstName": "Siyaset",
-      "lastName": "Bilimi ve Kamu Yönetimi Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.uluslararasi-iliskiler",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.uluslararasi-iliskiler@personel.test",
-      "firstName": "Uluslararası",
-      "lastName": "İlişkiler Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.gazetecilik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.gazetecilik@personel.test",
-      "firstName": "Gazetecilik",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.halkla-iliskiler",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.halkla-iliskiler@personel.test",
-      "firstName": "Halkla",
-      "lastName": "İlişkiler ve Tanıtım Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.reklamcilik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.reklamcilik@personel.test",
-      "firstName": "Reklamcılık",
-      "lastName": "Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.moda",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.moda@personel.test",
-      "firstName": "Moda",
-      "lastName": "Tasarımı Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.sinif-ogretmenligi",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.sinif-ogretmenligi@personel.test",
-      "firstName": "Sınıf",
-      "lastName": "Öğretmenliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.turkce-ogretmenligi",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.turkce-ogretmenligi@personel.test",
-      "firstName": "Türkçe",
-      "lastName": "Öğretmenliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "bolum.matematik-ogretmenligi",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.matematik-ogretmenligi@personel.test",
-      "firstName": "Matematik",
-      "lastName": "Öğretmenliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "BOLUM_BASKANI"
-      ]
-    },
-    {
-      "username": "koord.bilgisayar",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.bilgisayar@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Bilgisayar Mühendisliği",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.eem",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.eem@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Elektrik-Elektronik Mühendisliği",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.makine",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.makine@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Makine Mühendisliği",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.mekatronik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.mekatronik@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Mekatronik Mühendisliği",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.metalurji",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.metalurji@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Metalurji ve Malzeme Mühendisliği",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.biyoloji",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.biyoloji@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Biyoloji",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.matematik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.matematik@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Matematik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.istatistik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.istatistik@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü İstatistik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.kimya",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.kimya@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Kimya",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.fizik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.fizik@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Fizik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.akturya",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.akturya@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Aktüerya Bilimleri",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.tarih",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.tarih@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Tarih",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.felsefe",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.felsefe@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Felsefe",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.sanat-tarihi",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.sanat-tarihi@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Sanat Tarihi",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.iktisat",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.iktisat@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü İktisat",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.isletme",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.isletme@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü İşletme",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.uluslararasi-iliskiler",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.uluslararasi-iliskiler@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Uluslararası İlişkiler",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.gazetecilik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.gazetecilik@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Gazetecilik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.halkla-iliskiler",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.halkla-iliskiler@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Halkla İlişkiler ve Tanıtım",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.reklamcilik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.reklamcilik@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Reklamcılık",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.moda",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.moda@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Moda Tasarımı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "koord.sinif-ogretmenligi",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.sinif-ogretmenligi@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Koordinatörü Sınıf Öğretmenliği",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "KOORDINATOR"
-      ]
-    },
-    {
-      "username": "danisman.isletme",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.isletme@personel.test",
-      "firstName": "Danışman",
-      "lastName": "isletme",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "DANISMAN"
-      ]
-    },
-    {
-      "username": "danisman.tarih",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.tarih@personel.test",
-      "firstName": "Danışman",
-      "lastName": "tarih",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "DANISMAN"
-      ]
-    },
-    {
-      "username": "danisman.makine",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.makine@personel.test",
-      "firstName": "Danışman",
-      "lastName": "makine",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "DANISMAN"
-      ]
-    },
-    {
-      "username": "danisman.gazetecilik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.gazetecilik@personel.test",
-      "firstName": "Danışman",
-      "lastName": "gazetecilik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "DANISMAN"
-      ]
-    },
-    {
-      "username": "danisman.matematik",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.matematik@personel.test",
-      "firstName": "Danışman",
-      "lastName": "matematik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "DANISMAN"
       ]
     },
     {
@@ -1149,35 +129,284 @@
       "enabled": true,
       "emailVerified": true,
       "email": "danisman.eem@personel.test",
-      "firstName": "Danışman",
-      "lastName": "eem",
+      "firstName": "Elektrik-Elektronik",
+      "lastName": "Mühendisliği Danışmanı",
       "credentials": [
         {
           "type": "password",
           "value": "Deneme.2026",
           "temporary": false
         }
-      ],
-      "realmRoles": [
-        "DANISMAN"
       ]
     },
     {
-      "username": "danisman.turkce",
+      "username": "danisman.makine",
       "enabled": true,
       "emailVerified": true,
-      "email": "danisman.turkce@personel.test",
-      "firstName": "Danışman",
-      "lastName": "turkce",
+      "email": "danisman.makine@personel.test",
+      "firstName": "Makine",
+      "lastName": "Mühendisliği Danışmanı",
       "credentials": [
         {
           "type": "password",
           "value": "Deneme.2026",
           "temporary": false
         }
-      ],
-      "realmRoles": [
-        "DANISMAN"
+      ]
+    },
+    {
+      "username": "253302001",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302001@ogrenci.test",
+      "firstName": "Ayşe",
+      "lastName": "Demirtaş",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302002",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302002@ogrenci.test",
+      "firstName": "Mehmet",
+      "lastName": "Kaya",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302003",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302003@ogrenci.test",
+      "firstName": "Zeynep",
+      "lastName": "Arslan",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302004",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302004@ogrenci.test",
+      "firstName": "Emre",
+      "lastName": "Yıldırım",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302005",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302005@ogrenci.test",
+      "firstName": "Elif",
+      "lastName": "Şahin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302006",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302006@ogrenci.test",
+      "firstName": "Burak",
+      "lastName": "Çelik",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "233302007",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "233302007@ogrenci.test",
+      "firstName": "Selin",
+      "lastName": "Aydın",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253303008",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253303008@ogrenci.test",
+      "firstName": "Kerem",
+      "lastName": "Polat",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302009",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302009@ogrenci.test",
+      "firstName": "Büşra",
+      "lastName": "Yalçın",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302010",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302010@ogrenci.test",
+      "firstName": "Can",
+      "lastName": "Öztürk",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302011",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302011@ogrenci.test",
+      "firstName": "Deniz",
+      "lastName": "Acar",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "253302012",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "253302012@ogrenci.test",
+      "firstName": "Mert",
+      "lastName": "Güneş",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "243302013",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "243302013@ogrenci.test",
+      "firstName": "Gizem",
+      "lastName": "Kurt",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "243303014",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "243303014@ogrenci.test",
+      "firstName": "Onur",
+      "lastName": "Tekin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "243302015",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "243302015@ogrenci.test",
+      "firstName": "Hakan",
+      "lastName": "Doğan",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "243302016",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "243302016@ogrenci.test",
+      "firstName": "İrem",
+      "lastName": "Koç",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "243303017",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "243303017@ogrenci.test",
+      "firstName": "Tolga",
+      "lastName": "Arı",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
       ]
     }
   ]

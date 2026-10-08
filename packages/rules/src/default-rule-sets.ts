@@ -6,9 +6,13 @@ const YD = 'Yan Dal Yön.';
 /**
  * Selçuk Üniversitesi Çift Ana Dal Yönergesi (Senato 20/5/2026, 2026-20).
  * Kural kimlikleri PRD bölüm 5.1 ve 5.2 ile aynıdır.
+ *
+ * Kapsam: Teknoloji Fakültesi Bilgisayar Mühendisliği (docs/KARARLAR.md K-12). Bölümde yetenek sınavı
+ * olmadığı için KR-ÇAP-07, ana dal müfredatı sistemde tutulmadığı için KR-ÇAP-19 / KR-YD-13 sette yer almaz;
+ * değerlendiricileri pakette durur.
  */
 export const CAP_RULE_SET_V1: RuleSetDefinition = {
-  version: 'CAP-2026.2',
+  version: 'CAP-2026.3',
   type: 'CAP',
   effectiveFrom: '2026-05-20',
   rules: [
@@ -41,7 +45,6 @@ export const CAP_RULE_SET_V1: RuleSetDefinition = {
     },
     { code: 'KR-ÇAP-06', kind: 'MAX_ACTIVE_TRACKS', article: `${CAP} m.5/1-ğ`, title: 'Tek çift ana dal', appliesTo: 'CAP', phase: 'APPLICATION', params: { max: 1 } },
     { code: 'KR-ÇAP-06b', kind: 'NOT_SAME_PROGRAM_BOTH', article: `${CAP} m.5/1-ğ`, title: 'Aynı programda yan dal olmaması', appliesTo: 'CAP', phase: 'APPLICATION', params: {} },
-    { code: 'KR-ÇAP-07', kind: 'TALENT_EXAM_PASSED', article: `${CAP} m.5/1-h`, title: 'Yetenek sınavı', appliesTo: 'CAP', phase: 'APPLICATION', params: {} },
     { code: 'KR-ÇAP-08', kind: 'SOURCE_PROGRAM_ALLOWED', article: 'Kontenjan ilanı (dipnot)', title: 'Kabul edilen bölümler', appliesTo: 'CAP', phase: 'APPLICATION', params: {} },
     {
       code: 'KR-ÇAP-09',
@@ -74,14 +77,13 @@ export const CAP_RULE_SET_V1: RuleSetDefinition = {
       // Yönerge yalnızca ön lisans (120) ve 4 yıllık lisans (240) için sayı verir.
       params: { byLevel: { ONLISANS: 120, '4': 240 } },
     },
-    { code: 'KR-ÇAP-19', kind: 'NO_MAIN_OVERLAP', article: 'İİBF ÇAP/Yan Dal İlkeleri 2023-24', title: 'Ana dal dersi tekrar alınamaz', appliesTo: 'CAP', phase: 'PROTOCOL', params: {} },
     { code: 'KR-ÇAP-13', kind: 'GRADUATION_CAP', article: `${CAP} m.7/2, m.8/1-c,ç`, title: 'Çift ana dal diploması', appliesTo: 'CAP', phase: 'GRADUATION', params: { minMainGano: 2.72 } },
   ],
 };
 
 /** Selçuk Üniversitesi Yan Dal Yönergesi (Senato 26/10/2023, 2023-131). */
 export const YANDAL_RULE_SET_V1: RuleSetDefinition = {
-  version: 'YANDAL-2023.2',
+  version: 'YANDAL-2023.3',
   type: 'YANDAL',
   effectiveFrom: '2023-10-26',
   rules: [
@@ -93,7 +95,6 @@ export const YANDAL_RULE_SET_V1: RuleSetDefinition = {
     { code: 'KR-YD-04b', kind: 'NOT_SAME_PROGRAM_BOTH', article: `${CAP} m.5/1-ğ`, title: 'Aynı programda çift ana dal olmaması', appliesTo: 'YANDAL', phase: 'APPLICATION', params: {} },
     { code: 'KR-YD-09', kind: 'NOT_PREVIOUSLY_REMOVED', article: `${YD} m.7/11`, title: 'Daha önce kaydı silinmemiş olma', appliesTo: 'YANDAL', phase: 'APPLICATION', params: {} },
     { code: 'KR-YD-05', kind: 'MINOR_PLAN_LIMITS', article: `${YD} m.5/1-g`, title: 'Yan dal ders planı', appliesTo: 'YANDAL', phase: 'PROTOCOL', params: { minEcts: 30, minCourses: 6, poolMinEcts: 60 } },
-    { code: 'KR-YD-13', kind: 'NO_MAIN_OVERLAP', article: 'Yan Dal Uygulama Esasları m.3; İİBF İlkeleri', title: 'Ana dal dersi yan dalda sayılmaz', appliesTo: 'YANDAL', phase: 'PROTOCOL', params: {} },
     { code: 'KR-YD-06', kind: 'MAIN_GANO_BELOW', article: `${YD} m.7/5`, title: 'Ana dal GNO alt sınırı', appliesTo: 'YANDAL', phase: 'TERM_END', params: { min: 2.3, warnMargin: 0.15 } },
     { code: 'KR-YD-07', kind: 'TRACK_GPA_CONSECUTIVE_BELOW', article: `${YD} m.7/6`, title: 'Yan dal ortalaması', appliesTo: 'YANDAL', phase: 'TERM_END', params: { min: 2.0, terms: 2 } },
     { code: 'KR-YD-08', kind: 'CONSECUTIVE_TERMS_NO_COURSE', article: `${YD} m.7/4`, title: 'Üst üste ders almama', appliesTo: 'YANDAL', phase: 'TERM_END', params: { terms: 2 } },

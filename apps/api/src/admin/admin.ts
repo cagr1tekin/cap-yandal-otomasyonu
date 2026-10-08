@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export interface Task {
   key: string;
-  role: Role | 'ONAY';
+  role: Role | 'IMZA';
   title: string;
   detail: string;
   count: number;
@@ -35,56 +35,46 @@ export class TasksService {
     const now = new Date();
 
     const approvals = await this.forms.myApprovals(user);
-    add({ key: 'approvals', role: 'ONAY', title: 'İmzanızı bekleyen formlar', detail: 'Kabul ve Ders Protokolü ve ders kayıt formları', count: approvals.length, link: '/onaylar' });
+    add({ key: 'approvals', role: 'IMZA', title: 'İmzanızı bekleyen formlar', detail: 'Protokol, ders kayıt formu ve muafiyet formları', count: approvals.length, link: '/onaylar' });
 
-    if (user.roles.includes('BIRIM') || user.roles.includes('OIDB')) {
-      const scope = this.access.isOidb(user) ? {} : { program: { unitId: { in: this.access.unitIds(user) } } };
-      const unitWhere = this.access.isOidb(user) ? {} : { unitId: { in: this.access.unitIds(user) } };
-      const [openWindows, awaitingDecision, unpublished, accepted, toFile, toEnter, findings] = await Promise.all([
-        term ? this.prisma.applicationWindow.count({ where: { termId: term.id, opensAt: { lte: now }, closesAt: { gte: now }, ...unitWhere } }) : 0,
-        this.prisma.offering.count({ where: { ...scope, rankingLockedAt: { not: null }, decisions: { none: {} } } }),
-        this.prisma.boardDecision.count({ where: { publishedAt: null, offering: scope } }),
-        this.prisma.application.count({ where: { status: 'ACCEPTED', offering: { ...scope, registrationClosedAt: null } } }),
-        this.prisma.protocol.count({ where: { status: 'APPROVED', enrollment: { offering: scope } } }),
-        term ? this.prisma.courseRegistration.count({ where: { termId: term.id, status: 'SUBMITTED', enrollment: { offering: scope } } }) : 0,
-        this.prisma.scanFinding.count({ where: { decision: 'PENDING', enrollment: { offering: scope } } }),
-      ]);
-      add({ key: 'intake', role: 'BIRIM', title: 'Başvuru dönemi açık', detail: 'Şahsen gelen dilekçeleri panele girin', count: openWindows, link: '/birim/basvurular/yeni' });
-      add({ key: 'decision', role: 'BIRIM', title: 'Yönetim kurulu kararı bekleyen teklifler', detail: 'Bölüm önerisi kilitlendi', count: awaitingDecision, link: '/birim/kararlar' });
-      add({ key: 'publish', role: 'BIRIM', title: 'Yayımlanmamış sonuçlar', detail: 'Karar girildi, ilan edilmedi', count: unpublished, link: '/birim/kararlar' });
-      add({ key: 'register', role: 'BIRIM', title: 'Kesin kaydı bekleyen asiller', detail: 'Belgeler teslim alınınca kayıt işlenir', count: accepted, link: '/birim/kararlar' });
-      add({ key: 'file', role: 'BIRIM', title: 'Dosyalanacak protokoller', detail: 'İmzalar tamam; aslı öğrenci dosyasına', count: toFile, link: '/birim/protokoller' });
-      add({ key: 'obis', role: 'BIRIM', title: "OBİS'e girilecek ders kayıt formları", detail: 'Koordinatörlerin teslim ettiği formlar', count: toEnter, link: '/birim/ders-kayitlari' });
-      add({ key: 'findings', role: 'BIRIM', title: 'Karar bekleyen tarama bulguları', detail: 'Kayıt silme adayları ve uyarılar', count: findings, link: '/birim/taramalar' });
+    if (this.access.isStudent(user)) {
+      const no = user.studentNo;
+      add({ key: 'profile', role: 'OGRENCI', title: 'Bilgilerinizi girin', detail: 'Başvuru için öğrenci ve akademik bilgileriniz gerekli', count: no ? 0 : 1, link: '/ogrenci/bilgilerim' });
+      if (no) {
+        const [open, accepted, needReg, noRecord] = await Promise.all([
+          term ? this.prisma.offering.count({ where: { termId: term.id, status: 'PUBLISHED', opensAt: { lte: now }, closesAt: { gte: now }, applications: { none: { studentNo: no, status: { notIn: ['WITHDRAWN'] } } } } }) : 0,
+          this.prisma.application.count({ where: { studentNo: no, status: 'ACCEPTED', offering: { registrationClosedAt: null, decisions: { some: { publishedAt: { not: null } } } } } }),
+          term ? this.prisma.enrollment.count({ where: { studentNo: no, status: 'ACTIVE', protocol: { status: 'APPROVED' }, courseRegistrations: { none: { termId: term.id } } } }) : 0,
+          term ? this.prisma.enrollment.count({ where: { studentNo: no, status: { in: ['ACTIVE', 'FROZEN'] }, startTerm: { startsAt: { lt: term.startsAt } }, termRecords: { none: { term: { endsAt: { lt: now } } } } } }) : 0,
+        ]);
+        add({ key: 'apply', role: 'OGRENCI', title: 'Başvuruya açık program', detail: 'Uygunluğunuzu görün ve başvurun', count: open, link: '/ogrenci/basvuru' });
+        add({ key: 'accept', role: 'OGRENCI', title: 'Kesin kaydınızı onaylayın', detail: 'Kabul edildiniz; kayıt süresi dolmadan onaylayın', count: accepted, link: '/ogrenci/basvuru' });
+        add({ key: 'courseReg', role: 'OGRENCI', title: 'Bu dönemin ders kayıt formu', detail: 'Alacağınız dersleri seçip imzaya gönderin', count: needReg, link: '/ogrenci/kayitlarim' });
+        add({ key: 'termRecord', role: 'OGRENCI', title: 'Dönem sonu beyanı', detail: 'Biten dönemin ana dal GNO’sunu girin', count: noRecord, link: '/ogrenci/kayitlarim' });
+      }
     }
 
-    if (user.roles.includes('KOORDINATOR')) {
-      const mine = { coordinatorUsername: user.username };
-      const [toLock, noProtocol, draftProtocol, approvedRegs, needReg] = await Promise.all([
-        this.prisma.offering.count({ where: { ...mine, rankingLockedAt: null, status: 'PUBLISHED', applications: { some: { status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } } } } }),
-        this.prisma.enrollment.count({ where: { status: 'ACTIVE', protocol: null, offering: mine } }),
-        this.prisma.protocol.count({ where: { status: { in: ['DRAFT', 'REJECTED'] }, enrollment: { offering: mine } } }),
-        term ? this.prisma.courseRegistration.count({ where: { termId: term.id, status: 'APPROVED', enrollment: { offering: mine } } }) : 0,
-        term
-          ? this.prisma.enrollment.count({
-              where: { status: 'ACTIVE', offering: mine, protocol: { status: { in: ['APPROVED', 'FILED'] } }, courseRegistrations: { none: { termId: term.id } } },
-            })
-          : 0,
-      ]);
-      add({ key: 'lock', role: 'KOORDINATOR', title: 'Değerlendirme bekleyen başvurular', detail: 'Sıralamayı inceleyip öneriyi kilitleyin', count: toLock, link: '/koordinator' });
-      add({ key: 'protocol', role: 'KOORDINATOR', title: 'Protokolü hazırlanacak öğrenciler', detail: 'Kesin kaydı yapıldı, protokol yok', count: noProtocol, link: '/koordinator' });
-      add({ key: 'protocolDraft', role: 'KOORDINATOR', title: 'Taslak ya da reddedilmiş protokoller', detail: 'Düzeltip onaya gönderin', count: draftProtocol, link: '/koordinator' });
-      add({ key: 'courseReg', role: 'KOORDINATOR', title: 'Bu dönem ders kaydı yapılmamış öğrenciler', detail: 'Ders kayıt formu hazırlayın', count: needReg, link: '/koordinator' });
-      add({ key: 'batch', role: 'KOORDINATOR', title: 'Teslim edilecek onaylı ders kayıt formları', detail: 'Öğrenci işlerine toplu teslim', count: approvedRegs, link: '/koordinator/teslim' });
-    }
-
-    if (user.roles.includes('OIDB')) {
-      const [drafts, noRole] = await Promise.all([
+    if (this.access.isCoordinator(user)) {
+      const [toVerify, toLock, awaitingDecision, unpublished, noProtocol, draftProtocol, findings, records, drafts] = await Promise.all([
+        this.prisma.application.count({ where: { verification: 'PENDING', status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } } }),
+        this.prisma.offering.count({ where: { rankingLockedAt: null, status: 'PUBLISHED', closesAt: { lt: now }, applications: { some: { status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } } } } }),
+        this.prisma.offering.count({ where: { rankingLockedAt: { not: null }, decisions: { none: {} } } }),
+        this.prisma.boardDecision.count({ where: { publishedAt: null } }),
+        this.prisma.enrollment.count({ where: { status: 'ACTIVE', protocol: null } }),
+        this.prisma.protocol.count({ where: { status: { in: ['DRAFT', 'REJECTED'] }, enrollment: { status: 'ACTIVE' } } }),
+        this.prisma.scanFinding.count({ where: { decision: 'PENDING' } }),
+        this.prisma.termRecord.count({ where: { verifiedAt: null, enrollment: { status: { in: ['ACTIVE', 'FROZEN'] } } } }),
         this.prisma.ruleSet.count({ where: { status: 'DRAFT' } }),
-        this.prisma.user.count({ where: { assignments: { none: {} } } }),
       ]);
-      add({ key: 'rules', role: 'OIDB', title: 'Taslak kural sürümleri', detail: 'Deneme çalıştırıp etkinleştirin', count: drafts, link: '/oidb/kurallar' });
-      add({ key: 'users', role: 'OIDB', title: 'Rolü atanmamış kullanıcılar', detail: 'Giriş yapmış ama yetkisi yok', count: noRole, link: '/oidb/kullanicilar' });
+      add({ key: 'verify', role: 'KOORDINATOR', title: 'Beyanı doğrulanacak başvurular', detail: 'Öğrencinin girdiği bilgileri belgeleriyle karşılaştırın', count: toVerify, link: '/koordinator/basvurular?dogrulama=PENDING' });
+      add({ key: 'lock', role: 'KOORDINATOR', title: 'Sıralaması kilitlenecek teklifler', detail: 'Başvuru dönemi kapandı', count: toLock, link: '/koordinator/degerlendirme' });
+      add({ key: 'decision', role: 'KOORDINATOR', title: 'Kurul kararı girilecek teklifler', detail: 'Komisyon önerisi kilitlendi', count: awaitingDecision, link: '/koordinator/degerlendirme' });
+      add({ key: 'publish', role: 'KOORDINATOR', title: 'Yayımlanmamış sonuçlar', detail: 'Karar girildi, ilan edilmedi', count: unpublished, link: '/koordinator/degerlendirme' });
+      add({ key: 'protocol', role: 'KOORDINATOR', title: 'Protokolü hazırlanacak öğrenciler', detail: 'Kesin kaydını onayladı, protokol yok', count: noProtocol, link: '/koordinator/ogrenciler' });
+      add({ key: 'protocolDraft', role: 'KOORDINATOR', title: 'Taslak ya da reddedilmiş protokoller', detail: 'Düzeltip imzaya gönderin', count: draftProtocol, link: '/koordinator/ogrenciler' });
+      add({ key: 'records', role: 'KOORDINATOR', title: 'Doğrulanacak dönem beyanları', detail: 'Öğrencinin girdiği ana dal GNO’su', count: records, link: '/koordinator/ogrenciler' });
+      add({ key: 'findings', role: 'KOORDINATOR', title: 'Karar bekleyen tarama bulguları', detail: 'Kayıt silme adayları ve uyarılar', count: findings, link: '/koordinator/taramalar' });
+      add({ key: 'rules', role: 'KOORDINATOR', title: 'Taslak kural sürümleri', detail: 'Deneme çalıştırıp etkinleştirin', count: drafts, link: '/koordinator/kurallar' });
     }
     return { tasks, term };
   }
@@ -96,6 +86,7 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly tasks: TasksService,
+    private readonly access: AccessService,
   ) {}
 
   @Get('me/tasks')
@@ -103,15 +94,23 @@ export class AdminController {
     return this.tasks.forUser(user);
   }
 
+  /** Personel hesapları ve rolleri. Öğrenci hesapları ayrı sayılır (rol atanmaz). */
   @Get('users')
-  @Roles('OIDB')
-  users() {
-    return this.prisma.user.findMany({ include: { assignments: true }, orderBy: { username: 'asc' } });
+  @Roles('BOLUM_BASKANI', 'KOORDINATOR')
+  async users(@CurrentUser() user: AuthUser) {
+    await this.access.assertDepartmentStaff(user);
+    const rows = await this.prisma.user.findMany({ include: { assignments: { include: { program: true } }, profile: { select: { studentNo: true, program: { select: { name: true } } } } }, orderBy: { username: 'asc' } });
+    return {
+      staff: rows.filter((u) => u.assignments.length),
+      students: rows.filter((u) => !u.assignments.length).map((u) => ({ id: u.id, username: u.username, displayName: u.displayName, email: u.email, lastLoginAt: u.lastLoginAt, studentNo: u.profile?.studentNo ?? null, mainProgramName: u.profile?.program.name ?? null })),
+      canManage: await this.access.isHomeHead(user),
+    };
   }
 
   @Post('users')
-  @Roles('OIDB')
+  @Roles('BOLUM_BASKANI')
   async createUser(@CurrentUser() actor: AuthUser, @Body(new ZodPipe(UserCreateSchema)) body: z.infer<typeof UserCreateSchema>) {
+    await this.access.assertHomeHead(actor);
     const exists = await this.prisma.user.findUnique({ where: { username: body.username } });
     if (exists) throw conflict('Bu kullanıcı adı zaten var.');
     const u = await this.prisma.user.create({ data: body });
@@ -119,26 +118,35 @@ export class AdminController {
     return u;
   }
 
+  /** Rol atamasını Bilgisayar Mühendisliği bölüm başkanı yapar (ÇAP Yön. m.6: koordinatörü bölüm başkanı atar). */
   @Post('users/:username/assignments')
-  @Roles('OIDB')
+  @Roles('BOLUM_BASKANI')
   async assign(@CurrentUser() actor: AuthUser, @Param('username') username: string, @Body(new ZodPipe(AssignmentSchema)) body: z.infer<typeof AssignmentSchema>) {
-    const u = await this.prisma.user.findUnique({ where: { username } });
+    await this.access.assertHomeHead(actor);
+    const u = await this.prisma.user.findUnique({ where: { username }, include: { profile: true, assignments: true } });
     if (!u) throw notFound('Kullanıcı');
-    if (body.role === 'BIRIM' && !body.unitId) throw badRequest('Birim öğrenci işleri rolü için birim seçin.');
-    if ((body.role === 'BOLUM_BASKANI' || body.role === 'KOORDINATOR') && !body.programId) throw badRequest(`${LABELS.role[body.role]} rolü için program seçin.`);
-    const a = await this.prisma.roleAssignment.create({ data: { userId: u.id, role: body.role, unitId: body.unitId ?? null, programId: body.programId ?? null } });
-    await this.audit.log({ actor: actor.username, action: 'ROLE_ASSIGN', entity: 'User', entityId: u.id, after: body });
+    if (u.profile) throw conflict('Öğrenci hesabına personel rolü atanamaz.');
+    const home = await this.access.home();
+    if (body.role === 'KOORDINATOR' && body.programId && body.programId !== home.id) throw badRequest('Koordinatör rolü yalnızca Bilgisayar Mühendisliği içindir.');
+    if ((body.role === 'BOLUM_BASKANI' || body.role === 'DANISMAN') && !body.programId) throw badRequest(`${LABELS.role[body.role]} rolü için bölüm seçin.`);
+    if (body.role === 'DANISMAN' && body.programId === home.id) throw badRequest('Danışman rolü öğrencinin ana dal bölümü içindir; Bilgisayar Mühendisliği seçilemez.');
+    const programId = body.role === 'KOORDINATOR' ? null : body.programId!;
+    if (u.assignments.some((a) => a.role === body.role && a.programId === programId)) throw conflict('Bu rol zaten atanmış.');
+    const a = await this.prisma.roleAssignment.create({ data: { userId: u.id, role: body.role, programId } });
+    await this.audit.log({ actor: actor.username, action: 'ROLE_ASSIGN', entity: 'User', entityId: u.id, after: { username, role: body.role, programId } });
     return a;
   }
 
   @Delete('assignments/:id')
-  @Roles('OIDB')
+  @Roles('BOLUM_BASKANI')
   async unassign(@CurrentUser() actor: AuthUser, @Param('id') id: string) {
+    await this.access.assertHomeHead(actor);
     const a = await this.prisma.roleAssignment.findUnique({ where: { id } });
     if (!a) throw notFound('Rol ataması');
-    if (a.userId && actor.assignments.some((x) => x.role === 'OIDB') && a.role === 'OIDB') {
-      const others = await this.prisma.roleAssignment.count({ where: { role: 'OIDB', id: { not: id } } });
-      if (others === 0) throw conflict('Son ÖİDB yetkisi kaldırılamaz.');
+    const home = await this.access.home();
+    if (a.role === 'BOLUM_BASKANI' && a.programId === home.id) {
+      const others = await this.prisma.roleAssignment.count({ where: { role: 'BOLUM_BASKANI', programId: home.id, id: { not: id } } });
+      if (others === 0) throw conflict('Son bölüm başkanı yetkisi kaldırılamaz.');
     }
     await this.prisma.roleAssignment.delete({ where: { id } });
     await this.audit.log({ actor: actor.username, action: 'ROLE_UNASSIGN', entity: 'User', entityId: a.userId, before: a });
@@ -146,8 +154,9 @@ export class AdminController {
   }
 
   @Get('audit')
-  @Roles('OIDB')
-  async auditLog(@Query('entity') entity?: string, @Query('actor') actor?: string, @Query('action') action?: string, @Query('take') take = '100') {
+  @Roles('BOLUM_BASKANI', 'KOORDINATOR')
+  async auditLog(@CurrentUser() user: AuthUser, @Query('entity') entity?: string, @Query('actor') actor?: string, @Query('action') action?: string, @Query('take') take = '100') {
+    await this.access.assertDepartmentStaff(user);
     const rows = await this.prisma.auditLog.findMany({
       where: {
         ...(entity ? { entity } : {}),

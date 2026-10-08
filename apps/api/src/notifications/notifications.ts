@@ -31,7 +31,7 @@ export class NotificationsService {
       try {
         await this.mail.add(
           'send',
-          { to: user.email, subject: `[ÇAP/Yan Dal] ${title}`, text: `${body}\n\n${link ? `Ayrıntı: http://localhost:3000${link}` : ''}` },
+          { to: user.email, subject: `[Bilgisayar Müh. ÇAP/Yan Dal] ${title}`, text: `${body}\n\n${link ? `Ayrıntı: http://localhost:3000${link}` : ''}` },
           { attempts: 3, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 100 },
         );
       } catch (e) {
@@ -40,21 +40,10 @@ export class NotificationsService {
     }
   }
 
-  /**
-   * Öğrenci panel kullanıcısı değildir (KARARLAR K-1); öğrenciye yalnızca OBİS'teki e-posta adresine yazılır.
-   */
-  async emailStudent(email: string, subject: string, text: string) {
-    try {
-      await this.mail.add(
-        'send',
-        { to: email, subject: `[ÇAP/Yan Dal] ${subject}`, text: `${text}
-
-Bu ileti Selçuk Üniversitesi ÇAP / Yan Dal sisteminden otomatik gönderilmiştir.` },
-        { attempts: 3, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 100 },
-      );
-    } catch (e) {
-      this.logger.warn(`Öğrenci e-postası kuyruğa alınamadı: ${(e as Error).message}`);
-    }
+  /** ÇAP / yan dal komisyonunun bütün üyelerine bildirim. */
+  async notifyCoordinators(title: string, body: string, link?: string) {
+    const rows = await this.prisma.roleAssignment.findMany({ where: { role: 'KOORDINATOR' }, include: { user: true } });
+    await this.notifyMany(rows.map((r) => r.user.username), title, body, link);
   }
 
   async notifyMany(usernames: string[], title: string, body: string, link?: string) {

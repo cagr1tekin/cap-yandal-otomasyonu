@@ -1,98 +1,197 @@
 /**
- * Birim ve programlar Selçuk Üniversitesi 2026-2027 güz çift ana dal kontenjan ilanından
- * (kaynaklar/pdf/11-...) alınmıştır. İlandaki tablo düzeni PDF'ten düz metne çevrilirken
- * bozulduğu için kontenjan sayıları, taban puanlar ve birinci sınıf mevcutları TEMSİLÎDİR.
- * Kaynak bölüm kısıtları (dipnot 1–6) ilandaki gibidir.
+ * Kapsam: Selçuk Üniversitesi Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümü (docs/KARARLAR.md K-12).
+ *
+ * GERÇEK veriler ve kaynakları:
+ *  - Müfredat (ders kodu, ad, AKTS, yarıyıl): Bologna ders paketi,
+ *    https://bologna.selcuk.edu.tr/tr/dersler/teknoloji-bilgisayar_muhendisligi-bilgisayar_muhendisligi-lisans (8/10/2026)
+ *  - Kaynak bölümler: 2026-27 güz ÇAP kontenjan ilanı dipnot 1 (yalnız Elektrik-Elektronik Müh.).
+ *
+ * TEMSİLÎ veriler: kontenjan sayıları (ilan tablosu metne bozuk aktarıldı), taban puanlar (YÖK Atlas'tan
+ * doğrulanmadı; koordinatör panelden girer), yan dal teklifi.
  */
-
-export type Category = 'MUHENDISLIK' | 'HUKUK' | 'TIP' | 'SAGLIK' | 'DIGER';
-
-export interface SeedUnit {
-  id: string;
-  code: string;
-  name: string;
-  kind: 'FAKULTE' | 'YUKSEKOKUL' | 'MYO' | 'KONSERVATUVAR';
-}
 
 export interface SeedProgram {
   id: string;
-  unitId: string;
   name: string;
+  faculty: string;
   slug: string;
-  level: 'ONLISANS' | 'LISANS';
-  durationYears: number;
-  category: Category;
-  requiresTalentExam?: boolean;
-  requiresSuccessRank?: boolean;
-  firstYearIntake: number;
-  /** Yıl → taban puan (temsilî). */
-  baseScores: Record<number, number>;
+  /** Ders kodlarının ilk dört hanesi (biliniyorsa). */
+  codePrefix: string | null;
+  isHome: boolean;
 }
 
-export const UNITS: SeedUnit[] = [
-  { id: 'U-TF', code: 'TEKNOLOJI', name: 'Teknoloji Fakültesi', kind: 'FAKULTE' },
-  { id: 'U-FEN', code: 'FEN', name: 'Fen Fakültesi', kind: 'FAKULTE' },
-  { id: 'U-EDB', code: 'EDEBIYAT', name: 'Edebiyat Fakültesi', kind: 'FAKULTE' },
-  { id: 'U-IIBF', code: 'IIBF', name: 'İktisadi ve İdari Bilimler Fakültesi', kind: 'FAKULTE' },
-  { id: 'U-ILT', code: 'ILETISIM', name: 'İletişim Fakültesi', kind: 'FAKULTE' },
-  { id: 'U-MTF', code: 'MIMARLIK', name: 'Mimarlık ve Tasarım Fakültesi', kind: 'FAKULTE' },
-  { id: 'U-EGT', code: 'EGITIM', name: 'Eğitim Fakültesi', kind: 'FAKULTE' },
-];
-
-const p = (
-  id: string,
-  unitId: string,
-  name: string,
-  slug: string,
-  category: Category,
-  firstYearIntake: number,
-  base: number,
-  extra: Partial<SeedProgram> = {},
-): SeedProgram => ({
-  id,
-  unitId,
-  name,
-  slug,
-  level: 'LISANS',
-  durationYears: 4,
-  category,
-  firstYearIntake,
-  baseScores: { 2022: base - 6, 2023: base - 4, 2024: base - 2, 2025: base, 2026: base + 1 },
-  ...extra,
-});
+export const HOME_PROGRAM_ID = 'P-BIL';
+const TF = 'Teknoloji Fakültesi';
 
 export const PROGRAMS: SeedProgram[] = [
-  p('P-TF-BIL', 'U-TF', 'Bilgisayar Mühendisliği', 'bilgisayar', 'MUHENDISLIK', 80, 395),
-  p('P-TF-EEM', 'U-TF', 'Elektrik-Elektronik Mühendisliği', 'eem', 'MUHENDISLIK', 80, 380),
-  p('P-TF-MAK', 'U-TF', 'Makine Mühendisliği', 'makine', 'MUHENDISLIK', 80, 360),
-  p('P-TF-MEK', 'U-TF', 'Mekatronik Mühendisliği', 'mekatronik', 'MUHENDISLIK', 60, 365),
-  p('P-TF-MET', 'U-TF', 'Metalurji ve Malzeme Mühendisliği', 'metalurji', 'MUHENDISLIK', 50, 330),
-  p('P-FEN-BIY', 'U-FEN', 'Biyoloji', 'biyoloji', 'DIGER', 50, 300),
-  p('P-FEN-MAT', 'U-FEN', 'Matematik', 'matematik', 'DIGER', 60, 320),
-  p('P-FEN-IST', 'U-FEN', 'İstatistik', 'istatistik', 'DIGER', 40, 305),
-  p('P-FEN-KIM', 'U-FEN', 'Kimya', 'kimya', 'DIGER', 50, 295),
-  p('P-FEN-FIZ', 'U-FEN', 'Fizik', 'fizik', 'DIGER', 40, 290),
-  p('P-FEN-AKT', 'U-FEN', 'Aktüerya Bilimleri', 'akturya', 'DIGER', 30, 340),
-  p('P-EDB-TAR', 'U-EDB', 'Tarih', 'tarih', 'DIGER', 60, 330),
-  p('P-EDB-FEL', 'U-EDB', 'Felsefe', 'felsefe', 'DIGER', 40, 310),
-  p('P-EDB-SAN', 'U-EDB', 'Sanat Tarihi', 'sanat-tarihi', 'DIGER', 40, 300),
-  p('P-IIBF-IKT', 'U-IIBF', 'İktisat', 'iktisat', 'DIGER', 100, 345),
-  p('P-IIBF-ISL', 'U-IIBF', 'İşletme', 'isletme', 'DIGER', 120, 350),
-  p('P-IIBF-SBKY', 'U-IIBF', 'Siyaset Bilimi ve Kamu Yönetimi', 'sbky', 'DIGER', 100, 335),
-  p('P-IIBF-UI', 'U-IIBF', 'Uluslararası İlişkiler', 'uluslararasi-iliskiler', 'DIGER', 80, 360),
-  p('P-ILT-GAZ', 'U-ILT', 'Gazetecilik', 'gazetecilik', 'DIGER', 60, 325),
-  p('P-ILT-HIT', 'U-ILT', 'Halkla İlişkiler ve Tanıtım', 'halkla-iliskiler', 'DIGER', 60, 335),
-  p('P-ILT-REK', 'U-ILT', 'Reklamcılık', 'reklamcilik', 'DIGER', 50, 330),
-  p('P-MTF-MODA', 'U-MTF', 'Moda Tasarımı', 'moda', 'DIGER', 40, 280, { requiresTalentExam: true }),
-  p('P-EGT-SINIF', 'U-EGT', 'Sınıf Öğretmenliği', 'sinif-ogretmenligi', 'DIGER', 60, 390, { requiresSuccessRank: true }),
-  p('P-EGT-TURK', 'U-EGT', 'Türkçe Öğretmenliği', 'turkce-ogretmenligi', 'DIGER', 60, 385, { requiresSuccessRank: true }),
-  p('P-EGT-MATO', 'U-EGT', 'Matematik Öğretmenliği', 'matematik-ogretmenligi', 'DIGER', 50, 395, { requiresSuccessRank: true }),
+  { id: 'P-BIL', name: 'Bilgisayar Mühendisliği', faculty: TF, slug: 'bilgisayar', codePrefix: '3301', isHome: true },
+  { id: 'P-EEM', name: 'Elektrik-Elektronik Mühendisliği', faculty: TF, slug: 'eem', codePrefix: '3302', isHome: false },
+  { id: 'P-MAK', name: 'Makine Mühendisliği', faculty: TF, slug: 'makine', codePrefix: '3303', isHome: false },
+  { id: 'P-MEK', name: 'Mekatronik Mühendisliği', faculty: TF, slug: 'mekatronik', codePrefix: null, isHome: false },
+  { id: 'P-MET', name: 'Metalurji ve Malzeme Mühendisliği', faculty: TF, slug: 'metalurji', codePrefix: null, isHome: false },
 ];
 
-export const programById = (id: string): SeedProgram => {
-  const found = PROGRAMS.find((x) => x.id === id);
-  if (!found) throw new Error(`Program yok: ${id}`);
-  return found;
+export type CourseKind = 'ZORUNLU' | 'TEKNIK_SECMELI' | 'SOSYAL_SECMELI';
+
+export interface SeedCourse {
+  code: string;
+  name: string;
+  ects: number;
+  semester: number;
+  kind: CourseKind;
+}
+
+const Z = 'ZORUNLU';
+const T = 'TEKNIK_SECMELI';
+const S = 'SOSYAL_SECMELI';
+type Row = [code: string, name: string, ects: number, kind: CourseKind];
+
+const BY_SEMESTER: Record<number, Row[]> = {
+  1: [
+    ['3301151', 'Matematik-1', 6, Z],
+    ['3301152', 'Fizik-1', 6, Z],
+    ['3301153', 'Türk Dili I', 2, Z],
+    ['3301154', 'Atatürk İlkeleri ve İnkılap Tarihi-1', 2, Z],
+    ['3301155', 'Yabancı Dil-1', 2, Z],
+    ['3301156', 'Bilgisayar Mühendisliğine Giriş', 4, Z],
+    ['3301157', 'İş Sağlığı ve Güvenliği-1', 2, Z],
+    ['3301158', 'Lineer Cebir', 6, Z],
+  ],
+  2: [
+    ['3301251', 'Matematik-2', 6, Z],
+    ['3301252', 'Fizik-2', 6, Z],
+    ['3301253', 'Türk Dili II', 2, Z],
+    ['3301254', 'Atatürk İlkeleri ve İnkılap Tarihi-2', 2, Z],
+    ['3301255', 'Yabancı Dil-2', 2, Z],
+    ['3301256', 'Programlama Dili-1', 4, Z],
+    ['3301257', 'İş Sağlığı ve Güvenliği-2', 2, Z],
+    ['3301258', 'Ayrık Matematik', 6, Z],
+  ],
+  3: [
+    ['3301351', 'Nesneye Yönelik Programlama Dili', 4, Z],
+    ['3301352', 'İşletim Sistemleri', 4, Z],
+    ['3301353', 'Mantık Devreleri-1', 4, Z],
+    ['3301354', 'Veri Yapıları ve Uygulamaları', 4, Z],
+    ['3301355', 'Elektronik Devre Elemanları ve Ölçme', 4, Z],
+    ['3301356', 'Sayısal Yöntemler', 5, Z],
+    ['3301357', 'İstatistik ve Olasılık', 5, Z],
+  ],
+  4: [
+    ['3301451', 'Mühendislik Matematiği', 7, Z],
+    ['3301452', 'Programlama Dili-2', 4, Z],
+    ['3301453', 'Mantık Devreleri-2', 4, Z],
+    ['3301454', 'Veritabanı Yönetim Sistemleri', 5, Z],
+    ['3301455', 'Yazılım Mühendisliği', 4, Z],
+    ['3301456', 'Mobil Programlama', 4, Z],
+    ['3301461', 'Teknoloji Tarihi', 2, S],
+    ['3301462', 'İş Hukuku ve Etik', 2, S],
+    ['3301463', 'İletişim Becerileri ve Akademik Raporlama', 2, S],
+    ['3301464', 'Sosyal Sorumluluk ve Değerler Eğitimi', 2, S],
+    ['3301465', 'Etkili İletişim ve Beden Dili', 2, S],
+    ['3301466', 'Medya Okur Yazarlığı', 2, S],
+    ['3301467', 'Yönetim ve Organizasyon', 2, S],
+    ['3301468', 'Çevre ve Ekoloji', 2, S],
+    ['3301469', 'Yaşam Boyu Öğrenme', 2, S],
+    ['3301470', 'İletişim ve Stres Yönetimi', 2, S],
+    ['3301471', 'Gönüllülük Çalışmaları', 2, S],
+    ['3301472', 'Dijital Dönüşüm', 2, S],
+    ['3301473', 'Sosyal İngilizce', 2, S],
+  ],
+  5: [
+    ['3301551', 'Mikroişlemciler ve Mikrodenetleyiciler', 5, Z],
+    ['3301552', 'Programlama Dili-3', 5, Z],
+    ['3301553', 'Veri Haberleşmesi ve Ağlar', 5, Z],
+    ['3301554', 'Teknik İngilizce', 3, Z],
+    ['3301561', 'Sinyal İşleme', 4, T],
+    ['3301562', 'Tasarım Desenleri', 4, T],
+    ['3301563', 'İnsan Bilgisayar Etkileşimi', 4, T],
+    ['3301564', 'Biyomedikal Sistemler', 4, T],
+    ['3301565', 'Simülasyon ve Modelleme', 4, T],
+    ['3301566', 'Bilgisayar Donanımı', 4, T],
+    ['3301567', 'Web Tasarımı', 4, T],
+    ['3301568', 'Veri Madenciliği', 4, T],
+    ['3301569', 'Adli Bilişim', 4, T],
+    ['3301570', 'Veri Tabanı Programlama', 4, T],
+    ['3301571', 'Makine Öğrenmesi', 4, T],
+    ['3301572', 'Algoritma Analizi', 4, T],
+    ['3301573', 'Doğal Dil İşleme Temelleri', 4, T],
+    ['3301574', 'Nesnelerin İnterneti', 4, T],
+    ['3301575', 'İleri Dijital Sistemler', 4, T],
+    ['3301576', 'Bilgisayar Mühendisliğinde Özel Konular', 4, T],
+    ['3301577', 'Siber Sistemler ve Bilgi Güvenliği', 4, T],
+    ['3301578', 'Sürdürülebilir Yazılım Mühendisliği', 4, T],
+  ],
+  6: [
+    ['3301651', 'Yapay Zeka', 4, Z],
+    ['3301652', 'Otomata Teorisi ve Biçimsel Diller', 4, Z],
+    ['3301653', 'Görüntü İşleme', 4, Z],
+    ['3301654', 'Mühendislik Tasarımı', 6, Z],
+    ['3301661', 'Sistem Programlama', 4, T],
+    ['3301662', 'Bilgisayar ve Ağ Güvenliği', 4, T],
+    ['3301663', 'Gömülü Sistemler', 4, T],
+    ['3301664', 'İş Zekası', 4, T],
+    ['3301665', 'Robotik', 4, T],
+    ['3301666', 'İşletim Sistemleri Yönetimi', 4, T],
+    ['3301667', 'Web Servisleri', 4, T],
+    ['3301668', 'Mikrobilgisayarlı Sistem Tasarımı', 4, T],
+    ['3301669', 'Mesleki İngilizce', 4, T],
+    ['3301670', 'Kriptoloji', 4, T],
+    ['3301671', 'Bilgisayar Bilimlerinde İnovasyon ve Araştırma Teknikleri', 4, T],
+    ['3301672', 'Disiplinlerarası Çalışma', 4, T],
+    ['3301673', 'Gerçekçi Modelleme ve Simülasyon Tasarımı', 4, T],
+    ['3301674', 'Web Programlama', 4, T],
+    ['3301675', 'Sürdürülebilir Bilişim Teknolojileri', 4, T],
+    ['3301676', 'Steganografi', 4, T],
+  ],
+  7: [
+    ['3301751', 'Bilgisayar Mühendisliği Uygulamaları', 4, Z],
+    ['3301752', 'Bilgisayar Mimarisi ve Organizasyonu', 4, Z],
+    ['3301753', 'Veri Bilimi', 4, Z],
+    ['3301754', 'Girişimcilik ve Proje Yönetimi', 3, Z],
+    ['3301761', 'Programlanabilir Mantık Kontrolör', 4, T],
+    ['3301762', 'Paralel İşlemcili Sistemler', 4, T],
+    ['3301763', 'Kontrol Sistemleri', 4, T],
+    ['3301764', 'Bilgisayar Destekli Tasarım', 4, T],
+    ['3301765', 'Yöneylem Araştırması', 4, T],
+    ['3301766', 'Kablosuz Ağlar', 4, T],
+    ['3301767', 'Bulut Bilişim', 4, T],
+    ['3301768', 'Paket Programlar', 4, T],
+    ['3301769', 'Bilgisayar Grafikleri', 4, T],
+    ['3301770', 'Veri İletişim Teknikleri', 4, T],
+    ['3301771', 'Oyun Programlama', 4, T],
+    ['3301772', 'E-Ticaret ve Uygulamaları', 4, T],
+    ['3301773', 'Paralel Programlama', 4, T],
+    ['3301774', 'MVC Tabanlı Web Mimarisi', 4, T],
+    ['3301775', 'Yeşil Bilişim', 4, T],
+    ['3301776', 'Çevre ve Enerji', 6, T],
+    ['3301777', 'Blokzincir Temelleri', 4, T],
+    ['3301778', 'Büyük Veri Analitiği', 4, T],
+    ['3301779', 'Bilgisayarla Görme', 4, T],
+    ['3301782', 'Kalite ve Güvence Sistemleri', 2, S],
+    ['3301783', 'Mühendislik Ekonomisi', 2, S],
+    ['3301784', 'İşaret Dili', 2, S],
+    ['3301785', 'Dış Ticaret', 2, S],
+    ['3301786', 'Topluma Hizmet Uygulamaları', 2, S],
+    ['3301787', 'Reklamcılık ve Stratejileri', 2, S],
+    ['3301788', 'Araştırma ve Rapor Yazma Teknikleri', 2, S],
+    ['3301789', 'Mühendislik Etiği', 2, S],
+  ],
+  8: [
+    ['3301851', 'İşletmede Mesleki Eğitim', 20, Z],
+    ['3301852', 'Staj-1', 5, Z],
+    ['3301853', 'Staj-2', 5, Z],
+  ],
+};
+
+/** Bilgisayar Mühendisliği lisans müfredatı (Bologna ders paketi). */
+export const COURSES: SeedCourse[] = Object.entries(BY_SEMESTER).flatMap(([semester, rows]) =>
+  rows.map(([code, name, ects, kind]) => ({ code, name, ects, semester: Number(semester), kind })),
+);
+
+export const course = (code: string): SeedCourse => {
+  const c = COURSES.find((x) => x.code === code);
+  if (!c) throw new Error(`Müfredatta olmayan ders: ${code}`);
+  return c;
 };
 
 export interface SeedTerm {
@@ -115,113 +214,31 @@ export const CURRENT_TERM_ID = 'T-2026-GUZ';
 
 export interface SeedOffering {
   id: string;
-  programId: string;
   termId: string;
   type: 'CAP' | 'YANDAL';
   quota: number;
+  /** Boşsa her bölümden başvuru alınır. */
   sourceProgramIds: string[];
-  /** Ders havuzu kodları (yalnızca yan dal). */
-  pool?: string[];
+  firstYearIntake: number;
 }
-
-const ALL_EGT = ['P-EGT-SINIF', 'P-EGT-TURK', 'P-EGT-MATO'];
-
-const cap = (programId: string, quota: number, sourceProgramIds: string[] = [], termId = CURRENT_TERM_ID): SeedOffering => ({
-  id: `O-${termId.slice(2)}-CAP-${programId.slice(2)}`,
-  programId,
-  termId,
-  type: 'CAP',
-  quota,
-  sourceProgramIds,
-});
-
-const yandal = (programId: string, quota: number, pool: string[], termId = CURRENT_TERM_ID): SeedOffering => ({
-  id: `O-${termId.slice(2)}-YD-${programId.slice(2)}`,
-  programId,
-  termId,
-  type: 'YANDAL',
-  quota,
-  sourceProgramIds: [],
-  pool,
-});
 
 export const OFFERINGS: SeedOffering[] = [
-  // 2026-2027 güz — ilandaki dipnotlu Teknoloji Fakültesi kısıtları
-  cap('P-TF-BIL', 3, ['P-TF-EEM']),
-  cap('P-TF-EEM', 2, ['P-TF-BIL', 'P-TF-MAK', 'P-TF-MEK']),
-  cap('P-TF-MAK', 3, ['P-TF-BIL', 'P-TF-EEM', 'P-TF-MET']),
-  cap('P-TF-MEK', 3, ['P-TF-BIL', 'P-TF-EEM', 'P-TF-MAK']),
-  cap('P-TF-MET', 2, ['P-TF-MAK', 'P-TF-MEK', 'P-TF-BIL', 'P-TF-EEM']),
-  cap('P-FEN-BIY', 10),
-  cap('P-FEN-MAT', 5),
-  cap('P-FEN-IST', 3),
-  cap('P-FEN-KIM', 5),
-  cap('P-FEN-FIZ', 5),
-  cap('P-FEN-AKT', 4),
-  cap('P-EDB-TAR', 6),
-  cap('P-EDB-FEL', 3),
-  cap('P-EDB-SAN', 2),
-  cap('P-IIBF-IKT', 4),
-  cap('P-IIBF-ISL', 10),
-  cap('P-IIBF-UI', 10),
-  cap('P-ILT-GAZ', 10),
-  cap('P-ILT-HIT', 5),
-  cap('P-ILT-REK', 5),
-  cap('P-MTF-MODA', 9),
-  cap('P-EGT-SINIF', 2, ALL_EGT),
-  yandal('P-IIBF-ISL', 10, ['ISL101', 'ISL105', 'ISL201', 'ISL203', 'ISL205', 'ISL301', 'ISL303', 'ISL305', 'ISL401', 'ISL403']),
-  yandal('P-FEN-IST', 5, ['IST101', 'IST103', 'IST201', 'IST203', 'IST205', 'IST301', 'IST303', 'IST305', 'IST401', 'IST403']),
-  yandal('P-ILT-HIT', 5, ['HIT101', 'HIT103', 'HIT201', 'HIT203', 'HIT205', 'HIT301', 'HIT303', 'HIT305', 'HIT401', 'HIT403']),
-  // 2025-2026 güz — mevcut kayıtlar için geçmiş dönem teklifleri
-  cap('P-IIBF-IKT', 4, [], 'T-2025-GUZ'),
-  cap('P-ILT-HIT', 5, [], 'T-2025-GUZ'),
-  cap('P-FEN-IST', 3, [], 'T-2025-GUZ'),
-  yandal('P-IIBF-ISL', 10, ['ISL101', 'ISL105', 'ISL201', 'ISL203', 'ISL205', 'ISL301', 'ISL303', 'ISL305', 'ISL401', 'ISL403'], 'T-2025-GUZ'),
+  // 2026-27 güz ilanı, dipnot 1: "Elektrik-Elektronik Mühendisliği Bölümünden öğrenci kabul edilecektir."
+  { id: 'O-2026-GUZ-CAP', termId: 'T-2026-GUZ', type: 'CAP', quota: 3, sourceProgramIds: ['P-EEM'], firstYearIntake: 80 },
+  { id: 'O-2026-GUZ-YANDAL', termId: 'T-2026-GUZ', type: 'YANDAL', quota: 5, sourceProgramIds: [], firstYearIntake: 80 },
+  // Önceki yıl: bölüm sitesinde protokolü bulunan iki bölüm (EEM, Makine).
+  { id: 'O-2025-GUZ-CAP', termId: 'T-2025-GUZ', type: 'CAP', quota: 6, sourceProgramIds: ['P-EEM', 'P-MAK'], firstYearIntake: 80 },
+  { id: 'O-2025-GUZ-YANDAL', termId: 'T-2025-GUZ', type: 'YANDAL', quota: 5, sourceProgramIds: [], firstYearIntake: 80 },
 ];
 
-export interface SeedCourse {
-  code: string;
-  name: string;
-  ects: number;
-}
-
-export const COURSES: SeedCourse[] = [
-  ['ISL101', 'İşletmeye Giriş'],
-  ['ISL105', 'Genel Muhasebe'],
-  ['ISL201', 'Pazarlama İlkeleri'],
-  ['ISL203', 'Örgütsel Davranış'],
-  ['ISL205', 'Finansal Yönetim'],
-  ['ISL301', 'Üretim Yönetimi'],
-  ['ISL303', 'İnsan Kaynakları Yönetimi'],
-  ['ISL305', 'Maliyet Muhasebesi'],
-  ['ISL401', 'Stratejik Yönetim'],
-  ['ISL403', 'Girişimcilik'],
-  ['IST101', 'İstatistiğe Giriş'],
-  ['IST103', 'Olasılık'],
-  ['IST201', 'İstatistiksel Çıkarım'],
-  ['IST203', 'Regresyon Analizi'],
-  ['IST205', 'Örnekleme'],
-  ['IST301', 'Deney Tasarımı'],
-  ['IST303', 'Zaman Serileri'],
-  ['IST305', 'Çok Değişkenli İstatistik'],
-  ['IST401', 'Parametrik Olmayan Yöntemler'],
-  ['IST403', 'Veri Madenciliği'],
-  ['HIT101', 'Halkla İlişkilere Giriş'],
-  ['HIT103', 'İletişim Kuramları'],
-  ['HIT201', 'Kurumsal İletişim'],
-  ['HIT203', 'Tanıtım ve Reklam'],
-  ['HIT205', 'Kriz İletişimi'],
-  ['HIT301', 'Kampanya Yönetimi'],
-  ['HIT303', 'Dijital Halkla İlişkiler'],
-  ['HIT305', 'Medya İlişkileri'],
-  ['HIT401', 'Kurumsal Sosyal Sorumluluk'],
-  ['HIT403', 'İtibar Yönetimi'],
-  ['IKT101', 'İktisada Giriş'],
-  ['IKT103', 'Matematiksel İktisat'],
-].map(([code, name]) => ({ code, name, ects: 6 }));
-
-export const courseByCode = (code: string): SeedCourse => {
-  const c = COURSES.find((x) => x.code === code);
-  if (!c) throw new Error(`Ders yok: ${code}`);
-  return c;
-};
+/**
+ * Bilgisayar Mühendisliğinin yıllara göre taban puanı (TEMSİLÎ) ve başarı sırası şartı.
+ * Mühendislik programlarında başarı sırası şartı 300.000'dir; koordinatör panelden günceller.
+ */
+export const YEAR_STATS: { year: number; baseScore: number; successRankLimit: number }[] = [
+  { year: 2022, baseScore: 389, successRankLimit: 300000 },
+  { year: 2023, baseScore: 391, successRankLimit: 300000 },
+  { year: 2024, baseScore: 393, successRankLimit: 300000 },
+  { year: 2025, baseScore: 395, successRankLimit: 300000 },
+  { year: 2026, baseScore: 396, successRankLimit: 300000 },
+];

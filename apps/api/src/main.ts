@@ -18,9 +18,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const doc = new DocumentBuilder()
-    .setTitle('ÇAP / Yan Dal API')
-    .setDescription('Çift Ana Dal ve Yan Dal Başvuru ve Takip Sistemi')
-    .setVersion('0.1')
+    .setTitle('Bilgisayar Mühendisliği ÇAP / Yan Dal API')
+    .setDescription('Selçuk Üniversitesi Teknoloji Fakültesi Bilgisayar Mühendisliği çift ana dal ve yan dal otomasyonu')
+    .setVersion('0.3')
     .addBearerAuth()
     .build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, doc));

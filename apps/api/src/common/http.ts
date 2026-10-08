@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
-import type { ZodSchema } from 'zod';
+import { ZodError, type ZodSchema } from 'zod';
 
 /** RFC 9457 problem ayrıntısı taşıyan hata. */
 export class Problem extends HttpException {
@@ -61,6 +61,9 @@ export class ProblemFilter implements ExceptionFilter {
           : 'title' in (r as object)
             ? (r as Record<string, unknown>)
             : { title: (r as { error?: string }).error ?? 'Hata', detail: (r as { message?: unknown }).message };
+    } else if (exception instanceof ZodError) {
+      status = 400;
+      body = { title: 'Geçersiz istek', detail: 'Gönderilen veri doğrulanamadı.', errors: exception.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) };
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError && exception.code === 'P2002') {
       status = 409;
       body = { title: 'Durum çakışması', detail: 'Bu kayıt zaten var ya da bir benzersizlik kuralını ihlal ediyor.' };

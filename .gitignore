@@ -10,3 +10,5 @@ apps/*/.env
 playwright-report/
 test-results/
 e2e/.auth/
+storage/
+storage-test/

@@ -11,13 +11,11 @@ const EnvSchema = z.object({
   WEB_ORIGIN: z.string().url(),
   OIDC_ISSUER: z.string().url(),
   OIDC_AUDIENCE: z.string().min(1),
-  OBIS_ADAPTER: z.enum(['mock', 'http']).default('mock'),
-  OBIS_BASE_URL: z.string().url(),
-  OBIS_API_KEY: z.string().min(1),
-  OBIS_PORTAL_URL: z.string().url().default('http://localhost:4100/obis'),
+  /** Öğrencilerin yüklediği belgelerin tutulduğu dizin (sürüm denetimine girmez). */
+  UPLOAD_DIR: z.string().default('./storage'),
   SMTP_HOST: z.string().default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().default(1035),
-  MAIL_FROM: z.string().default('ÇAP-Yan Dal Sistemi <noreply@cap.test>'),
+  MAIL_FROM: z.string().default('Bilgisayar Müh. ÇAP-Yan Dal <noreply@cap.test>'),
   WORKER_ENABLED: z
     .string()
     .default('true')

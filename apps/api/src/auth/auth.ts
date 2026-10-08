@@ -10,8 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
-import type { Role } from '@cap/contracts';
-import { ROLES } from '@cap/contracts';
+import type { Role, StaffRole } from '@cap/contracts';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import type { Request } from 'express';
 import { APP_CONFIG, type AppConfig } from '../config';
@@ -19,8 +18,7 @@ import { forbidden } from '../common/http';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface Assignment {
-  role: Role;
-  unitId: string | null;
+  role: StaffRole;
   programId: string | null;
 }
 
@@ -29,8 +27,11 @@ export interface AuthUser {
   sub: string;
   displayName: string;
   email: string | null;
+  /** Personel rolleri; hiç atama yoksa hesap öğrenci hesabıdır (['OGRENCI']). */
   roles: Role[];
   assignments: Assignment[];
+  /** Öğrenci bilgilerini girdiyse öğrenci numarası. */
+  studentNo: string | null;
 }
 
 const IS_PUBLIC = 'isPublic';
@@ -91,25 +92,25 @@ export class AuthGuard implements CanActivate {
 
     const username = payload.preferred_username;
     if (!username || !payload.sub) throw new UnauthorizedException('Belirteçte kullanıcı bilgisi yok.');
-    // Keycloak yalnızca kimlik doğrular. Yetkinin tek kaynağı ÖİDB'nin yönettiği rol atamalarıdır;
-    // atanmamış kullanıcı ilk girişte kayıt olur ama hiçbir işlem yapamaz.
+    // Keycloak yalnızca kimlik doğrular. Personel yetkisinin tek kaynağı bölüm başkanının yönettiği rol
+    // atamalarıdır; ataması olmayan hesap öğrenci hesabıdır ve yalnızca kendi kayıtlarını görür.
     const user = await this.prisma.user.upsert({
       where: { username },
       create: { username, oidcSub: payload.sub, displayName: payload.name ?? username, email: payload.email ?? null, lastLoginAt: new Date() },
       update: { oidcSub: payload.sub, lastLoginAt: new Date() },
-      include: { assignments: true },
+      include: { assignments: true, profile: { select: { studentNo: true } } },
     });
 
-    const assignments = user.assignments
-      .filter((a) => (ROLES as readonly string[]).includes(a.role))
-      .map((a) => ({ role: a.role as Role, unitId: a.unitId, programId: a.programId }));
+    const assignments = user.assignments.map((a) => ({ role: a.role as StaffRole, programId: a.programId }));
+    const staffRoles = [...new Set(assignments.map((a) => a.role))] as Role[];
     req.user = {
       username,
       sub: payload.sub,
       displayName: user.displayName,
       email: user.email,
-      roles: [...new Set(assignments.map((a) => a.role))],
+      roles: staffRoles.length ? staffRoles : ['OGRENCI'],
       assignments,
+      studentNo: user.profile?.studentNo ?? null,
     };
     const roles = req.user.roles;
 

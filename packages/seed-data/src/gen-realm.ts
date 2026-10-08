@@ -6,9 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DEV_PASSWORD, USERS } from './users';
 
-// Keycloak yalnızca kimlik doğrular; yetki uygulamadaki rol atamalarından gelir. Roller bilgi amaçlı eklenir.
-const ROLES = ['KOORDINATOR', 'DANISMAN', 'BOLUM_BASKANI', 'BIRIM', 'OIDB'];
-
+// Keycloak yalnızca kimlik doğrular; yetki uygulamadaki rol atamalarından gelir.
 const realm = {
   realm: 'selcuk',
   enabled: true,
@@ -19,11 +17,15 @@ const realm = {
   accessTokenLifespan: 3600,
   ssoSessionIdleTimeout: 28800,
   sslRequired: 'none',
-  roles: { realm: ROLES.map((name) => ({ name })) },
+  // Öğrenciler hesabını kendisi açar (kullanıcı adı: öğrenci numarası); personel rolünü bölüm başkanı atar.
+  registrationAllowed: true,
+  registrationEmailAsUsername: false,
+  editUsernameAllowed: false,
+  verifyEmail: false,
   clients: [
     {
       clientId: 'cap-web',
-      name: 'ÇAP / Yan Dal Sistemi',
+      name: 'Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonu',
       enabled: true,
       publicClient: false,
       // Yalnızca yerel geliştirme için; apps/web/.env.example ile aynı.
@@ -55,7 +57,6 @@ const realm = {
       firstName,
       lastName: rest.join(' ') || '-',
       credentials: [{ type: 'password', value: DEV_PASSWORD, temporary: false }],
-      realmRoles: [...new Set(u.assignments.map((a) => a.role))],
     };
   }),
 };
