@@ -23,34 +23,19 @@ describe('varsayılan kural setleri', () => {
     }
   });
 
-  it('uygun ÇAP adayı', () => {
-    const out = evaluate(CAP_RULE_SET_V1, 'APPLICATION', {
+  it('başvuru aşaması kuralı yok (değerlendirmeyi dekanlık yapar)', () => {
+    for (const set of DEFAULT_RULE_SETS) expect(set.rules.some((r) => r.phase === 'APPLICATION')).toBe(false);
+    expect(evaluate(CAP_RULE_SET_V1, 'APPLICATION', { student: student(), offering: offering(), enrollments: [] }).verdict).toBe('ELIGIBLE');
+  });
+
+  it('yan dal ders listesi ve mezuniyet sonrası süre', () => {
+    const plan = evaluate(YANDAL_RULE_SET_V1, 'PROTOCOL', { minorPlan: { poolEcts: 240, planEcts: 28, planCourseCount: 7 } });
+    expect(plan.results.find((r) => r.code === 'KR-YD-05')?.status).toBe('FAIL');
+    const term = evaluate(YANDAL_RULE_SET_V1, 'TERM_END', {
       student: student(),
-      offering: offering(),
-      enrollments: [],
+      history: { mainGano: 2.5, trackGpaByTerm: [2.4], consecutiveTermsWithoutCourse: 0, ganoStrikes: 0, termsSinceMainGraduation: 3 },
     });
-    expect(out.verdict).toBe('ELIGIBLE');
-  });
-
-  it('kaynak bölüm dışı mühendislik başvurusu reddedilir', () => {
-    const out = evaluate(CAP_RULE_SET_V1, 'APPLICATION', {
-      student: student({ programId: 'P-TARIH' }),
-      offering: offering({ programCategory: 'MUHENDISLIK', sourceProgramIds: ['P-EEM'] }),
-      enrollments: [],
-    });
-    expect(out.verdict).toBe('INELIGIBLE');
-    expect(out.results.find((r) => r.code === 'KR-ÇAP-08')?.status).toBe('FAIL');
-  });
-
-  it('yan dal 2.50 sınırı ve 7. yarıyıl', () => {
-    const out = evaluate(YANDAL_RULE_SET_V1, 'APPLICATION', {
-      student: student({ gano: 2.49, semesterNo: 7 }),
-      offering: offering({ type: 'YANDAL' }),
-      enrollments: [],
-      previouslyRemovedProgramIds: [],
-    });
-    const failed = out.results.filter((r) => r.status === 'FAIL').map((r) => r.code);
-    expect(failed).toEqual(['KR-YD-02', 'KR-YD-03']);
+    expect(term.results.find((r) => r.code === 'KR-YD-14')?.status).toBe('FAIL');
   });
 
   it('dönem sonu ÇAP taraması', () => {

@@ -9,8 +9,11 @@ import { course } from './catalog';
  * Ortak AKTS, yönergedeki 240 AKTS'den (ÇAP Yön. m.7/2) protokol toplamı çıkarılarak bulunmuştur;
  * protokol belgesinde ortak dersler listelenmez (Rehber, "Protokol ve Özel Şartlar").
  *
- * TEMSİLÎ: yan dal havuzu. Bölümün yayımlanmış bir yan dal ders listesi bulunamadı; havuz gerçek
- * müfredat derslerinden örnek olarak kurulmuştur ve bölüm kurulu kararıyla değiştirilmelidir.
+ * TEMSİLÎ: yan dal ders listesi. Bölümün yayımlanmış bir yan dal listesi bulunamadı; liste gerçek
+ * müfredat derslerinden örnek olarak kurulmuştur.
+ *
+ * Şablon, koordinatörün bir öğrencinin ders listesini tek seferde oluşturması içindir; liste sonra
+ * gerekçeli ekleme / çıkarma ile değişebilir.
  */
 
 export interface SeedTemplateItem {
@@ -101,13 +104,10 @@ export const TEMPLATES: SeedTemplate[] = [
     id: 'PT-YANDAL',
     type: 'YANDAL',
     sourceProgramId: null,
-    title: 'Bilgisayar Mühendisliği Yan Dal Ders Havuzu (örnek)',
+    title: 'Bilgisayar Mühendisliği Yan Dal Ders Listesi (örnek)',
     commonEcts: 0,
-    source: 'TEMSİLÎ: gerçek müfredat derslerinden örnek havuz; bölüm kurulu belirler',
-    items: [
-      c('3301156'), c('3301256'), c('3301351'), c('3301352'), c('3301354'), c('3301452'), c('3301454'), c('3301455'),
-      c('3301456'), c('3301552'), c('3301553'), c('3301651'), c('3301652'), c('3301653'), c('3301753'),
-    ],
+    source: 'TEMSİLÎ: gerçek müfredat derslerinden örnek liste (8 ders, 33 AKTS); bölüm kurulu belirler',
+    items: [c('3301156'), c('3301256'), c('3301351'), c('3301352'), c('3301354'), c('3301452'), c('3301454'), c('3301455')],
     conditions: [],
   },
 ];

@@ -1,7 +1,7 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Controller, Get, Injectable, Logger, Param, Post } from '@nestjs/common';
 import type { Job, Queue } from 'bullmq';
-import { CurrentUser, type AuthUser } from '../auth/auth';
+import { CurrentUser, ReadOnlySafe, type AuthUser } from '../auth/auth';
 import { notFound } from '../common/http';
 import { MailPort } from '../integrations/integrations.module';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,7 +31,7 @@ export class NotificationsService {
       try {
         await this.mail.add(
           'send',
-          { to: user.email, subject: `[Bilgisayar Müh. ÇAP/Yan Dal] ${title}`, text: `${body}\n\n${link ? `Ayrıntı: http://localhost:3000${link}` : ''}` },
+          { to: user.email, subject: `[Bilgisayar Müh. ÇAP/YDP] ${title}`, text: `${body}\n\n${link ? `Ayrıntı: http://localhost:3000${link}` : ''}` },
           { attempts: 3, backoff: { type: 'exponential', delay: 2000 }, removeOnComplete: 100 },
         );
       } catch (e) {
@@ -40,10 +40,10 @@ export class NotificationsService {
     }
   }
 
-  /** ÇAP / yan dal komisyonunun bütün üyelerine bildirim. */
+  /** Etkin bütün koordinatörlere bildirim. */
   async notifyCoordinators(title: string, body: string, link?: string) {
-    const rows = await this.prisma.roleAssignment.findMany({ where: { role: 'KOORDINATOR' }, include: { user: true } });
-    await this.notifyMany(rows.map((r) => r.user.username), title, body, link);
+    const rows = await this.prisma.user.findMany({ where: { role: 'KOORDINATOR', active: true }, select: { username: true } });
+    await this.notifyMany(rows.map((r) => r.username), title, body, link);
   }
 
   async notifyMany(usernames: string[], title: string, body: string, link?: string) {
@@ -86,12 +86,14 @@ export class NotificationsController {
   }
 
   @Post('read-all')
+  @ReadOnlySafe()
   async readAll(@CurrentUser() user: AuthUser) {
     await this.prisma.notification.updateMany({ where: { username: user.username, readAt: null }, data: { readAt: new Date() } });
     return { ok: true };
   }
 
   @Post(':id/read')
+  @ReadOnlySafe()
   async read(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const n = await this.prisma.notification.findFirst({ where: { id, username: user.username } });
     if (!n) throw notFound('Bildirim');

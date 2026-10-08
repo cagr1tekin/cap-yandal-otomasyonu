@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { evaluate, type EvaluationContext, type RuleSetDefinition, type TrackType, type Verdict } from '@cap/rules';
+import type { RuleSetDefinition, TrackType } from '@cap/rules';
 import type { RuleDefinition, RuleSet } from '@prisma/client';
 import type { z } from 'zod';
 import type { RuleSetCreateSchema } from '@cap/contracts';
@@ -55,7 +55,7 @@ export class RulesService {
   list() {
     return this.prisma.ruleSet.findMany({
       orderBy: [{ type: 'asc' }, { createdAt: 'desc' }],
-      include: { rules: { orderBy: { position: 'asc' } }, _count: { select: { applications: true } } },
+      include: { rules: { orderBy: { position: 'asc' } }, _count: { select: { checks: true } } },
     });
   }
 
@@ -88,7 +88,7 @@ export class RulesService {
       },
       include: { rules: true },
     });
-    await this.audit.log({ actor: user.username, action: 'RULESET_CREATE', entity: 'RuleSet', entityId: created.id, after: input });
+    await this.audit.log(user, { action: 'RULESET_CREATE', entity: 'RuleSet', entityId: created.id, after: input });
     return created;
   }
 
@@ -98,33 +98,8 @@ export class RulesService {
     await this.prisma.$transaction(async (tx) => {
       await tx.ruleSet.updateMany({ where: { type: row.type, status: 'ACTIVE' }, data: { status: 'RETIRED' } });
       await tx.ruleSet.update({ where: { id }, data: { status: 'ACTIVE' } });
-      await this.audit.log({ actor: user.username, action: 'RULESET_ACTIVATE', entity: 'RuleSet', entityId: id }, tx);
+      await this.audit.log(user, { action: 'RULESET_ACTIVATE', entity: 'RuleSet', entityId: id }, tx);
     });
     return this.byId(id).then((r) => r.row);
-  }
-
-  /** Taslak sürümü değerlendirme bekleyen başvuruların saklı bağlamları üzerinde çalıştırır; sonucu değişenleri listeler. */
-  async dryRun(id: string) {
-    const { def, row } = await this.byId(id);
-    const apps = await this.prisma.application.findMany({
-      where: { offering: { type: row.type }, status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'PROPOSED'] } },
-      include: { offering: true },
-    });
-    const rows = apps.map((a) => {
-      const snap = a.snapshot as unknown as { ctx: EvaluationContext; fullName: string };
-      const ctx = snap.ctx;
-      const before = (a.eligibility as unknown as { verdict: Verdict }).verdict;
-      const after = evaluate(def, 'APPLICATION', ctx);
-      return {
-        applicationId: a.id,
-        studentNo: a.studentNo,
-        fullName: snap.fullName,
-        before,
-        after: after.verdict,
-        changed: before !== after.verdict,
-        failed: after.results.filter((r) => r.status === 'FAIL').map((r) => `${r.code}: ${r.message}`),
-      };
-    });
-    return { total: rows.length, changed: rows.filter((r) => r.changed).length, rows };
   }
 }

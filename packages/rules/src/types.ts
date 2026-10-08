@@ -94,6 +94,10 @@ export interface TrackHistory {
   ganoStrikes: number;
   /** Bu dönem için kayıtlı dönem izni (Erasmus/Farabi, dersin açılmaması vb.) var mı. */
   onLeave?: boolean;
+  /** Kabul döneminden taranan döneme kadar geçen yarıyıl sayısı (kabul dönemi dahil). */
+  termsSinceAdmission?: number;
+  /** Ana daldan mezun olunan dönemden sonra geçen yarıyıl sayısı; mezun değilse null. */
+  termsSinceMainGraduation?: number | null;
 }
 
 export interface MinorPlanInfo {

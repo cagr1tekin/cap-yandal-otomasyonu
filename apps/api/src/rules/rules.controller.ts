@@ -2,40 +2,52 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { RuleSetCreateSchema } from '@cap/contracts';
 import type { z } from 'zod';
 import { CurrentUser, Roles, type AuthUser } from '../auth/auth';
-import { AccessService } from '../auth/access.service';
 import { ZodPipe } from '../common/http';
+import { ChecksService } from './checks.service';
 import { RulesService } from './rules.service';
 
-/** Kural setleri: komisyon yönerge değişikliğinde yeni sürüm üretir; bölüm başkanı görür. */
-@Controller('rule-sets')
-@Roles('KOORDINATOR', 'BOLUM_BASKANI')
+/**
+ * Yönerge kuralları: sayısal değerler sürümlü kural setindedir. Koordinatör yeni sürüm üretir, dener ve
+ * etkinleştirir; eski sürüm ve onunla yapılmış kontroller kalır. Bölüm başkanı görür.
+ */
+@Controller()
 export class RulesController {
   constructor(
     private readonly rules: RulesService,
-    private readonly access: AccessService,
+    private readonly checks: ChecksService,
   ) {}
 
-  @Get()
-  async list(@CurrentUser() user: AuthUser) {
-    await this.access.assertDepartmentStaff(user);
+  @Get('rule-sets')
+  list() {
     return this.rules.list();
   }
 
-  @Post()
+  @Post('rule-sets')
   @Roles('KOORDINATOR')
   create(@Body(new ZodPipe(RuleSetCreateSchema)) body: z.infer<typeof RuleSetCreateSchema>, @CurrentUser() user: AuthUser) {
     return this.rules.create(body, user);
   }
 
-  @Post(':id/activate')
+  @Post('rule-sets/:id/activate')
   @Roles('KOORDINATOR')
   activate(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.rules.activate(id, user);
   }
 
-  @Post(':id/dry-run')
+  @Get('rule-sets/:id/dry-run')
   @Roles('KOORDINATOR')
   dryRun(@Param('id') id: string) {
-    return this.rules.dryRun(id);
+    return this.checks.dryRun(id);
+  }
+
+  @Get('checks')
+  overview() {
+    return this.checks.overview();
+  }
+
+  @Post('checks/run-all')
+  @Roles('KOORDINATOR')
+  runAll(@CurrentUser() user: AuthUser) {
+    return this.checks.runAll(user);
   }
 }

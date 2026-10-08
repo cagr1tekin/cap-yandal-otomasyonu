@@ -1,329 +1,340 @@
 import { z } from 'zod';
 
+/**
+ * Bilgisayar Mühendisliği ÇAP / YDP takip sistemi — ortak tanımlar.
+ * Tek kaynak: koordinatörün sistem çerçevesi e-postası (docs/KARARLAR.md K-18).
+ */
+
 export const TRACK_TYPES = ['CAP', 'YANDAL'] as const;
 export type TrackType = (typeof TRACK_TYPES)[number];
 
-/**
- * Roller (docs/KARARLAR.md K-12). Sistem yalnızca Bilgisayar Mühendisliği Bölümünün ÇAP / yan dal
- * sürecini kapsar; birim öğrenci işleri ve Öğrenci İşleri Daire Başkanlığı rolleri yoktur.
- * OGRENCI rolü atanmaz: personel rolü olmayan her hesap öğrenci hesabıdır.
- */
-export const ROLES = ['OGRENCI', 'DANISMAN', 'KOORDINATOR', 'BOLUM_BASKANI'] as const;
+/** Üç giriş türü; başka rol yok. */
+export const ROLES = ['KOORDINATOR', 'OGRENCI', 'BOLUM_BASKANI'] as const;
 export type Role = (typeof ROLES)[number];
-export const STAFF_ROLES = ['DANISMAN', 'KOORDINATOR', 'BOLUM_BASKANI'] as const;
-export type StaffRole = (typeof STAFF_ROLES)[number];
 
-export const APPLICATION_STATUSES = [
-  'SUBMITTED',
-  'INELIGIBLE',
-  'WITHDRAWN',
-  'UNDER_REVIEW',
-  'PROPOSED',
-  'ACCEPTED',
-  'WAITLISTED',
-  'REJECTED',
-  'ENROLLED',
-  'NOT_ENROLLED',
-] as const;
-export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+export const STUDENT_STATUSES = ['ACTIVE', 'FROZEN', 'GRADUATED', 'CERTIFIED', 'WITHDRAWN', 'REMOVED'] as const;
+export type StudentStatus = (typeof STUDENT_STATUSES)[number];
 
-/** Öğrencinin kendi girdiği bilgilerin koordinatörce belgeyle karşılaştırılması. */
-export const VERIFICATION_STATUSES = ['PENDING', 'VERIFIED', 'MISMATCH'] as const;
-export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
+/** Öğrencinin girdiği her kaydın onay durumu. Reddedilen ve iptal edilen kayıt silinmez. */
+export const REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
-export const ENROLLMENT_STATUSES = ['ACTIVE', 'FROZEN', 'WITHDRAWN', 'REMOVED', 'COMPLETED'] as const;
-export type EnrollmentStatus = (typeof ENROLLMENT_STATUSES)[number];
+/** Kaydın nereden geldiği: ileride OBİS bağlantısı IMPORT/OBIS kaynağıyla aynı yoldan yazar. */
+export const RECORD_SOURCES = ['STUDENT', 'COORDINATOR', 'BACKFILL', 'IMPORT'] as const;
+export type RecordSource = (typeof RECORD_SOURCES)[number];
 
-export const PROPOSALS = ['ASIL', 'YEDEK', 'RET'] as const;
-export type Proposal = (typeof PROPOSALS)[number];
+export const PLAN_ITEM_KINDS = ['COURSE', 'ELECTIVE_SLOT'] as const;
+export type PlanItemKind = (typeof PLAN_ITEM_KINDS)[number];
 
-export const FINDING_DECISIONS = ['PENDING', 'CONFIRMED', 'DISMISSED'] as const;
-export type FindingDecision = (typeof FINDING_DECISIONS)[number];
+/** Ders listesindeki bir dersin görünen durumu (e-postadaki sözcüklerle). */
+export const COURSE_STATES = ['PLANLANDI', 'ALINDI', 'GECTI', 'KALDI', 'MUAF', 'CIKARILDI'] as const;
+export type CourseState = (typeof COURSE_STATES)[number];
 
-/** Formlardaki imzacılar (Bölüm ÇAP Rehberi 2025; protokol ve ders kayıt formları). */
-export const APPROVAL_ROLES = ['OGRENCI', 'ANA_DAL_DANISMANI', 'ANA_DAL_BOLUM_BASKANI', 'KOORDINATOR', 'CAP_BOLUM_BASKANI'] as const;
-export type ApprovalRole = (typeof APPROVAL_ROLES)[number];
-
-export const APPROVAL_SUBJECTS = ['PROTOCOL', 'COURSE_REG', 'EXEMPTION'] as const;
-export type ApprovalSubject = (typeof APPROVAL_SUBJECTS)[number];
-
-/**
- * Hangi formu kim imzalar:
- * - Kabul ve Ders Protokolü: 5 imza, 4 nüsha (Rehber "Asil öğrenci kayıtları"; protokol formu).
- * - Ders Kayıt Formu (FORM01): öğrenci, ana dal danışmanı, koordinatör; 3 nüsha.
- * - Özel Şartlı Derslerin Muafiyeti Formu: öğrenci, ana dal danışmanı, koordinatör; 2 nüsha.
- */
-export const SIGNERS: Record<ApprovalSubject, ApprovalRole[]> = {
-  PROTOCOL: ['OGRENCI', 'ANA_DAL_DANISMANI', 'ANA_DAL_BOLUM_BASKANI', 'KOORDINATOR', 'CAP_BOLUM_BASKANI'],
-  COURSE_REG: ['OGRENCI', 'ANA_DAL_DANISMANI', 'KOORDINATOR'],
-  EXEMPTION: ['OGRENCI', 'ANA_DAL_DANISMANI', 'KOORDINATOR'],
-};
-
-export const FORM_STATUSES = ['DRAFT', 'IN_APPROVAL', 'APPROVED', 'REJECTED'] as const;
-export type FormStatus = (typeof FORM_STATUSES)[number];
-
-export const LEAVE_REASONS = ['ERASMUS', 'FARABI', 'DERS_ACILMADI', 'DERS_CAKISMASI', 'DIGER'] as const;
-export type LeaveReason = (typeof LEAVE_REASONS)[number];
+export const ATTEMPT_RESULTS = ['TAKEN', 'PASSED', 'FAILED'] as const;
+export type AttemptResult = (typeof ATTEMPT_RESULTS)[number];
 
 export const COURSE_KINDS = ['ZORUNLU', 'TEKNIK_SECMELI', 'SOSYAL_SECMELI'] as const;
 export type CourseKind = (typeof COURSE_KINDS)[number];
 
-export const PROTOCOL_ITEM_KINDS = ['COURSE', 'ELECTIVE_SLOT'] as const;
-export type ProtocolItemKind = (typeof PROTOCOL_ITEM_KINDS)[number];
+export const DOCUMENT_KINDS = [
+  'PROTOKOL',
+  'DERS_KAYIT_FORMU',
+  'MUAFIYET_FORMU',
+  'CAP_TRANSKRIPT',
+  'ANADAL_TRANSKRIPT',
+  'YK_KARARI',
+  'RESMI_YAZI',
+  'DIGER',
+] as const;
+export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
+/** Koordinatörün yükleyebildiği resmî yazılar; öğrenci bu türleri yükleyemez. */
+export const STAFF_ONLY_DOCUMENTS: DocumentKind[] = ['YK_KARARI', 'RESMI_YAZI'];
+/** Döneme bağlı belgeler. */
+export const TERM_DOCUMENTS: DocumentKind[] = ['DERS_KAYIT_FORMU', 'CAP_TRANSKRIPT', 'ANADAL_TRANSKRIPT'];
 
-export const PROTOCOL_ITEM_STATUSES = ['PENDING', 'PASSED', 'FAILED', 'EXEMPT'] as const;
-export type ProtocolItemStatus = (typeof PROTOCOL_ITEM_STATUSES)[number];
+export const REQUEST_STATUSES = ['OPEN', 'UPLOADED', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
-/** Harf notları ve katsayıları (Eğitim-Öğretim ve Sınav Yönetmeliği m.13). G: kredisiz derste geçer, M: muaf. */
+export const GANO_SOURCES = ['TRANSKRIPT', 'OGRENCI_ISLERI', 'OBIS', 'DIGER'] as const;
+export type GanoSource = (typeof GANO_SOURCES)[number];
+
+export const DECISION_TYPES = ['MEZUNIYET', 'SERTIFIKA', 'KAYIT_SILME', 'AYRILMA', 'DONDURMA', 'ETKINLESTIRME'] as const;
+export type DecisionType = (typeof DECISION_TYPES)[number];
+
+export const LEAVE_REASONS = ['ERASMUS', 'FARABI', 'DERS_ACILMADI', 'DERS_CAKISMASI', 'DIGER'] as const;
+export type LeaveReason = (typeof LEAVE_REASONS)[number];
+
+export const IMPORT_KINDS = ['COURSES', 'STUDENTS', 'ATTEMPTS'] as const;
+export type ImportKind = (typeof IMPORT_KINDS)[number];
+
+/** Harf notları ve katsayıları (Eğitim-Öğretim ve Sınav Yönetmeliği m.13). G: kredisiz derste geçer, K: kalır. */
 export const GRADES = ['AA', 'BA', 'BB', 'CB', 'CC', 'DC', 'FF', 'F', 'G', 'K'] as const;
 export type Grade = (typeof GRADES)[number];
 export const GRADE_POINTS: Record<Grade, number | null> = { AA: 4, BA: 3.5, BB: 3, CB: 2.5, CC: 2, DC: 1.5, FF: 0, F: 0, G: null, K: null };
-/** DC şartlı geçer: dönem ortalaması 2,50 ve üzeriyse başarılı sayılır (m.13/3-b); koordinatör ayrıca işaretler. */
 export const PASSING_GRADES: Grade[] = ['AA', 'BA', 'BB', 'CB', 'CC', 'G'];
+/** DC şartlı geçer: başarılı sayılıp sayılmadığını koordinatör onayda işaretler (m.13/3-b). */
+export const CONDITIONAL_GRADES: Grade[] = ['DC'];
 
-export interface DocumentDef {
-  key: DocumentKind;
-  label: string;
-  source: string;
-}
-
-export const DOCUMENT_KINDS = ['TRANSKRIPT', 'BASARI_BELGESI', 'YKS_BELGESI', 'DONEM_TRANSKRIPTI', 'DIGER'] as const;
-export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
-
-/**
- * Başvuruda istenen belgeler (Bölüm ÇAP Rehberi 2025, "Başvuru"). Dilekçeyi sistem üretir.
- * Transkript ve %20 belgesi fakülte içi bölümlerden gelen öğrencilerde zorunlu değildir.
- */
-export const APPLICATION_DOCUMENTS: DocumentDef[] = [
-  { key: 'TRANSKRIPT', label: 'Transkript', source: 'ÇAP Rehberi 2025, Başvuru (fakülte içi bölümlerde gerekmez)' },
-  {
-    key: 'BASARI_BELGESI',
-    label: 'Sınıfında başarı sıralamasının ilk %20’lik diliminde olduğunu gösterir belge',
-    source: 'ÇAP Rehberi 2025, Başvuru (fakülte içi bölümlerde gerekmez)',
-  },
-  {
-    key: 'YKS_BELGESI',
-    label: 'Kayıt yılındaki YÖK başarı sıralamasını ve puanını gösterir belge',
-    source: 'ÇAP Rehberi 2025, Başvuru; ÇAP Yön. m.5/1-e',
-  },
-];
-
-export const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
-export const UPLOAD_MIME = ['application/pdf', 'image/jpeg', 'image/png'] as const;
+export const ALLOWED_UPLOAD_TYPES = ['application/pdf', 'image/jpeg', 'image/png'] as const;
+/** Ayarlar sayfasındaki değerlerin varsayılanları (yönerge dışı sistem ayarları). */
+export const DEFAULT_SETTINGS = {
+  uploadMaxMb: 10,
+  uploadTypes: ['application/pdf', 'image/jpeg', 'image/png'] as string[],
+  messageMaxLength: 4000,
+};
+export type Settings = typeof DEFAULT_SETTINGS;
+/** Ayarlarda girilebilecek en büyük dosya boyutu (sunucunun sabit üst sınırı). */
+export const HARD_UPLOAD_LIMIT_MB = 20;
 
 export const LABELS = {
-  track: { CAP: 'Çift Ana Dal', YANDAL: 'Yan Dal' } satisfies Record<TrackType, string>,
-  role: {
-    OGRENCI: 'Öğrenci',
-    DANISMAN: 'Danışman',
-    KOORDINATOR: 'ÇAP / Yan Dal Koordinatörü',
-    BOLUM_BASKANI: 'Bölüm Başkanı',
-  } satisfies Record<Role, string>,
-  application: {
-    SUBMITTED: 'Başvuru alındı',
-    INELIGIBLE: 'Koşulları sağlamıyor',
-    WITHDRAWN: 'Geri çekildi',
-    UNDER_REVIEW: 'Komisyon incelemesinde',
-    PROPOSED: 'Kurul kararı bekleniyor',
-    ACCEPTED: 'Kabul (asil)',
-    WAITLISTED: 'Yedek',
-    REJECTED: 'Ret',
-    ENROLLED: 'Kesin kayıt yapıldı',
-    NOT_ENROLLED: 'Kayıt yaptırılmadı',
-  } satisfies Record<ApplicationStatus, string>,
-  verification: {
-    PENDING: 'Doğrulama bekliyor',
-    VERIFIED: 'Belgeyle doğrulandı',
-    MISMATCH: 'Belgeyle uyuşmuyor',
-  } satisfies Record<VerificationStatus, string>,
-  enrollment: {
+  track: { CAP: 'Çift Ana Dal (ÇAP)', YANDAL: 'Yan Dal (YDP)' } satisfies Record<TrackType, string>,
+  trackShort: { CAP: 'ÇAP', YANDAL: 'YDP' } satisfies Record<TrackType, string>,
+  role: { KOORDINATOR: 'Koordinatör', OGRENCI: 'Öğrenci', BOLUM_BASKANI: 'Bölüm Başkanı' } satisfies Record<Role, string>,
+  studentStatus: {
     ACTIVE: 'Etkin',
     FROZEN: 'Dondurulmuş',
+    GRADUATED: 'Mezun (ÇAP diploması)',
+    CERTIFIED: 'Sertifika aldı',
     WITHDRAWN: 'Kendi isteğiyle ayrıldı',
     REMOVED: 'Kaydı silindi',
-    COMPLETED: 'Tamamlandı',
-  } satisfies Record<EnrollmentStatus, string>,
-  proposal: { ASIL: 'Asil', YEDEK: 'Yedek', RET: 'Ret' } satisfies Record<Proposal, string>,
-  finding: { PENDING: 'Karar bekliyor', CONFIRMED: 'Onaylandı', DISMISSED: 'Reddedildi' } satisfies Record<FindingDecision, string>,
-  approvalRole: {
-    OGRENCI: 'Öğrenci',
-    ANA_DAL_DANISMANI: 'Ana dal danışmanı',
-    ANA_DAL_BOLUM_BASKANI: 'Ana dal bölüm başkanı',
-    KOORDINATOR: 'ÇAP / yan dal koordinatörü',
-    CAP_BOLUM_BASKANI: 'ÇAP / yan dal bölüm başkanı',
-  } satisfies Record<ApprovalRole, string>,
-  subject: {
-    PROTOCOL: 'Kabul ve Ders Protokolü',
-    COURSE_REG: 'Ders kayıt formu',
-    EXEMPTION: 'Özel şartlı ders muafiyeti formu',
-  } satisfies Record<ApprovalSubject, string>,
-  form: {
-    DRAFT: 'Taslak',
-    IN_APPROVAL: 'İmzada',
-    APPROVED: 'İmzalar tamam',
-    REJECTED: 'Reddedildi',
-  } satisfies Record<FormStatus, string>,
-  leave: {
-    ERASMUS: 'Erasmus',
-    FARABI: 'Farabi',
-    DERS_ACILMADI: 'Ders açılmadı',
-    DERS_CAKISMASI: 'Ders çakışması',
-    DIGER: 'Diğer (haklı ve geçerli mazeret)',
-  } satisfies Record<LeaveReason, string>,
-  courseKind: {
-    ZORUNLU: 'Zorunlu',
-    TEKNIK_SECMELI: 'Teknik seçmeli',
-    SOSYAL_SECMELI: 'Sosyal seçmeli',
-  } satisfies Record<CourseKind, string>,
-  itemStatus: {
-    PENDING: 'Alınacak',
-    PASSED: 'Geçti',
-    FAILED: 'Kaldı',
-    EXEMPT: 'Muaf',
-  } satisfies Record<ProtocolItemStatus, string>,
+  } satisfies Record<StudentStatus, string>,
+  review: { PENDING: 'Onay bekliyor', APPROVED: 'Onaylandı', REJECTED: 'Reddedildi', CANCELLED: 'İptal edildi' } satisfies Record<ReviewStatus, string>,
+  source: { STUDENT: 'Öğrenci girdi', COORDINATOR: 'Koordinatör girdi', BACKFILL: 'Geriye dönük giriş', IMPORT: 'Dışarıdan aktarım' } satisfies Record<RecordSource, string>,
+  courseState: { PLANLANDI: 'Planlandı', ALINDI: 'Alındı', GECTI: 'Geçti', KALDI: 'Kaldı', MUAF: 'Muaf', CIKARILDI: 'Çıkarıldı' } satisfies Record<CourseState, string>,
+  attemptResult: { TAKEN: 'Alındı (not yok)', PASSED: 'Geçti', FAILED: 'Kaldı' } satisfies Record<AttemptResult, string>,
+  courseKind: { ZORUNLU: 'Zorunlu', TEKNIK_SECMELI: 'Teknik seçmeli', SOSYAL_SECMELI: 'Sosyal seçmeli' } satisfies Record<CourseKind, string>,
   document: {
-    TRANSKRIPT: 'Transkript',
-    BASARI_BELGESI: 'İlk %20 başarı belgesi',
-    YKS_BELGESI: 'YKS başarı sırası ve puan belgesi',
-    DONEM_TRANSKRIPTI: 'Dönem sonu transkripti',
+    PROTOKOL: 'Kabul ve Ders Protokolü (imzalı)',
+    DERS_KAYIT_FORMU: 'Ders kayıt formu (imzalı)',
+    MUAFIYET_FORMU: 'Özel şartlı ders muafiyeti formu',
+    CAP_TRANSKRIPT: 'ÇAP / YDP not belgesi (transkript)',
+    ANADAL_TRANSKRIPT: 'Ana dal transkripti',
+    YK_KARARI: 'Yönetim kurulu yazısı',
+    RESMI_YAZI: 'Resmî yazı',
     DIGER: 'Diğer',
   } satisfies Record<DocumentKind, string>,
+  request: { OPEN: 'Bekliyor', UPLOADED: 'Yüklendi', APPROVED: 'Onaylandı', REJECTED: 'Reddedildi', CANCELLED: 'İptal edildi' } satisfies Record<RequestStatus, string>,
+  ganoSource: { TRANSKRIPT: 'Transkript', OGRENCI_ISLERI: 'Öğrenci işleri', OBIS: 'OBİS', DIGER: 'Diğer' } satisfies Record<GanoSource, string>,
+  decision: {
+    MEZUNIYET: 'Mezuniyet (ÇAP diploması)',
+    SERTIFIKA: 'Yan dal sertifikası',
+    KAYIT_SILME: 'Kayıt silme',
+    AYRILMA: 'Kendi isteğiyle ayrılma',
+    DONDURMA: 'Kayıt dondurma',
+    ETKINLESTIRME: 'Kaydı yeniden etkinleştirme',
+  } satisfies Record<DecisionType, string>,
+  leave: { ERASMUS: 'Erasmus', FARABI: 'Farabi', DERS_ACILMADI: 'Ders açılmadı', DERS_CAKISMASI: 'Ders çakışması', DIGER: 'Diğer (haklı ve geçerli mazeret)' } satisfies Record<LeaveReason, string>,
+  importKind: { COURSES: 'Ders kataloğu', STUDENTS: 'Öğrenciler', ATTEMPTS: 'Geçmiş dersler ve notlar' } satisfies Record<ImportKind, string>,
 };
 
 const reason = z.string().trim().min(5, 'Gerekçe en az 5 karakter olmalı').max(1000);
 const studentNo = z.string().trim().regex(/^\d{9}$/, 'Öğrenci numarası 9 haneli olmalı');
-const optionalNumber = (schema: z.ZodNumber) =>
-  z.preprocess((v) => (v === '' || v === null || v === undefined ? null : v), schema.nullable());
+const courseCode = z.string().trim().regex(/^[A-Z0-9]{3,12}$/i, 'Ders kodu 3–12 harf/rakam olmalı').transform((v) => v.toUpperCase());
+const termId = z.string().trim().regex(/^T-\d{4}-(GUZ|BAHAR)$/, 'Dönem geçersiz');
+const name = z.string().trim().min(3).max(120);
+const optionalText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || undefined);
 
-/**
- * Öğrencinin kendi girdiği akademik bilgiler. OBİS bağlantısı yoktur (K-12);
- * bilgiler başvuruda yüklenen belgelerle koordinatörce doğrulanır.
- */
-export const StudentProfileSchema = z
-  .object({
-    studentNo,
-    fullName: z.string().trim().min(3, 'Ad soyad girin').max(120),
-    email: z.string().trim().email('Geçerli bir e-posta girin'),
-    phone: z.string().trim().max(20).optional(),
-    programId: z.string().min(1, 'Ana dal bölümünüzü seçin'),
-    entryYear: z.coerce.number().int().min(2015, 'Kayıt yılı geçersiz').max(2100),
-    semesterNo: z.coerce.number().int().min(1).max(12),
-    gano: z.coerce.number().min(0, 'GNO 0–4 arasında olmalı').max(4, 'GNO 0–4 arasında olmalı'),
-    completedAllCourses: z.coerce.boolean(),
-    classRank: optionalNumber(z.coerce.number().int().min(1)),
-    classSize: optionalNumber(z.coerce.number().int().min(1)),
-    entryScore: optionalNumber(z.coerce.number().min(100).max(600)),
-    successRank: optionalNumber(z.coerce.number().int().min(1)),
-    advisorUsername: z.string().trim().max(60).optional(),
-  })
-  .refine((v) => (v.classRank === null) === (v.classSize === null), { message: 'Sınıf sırası ve sınıf mevcudu birlikte girilmeli', path: ['classRank'] })
-  .refine((v) => v.classRank === null || v.classSize === null || v.classRank <= v.classSize, { message: 'Sınıf sırası mevcuttan büyük olamaz', path: ['classRank'] });
-export type StudentProfileInput = z.infer<typeof StudentProfileSchema>;
+export const ReasonSchema = z.object({ reason });
 
-export const ApplySchema = z.object({
-  offeringId: z.string().min(1),
-  declaration: z.literal(true, { errorMap: () => ({ message: 'Bilgilerin doğruluğunu beyan etmelisiniz' }) }),
+// ---------------- Kullanıcılar ve öğrenciler ----------------
+
+export const StaffCreateSchema = z.object({
+  username: z.string().trim().min(3).max(60).regex(/^[a-z0-9._-]+$/, 'Küçük harf, rakam, nokta, tire'),
+  displayName: name,
+  email: z.string().trim().email(),
+  role: z.enum(['KOORDINATOR', 'BOLUM_BASKANI']),
 });
 
-export const WithdrawSchema = z.object({ reason });
+export const StudentCreateSchema = z.object({
+  studentNo,
+  fullName: name,
+  schoolEmail: z.string().trim().toLowerCase().email('Okul e-postası geçersiz'),
+  track: z.enum(TRACK_TYPES),
+  admissionTermId: termId,
+  mainProgramId: z.string().trim().min(1).optional(),
+  /** Mevcut öğrenci (geriye dönük giriş yapılacak): hesap daveti gönderilmeden de eklenebilir. */
+  sendInvite: z.boolean().default(true),
+  commonEcts: z.coerce.number().int().min(0).max(240).default(0),
+});
+export type StudentCreateInput = z.infer<typeof StudentCreateSchema>;
 
-export const VerifySchema = z.object({
-  status: z.enum(['VERIFIED', 'MISMATCH']),
-  note: z.string().trim().max(1000).optional(),
+export const StudentUpdateSchema = z.object({
+  fullName: name.optional(),
+  schoolEmail: z.string().trim().toLowerCase().email().optional(),
+  track: z.enum(TRACK_TYPES).optional(),
+  admissionTermId: termId.optional(),
+  mainProgramId: z.string().trim().min(1).nullable().optional(),
+  commonEcts: z.coerce.number().int().min(0).max(240).optional(),
+  reason,
 });
 
-export const OfferingInputSchema = z.object({
-  termId: z.string().min(1),
-  type: z.enum(TRACK_TYPES),
-  quota: z.coerce.number().int().min(1).max(200),
-  sourceProgramIds: z.array(z.string()).default([]),
-  firstYearIntake: optionalNumber(z.coerce.number().int().min(1).max(2000)).optional(),
-  quotaJustification: z.string().trim().max(1000).optional(),
-  opensAt: z.coerce.date(),
-  closesAt: z.coerce.date(),
-  announceAt: z.coerce.date().optional(),
-  registrationDeadline: z.coerce.date().optional(),
-  waitlistDeadline: z.coerce.date().optional(),
-});
-export type OfferingInput = z.infer<typeof OfferingInputSchema>;
+/** Öğrencinin kendi değiştirebildiği tek bilgi: iletişim telefonu. */
+export const ContactSchema = z.object({ phone: z.string().trim().regex(/^[0-9 +()-]{0,20}$/, 'Telefon geçersiz').optional() });
 
-export const OfferingPatchSchema = OfferingInputSchema.partial().extend({
-  status: z.enum(['DRAFT', 'PUBLISHED', 'CLOSED']).optional(),
-});
+// ---------------- Katalog ----------------
 
-export const RankingOverrideSchema = z.object({ proposal: z.enum(PROPOSALS), reason });
-
-export const DecisionInputSchema = z.object({
-  decisionDate: z.coerce.date(),
-  decisionNo: z.string().trim().min(1).max(50),
-});
-
-export const FindingDecisionSchema = z.object({ decision: z.enum(['CONFIRMED', 'DISMISSED']), reason });
-
-export const StartScanSchema = z.object({ termId: z.string().min(1) });
-
-const templateItem = z.object({
-  kind: z.enum(PROTOCOL_ITEM_KINDS),
-  code: z.string().trim().max(20).nullable().optional(),
-  name: z.string().trim().min(2).max(160),
-  ects: z.coerce.number().int().min(1).max(40),
+export const CourseSchema = z.object({
+  code: courseCode,
+  name: name,
+  ects: z.coerce.number().int().min(0).max(60),
+  credit: z.coerce.number().int().min(0).max(20).nullable().optional(),
   semester: z.coerce.number().int().min(1).max(8),
+  kind: z.enum(COURSE_KINDS),
+});
+export type CourseInput = z.infer<typeof CourseSchema>;
+export const CourseUpdateSchema = CourseSchema.omit({ code: true }).partial().extend({ active: z.boolean().optional(), reason });
+
+export const CourseRequestSchema = z.object({
+  code: z.string().trim().max(12).optional().transform((v) => v || undefined),
+  name: name,
+  note: z.string().trim().min(5, 'Neden gerektiğini kısaca yazın').max(1000),
+});
+export const CourseRequestDecisionSchema = z.object({
+  decision: z.enum(['APPROVED', 'REJECTED']),
+  note: optionalText(1000),
+  /** Onayda kataloğa eklenen ya da eşleştirilen ders */
+  courseCode: courseCode.optional(),
+  addToPlan: z.boolean().default(true),
 });
 
-const templateCondition = z.object({
-  no: z.coerce.number().int().min(1),
-  sourceCourseCode: z.string().trim().min(1).max(20),
-  sourceCourseName: z.string().trim().min(2).max(160),
-  targetCourseCode: z.string().trim().min(1).max(20),
-  note: z.string().trim().max(300).nullable().optional(),
+export const TermSchema = z.object({
+  year: z.string().regex(/^\d{4}-\d{4}$/, 'Akademik yıl 2026-2027 biçiminde olmalı'),
+  season: z.enum(['GUZ', 'BAHAR']),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date(),
 });
+
+export const SettingsSchema = z.object({
+  uploadMaxMb: z.coerce.number().int().min(1).max(HARD_UPLOAD_LIMIT_MB),
+  uploadTypes: z.array(z.enum(ALLOWED_UPLOAD_TYPES)).min(1),
+  messageMaxLength: z.coerce.number().int().min(200).max(20000),
+});
+
+// ---------------- Ders listesi, dönem dersleri, notlar ----------------
+
+export const PlanAddSchema = z.object({
+  courseCode,
+  /** Koordinatör eklerken zorunlu (ilk kurulum ve şablon hariç). Öğrenci eklerken isteğe bağlı açıklama. */
+  reason: optionalText(1000),
+});
+
+export const PlanFromTemplateSchema = z.object({ templateId: z.string().min(1), reason });
+
+export const ExemptSchema = z.object({ reason, conditionNo: z.coerce.number().int().min(1).optional(), documentId: z.string().optional() });
+
+export const AttemptCreateSchema = z.object({
+  planItemId: z.string().min(1),
+  termId,
+  /** Seçmeli ders yeri için hangi dersin alındığı (katalogdan). */
+  courseCode: courseCode.optional(),
+});
+
+/** Koordinatörün geriye dönük girişi: dönem ve notla birlikte doğrudan onaylı yazılır. */
+export const BackfillSchema = z.object({
+  planItemId: z.string().min(1),
+  termId,
+  courseCode: courseCode.optional(),
+  grade: z.enum(GRADES).optional(),
+  passed: z.boolean().optional(),
+  note: optionalText(500),
+});
+
+export const AttemptCorrectSchema = z.object({
+  termId: termId.optional(),
+  grade: z.enum(GRADES).nullable().optional(),
+  passed: z.boolean().optional(),
+  reason,
+});
+
+export const GradeSubmissionSchema = z.object({
+  termId,
+  transcriptId: z.string().min(1, 'Bu dönemin ÇAP / YDP not belgesini seçin'),
+  grades: z.array(z.object({ attemptId: z.string().min(1), grade: z.enum(GRADES) })).min(1, 'En az bir dersin notunu girin'),
+});
+
+export const ReviewSchema = z
+  .object({
+    decision: z.enum(['APPROVED', 'REJECTED']),
+    note: optionalText(1000),
+    /** Not onayında şartlı geçer (DC) sayılan denemeler */
+    conditionalPass: z.array(z.string()).default([]),
+  })
+  .refine((v) => v.decision === 'APPROVED' || (v.note?.length ?? 0) >= 5, { message: 'Ret için en az 5 karakterlik gerekçe yazın', path: ['note'] });
+
+// ---------------- Belgeler, mesajlar, notlar ----------------
+
+export const DocumentMetaSchema = z.object({
+  kind: z.enum(DOCUMENT_KINDS),
+  termId: termId.optional(),
+  /** Yeni sürümü yüklenen (reddedilen ya da yenilenen) belge */
+  replacesId: z.string().optional(),
+  /** Koordinatörün isteğine yanıt */
+  requestId: z.string().optional(),
+  note: optionalText(500),
+});
+
+export const DocumentRequestSchema = z.object({
+  kind: z.enum(DOCUMENT_KINDS),
+  termId: termId.optional(),
+  message: z.string().trim().min(5).max(1000),
+  dueDate: z.coerce.date().optional(),
+});
+
+export const MessageSchema = z.object({ body: z.string().trim().min(1, 'Mesaj boş olamaz').max(20000) });
+
+export const NoteSchema = z.object({ body: z.string().trim().min(2).max(4000) });
+
+export const GanoSchema = z.object({
+  termId,
+  gano: z.coerce.number().min(0).max(4),
+  source: z.enum(GANO_SOURCES),
+  sourceNote: optionalText(300),
+  mainFrozen: z.boolean().default(false),
+  mainGraduated: z.boolean().default(false),
+});
+
+export const LeaveSchema = z.object({ termId, reason: z.enum(LEAVE_REASONS), note: optionalText(1000) });
+
+export const DecisionSchema = z.object({
+  type: z.enum(DECISION_TYPES),
+  reason,
+  reference: optionalText(100),
+  ruleCheckId: z.string().optional(),
+});
+
+// ---------------- Ders listesi şablonları ----------------
 
 export const TemplateSaveSchema = z.object({
   type: z.enum(TRACK_TYPES),
   sourceProgramId: z.string().min(1).nullable(),
   title: z.string().trim().min(3).max(160),
   commonEcts: z.coerce.number().int().min(0).max(240),
-  items: z.array(templateItem).min(1, 'En az bir ders ekleyin'),
-  conditions: z.array(templateCondition).default([]),
+  items: z
+    .array(
+      z.object({
+        kind: z.enum(PLAN_ITEM_KINDS),
+        code: z.string().trim().max(20).nullable().optional(),
+        name: z.string().trim().min(2).max(160),
+        ects: z.coerce.number().int().min(1).max(40),
+        semester: z.coerce.number().int().min(1).max(8),
+      }),
+    )
+    .min(1, 'En az bir ders ekleyin'),
+  conditions: z
+    .array(
+      z.object({
+        no: z.coerce.number().int().min(1),
+        sourceCourseCode: z.string().trim().min(1).max(20),
+        sourceCourseName: z.string().trim().min(2).max(160),
+        targetCourseCode: z.string().trim().min(1).max(20),
+        note: z.string().trim().max(300).nullable().optional(),
+      }),
+    )
+    .default([]),
 });
 export type TemplateSaveInput = z.infer<typeof TemplateSaveSchema>;
 
-/** Yan dalda öğrencinin planı havuzdan seçilir; ÇAP'ta şablonun tamamı kopyalanır. */
-export const ProtocolCreateSchema = z.object({ itemIds: z.array(z.string()).optional() });
-
-export const CourseRegistrationSaveSchema = z.object({
-  termId: z.string().min(1),
-  items: z
-    .array(z.object({ protocolCourseId: z.string().min(1), courseCode: z.string().trim().max(20).optional() }))
-    .min(1, 'En az bir ders seçin'),
-});
-
-export const GradeEntrySchema = z.object({
-  grades: z.array(z.object({ itemId: z.string().min(1), grade: z.enum(GRADES), passed: z.coerce.boolean() })).min(1),
-});
-
-export const ExemptionCreateSchema = z.object({
-  conditionId: z.string().min(1),
-  sourceGrade: z.enum(GRADES),
-  sourceTerm: z.string().trim().min(3).max(40),
-});
-
-export const TermRecordSchema = z.object({
-  termId: z.string().min(1),
-  mainGano: z.coerce.number().min(0).max(4),
-  mainFrozen: z.coerce.boolean().default(false),
-});
-
-export const ApprovalDecisionSchema = z
-  .object({ decision: z.enum(['APPROVED', 'REJECTED']), comment: z.string().trim().max(1000).optional() })
-  .refine((v) => v.decision === 'APPROVED' || (v.comment?.length ?? 0) >= 5, {
-    message: 'Ret için en az 5 karakterlik açıklama girin',
-    path: ['comment'],
-  });
-
-export const LeaveSchema = z.object({ termId: z.string().min(1), reason: z.enum(LEAVE_REASONS), note: z.string().trim().max(1000).optional() });
-
-export const CompleteSchema = z.object({ mainGano: z.coerce.number().min(0).max(4) });
+// ---------------- Kurallar ve içe aktarma ----------------
 
 export const RuleSetCreateSchema = z.object({
   type: z.enum(TRACK_TYPES),
@@ -333,20 +344,17 @@ export const RuleSetCreateSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
-export const AssignmentSchema = z.object({
-  role: z.enum(STAFF_ROLES),
-  programId: z.string().min(1).optional(),
+export const ImportSchema = z.object({
+  kind: z.enum(IMPORT_KINDS),
+  commit: z.boolean().default(false),
+  rows: z.array(z.record(z.string(), z.string())).min(1).max(2000),
 });
 
-export const UserCreateSchema = z.object({
-  username: z.string().trim().min(3).max(60).regex(/^[a-z0-9._-]+$/, 'Küçük harf, rakam, nokta, tire'),
-  displayName: z.string().trim().min(3).max(120),
-  email: z.string().trim().email(),
-});
+export const ImportRowSchemas = {
+  COURSES: CourseSchema,
+  STUDENTS: StudentCreateSchema.omit({ sendInvite: true, commonEcts: true }).extend({ commonEcts: z.coerce.number().int().min(0).max(240).optional() }),
+  ATTEMPTS: z.object({ studentNo, courseCode, termId, grade: z.enum(GRADES).optional().or(z.literal('').transform(() => undefined)) }),
+};
 
-/** Bilgisayar Mühendisliğinin yıllara göre taban puanı ve başarı sırası şartı (KR-ÇAP-03b, KR-ÇAP-04). */
-export const YearStatSchema = z.object({
-  year: z.coerce.number().int().min(2015).max(2100),
-  baseScore: z.coerce.number().min(100).max(600),
-  successRankLimit: optionalNumber(z.coerce.number().int().min(1)),
-});
+export const SIGNERS_NOTE =
+  'Formlar öğrencinin ana dalında ıslak imzayla hazırlanır; öğrenci taratıp yükler, koordinatör onaylar (sistemde imza akışı yoktur).';

@@ -365,6 +365,29 @@ const frozenWithMain: Evaluator = (rule, { student }) => {
     : make(rule, 'PASS', 'Ana dal kaydı etkin.');
 };
 
+/**
+ * Süre sınırı: ana daldan mezun olup programı bitiremeyen öğrencinin kalabileceği süre.
+ * ÇAP: kayıttan itibaren 2547 m.44/c azami süresi (ÇAP Yön. m.8/1-d, m.9/1-g); yan dal: mezuniyetten sonra
+ * en çok iki yarıyıl (Yan Dal Yön. m.7/9).
+ */
+const maxDuration: Evaluator = (rule, { history }) => {
+  if (!history) return na(rule);
+  const max = num(rule, 'maxTerms');
+  if (history.termsSinceMainGraduation == null) {
+    return na(rule, 'Ana daldan mezuniyet kaydı yok; süre sınırı mezuniyetten sonra uygulanır.');
+  }
+  const fromAdmission = rule.params.basis === 'ADMISSION';
+  const used = fromAdmission ? (history.termsSinceAdmission ?? 0) : history.termsSinceMainGraduation;
+  const label = fromAdmission ? 'Kabulden bu yana' : 'Ana dal mezuniyetinden bu yana';
+  if (used > max) {
+    return make(rule, 'FAIL', `${label} ${used} yarıyıl geçti; en çok ${max} yarıyıl tanınır.`, { actual: used, expected: max });
+  }
+  if (used === max) {
+    return make(rule, 'WARN', `${label} ${used} yarıyıl geçti; bu, tanınan son yarıyıl.`, { actual: used, expected: max });
+  }
+  return make(rule, 'PASS', `${label} ${used} yarıyıl (en çok ${max}).`, { actual: used, expected: max });
+};
+
 const anyOf: Evaluator = (rule, ctx) => {
   const subs = rule.params.rules as Array<Pick<RuleDefinition, 'code' | 'kind' | 'title' | 'params'>>;
   const children = subs.map((s) =>
@@ -408,6 +431,7 @@ export const evaluators: Record<string, Evaluator> = {
   FROZEN_WITH_MAIN: frozenWithMain,
   PROTOCOL_TOTAL_ECTS: protocolTotalEcts,
   NO_MAIN_OVERLAP: noMainOverlap,
+  MAX_DURATION: maxDuration,
 };
 
 export function evaluateRule(rule: RuleDefinition, ctx: EvaluationContext): RuleResult {

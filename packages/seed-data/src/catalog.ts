@@ -1,13 +1,9 @@
 /**
  * Kapsam: Selçuk Üniversitesi Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümü (docs/KARARLAR.md K-12).
  *
- * GERÇEK veriler ve kaynakları:
- *  - Müfredat (ders kodu, ad, AKTS, yarıyıl): Bologna ders paketi,
- *    https://bologna.selcuk.edu.tr/tr/dersler/teknoloji-bilgisayar_muhendisligi-bilgisayar_muhendisligi-lisans (8/10/2026)
- *  - Kaynak bölümler: 2026-27 güz ÇAP kontenjan ilanı dipnot 1 (yalnız Elektrik-Elektronik Müh.).
- *
- * TEMSİLÎ veriler: kontenjan sayıları (ilan tablosu metne bozuk aktarıldı), taban puanlar (YÖK Atlas'tan
- * doğrulanmadı; koordinatör panelden girer), yan dal teklifi.
+ * GERÇEK: müfredat (ders kodu, ad, AKTS, yarıyıl), Bologna ders paketi,
+ * https://bologna.selcuk.edu.tr/tr/dersler/teknoloji-bilgisayar_muhendisligi-bilgisayar_muhendisligi-lisans (8/10/2026).
+ * Ana dal bölümleri 2026-27 güz ÇAP kontenjan ilanındaki Teknoloji Fakültesi bölümleridir.
  */
 
 export interface SeedProgram {
@@ -204,6 +200,8 @@ export interface SeedTerm {
 }
 
 export const TERMS: SeedTerm[] = [
+  { id: 'T-2024-GUZ', year: '2024-2025', season: 'GUZ', startsAt: '2024-09-16', endsAt: '2025-01-26' },
+  { id: 'T-2024-BAHAR', year: '2024-2025', season: 'BAHAR', startsAt: '2025-02-10', endsAt: '2025-06-29' },
   { id: 'T-2025-GUZ', year: '2025-2026', season: 'GUZ', startsAt: '2025-09-15', endsAt: '2026-01-25' },
   { id: 'T-2025-BAHAR', year: '2025-2026', season: 'BAHAR', startsAt: '2026-02-09', endsAt: '2026-06-28' },
   { id: 'T-2026-GUZ', year: '2026-2027', season: 'GUZ', startsAt: '2026-09-14', endsAt: '2027-01-24', current: true },
@@ -211,34 +209,3 @@ export const TERMS: SeedTerm[] = [
 ];
 
 export const CURRENT_TERM_ID = 'T-2026-GUZ';
-
-export interface SeedOffering {
-  id: string;
-  termId: string;
-  type: 'CAP' | 'YANDAL';
-  quota: number;
-  /** Boşsa her bölümden başvuru alınır. */
-  sourceProgramIds: string[];
-  firstYearIntake: number;
-}
-
-export const OFFERINGS: SeedOffering[] = [
-  // 2026-27 güz ilanı, dipnot 1: "Elektrik-Elektronik Mühendisliği Bölümünden öğrenci kabul edilecektir."
-  { id: 'O-2026-GUZ-CAP', termId: 'T-2026-GUZ', type: 'CAP', quota: 3, sourceProgramIds: ['P-EEM'], firstYearIntake: 80 },
-  { id: 'O-2026-GUZ-YANDAL', termId: 'T-2026-GUZ', type: 'YANDAL', quota: 5, sourceProgramIds: [], firstYearIntake: 80 },
-  // Önceki yıl: bölüm sitesinde protokolü bulunan iki bölüm (EEM, Makine).
-  { id: 'O-2025-GUZ-CAP', termId: 'T-2025-GUZ', type: 'CAP', quota: 6, sourceProgramIds: ['P-EEM', 'P-MAK'], firstYearIntake: 80 },
-  { id: 'O-2025-GUZ-YANDAL', termId: 'T-2025-GUZ', type: 'YANDAL', quota: 5, sourceProgramIds: [], firstYearIntake: 80 },
-];
-
-/**
- * Bilgisayar Mühendisliğinin yıllara göre taban puanı (TEMSİLÎ) ve başarı sırası şartı.
- * Mühendislik programlarında başarı sırası şartı 300.000'dir; koordinatör panelden günceller.
- */
-export const YEAR_STATS: { year: number; baseScore: number; successRankLimit: number }[] = [
-  { year: 2022, baseScore: 389, successRankLimit: 300000 },
-  { year: 2023, baseScore: 391, successRankLimit: 300000 },
-  { year: 2024, baseScore: 393, successRankLimit: 300000 },
-  { year: 2025, baseScore: 395, successRankLimit: 300000 },
-  { year: 2026, baseScore: 396, successRankLimit: 300000 },
-];

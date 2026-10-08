@@ -8,22 +8,40 @@
     "en"
   ],
   "defaultLocale": "tr",
-  "accessTokenLifespan": 3600,
-  "ssoSessionIdleTimeout": 28800,
-  "sslRequired": "none",
-  "registrationAllowed": true,
-  "registrationEmailAsUsername": false,
-  "editUsernameAllowed": false,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 3600,
+  "ssoSessionMaxLifespan": 36000,
+  "actionTokenGeneratedByAdminLifespan": 259200,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
   "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "passwordPolicy": "length(10) and digits(1) and upperCase(1) and lowerCase(1) and notUsername(undefined) and notEmail(undefined) and passwordHistory(3)",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "noreply@cap.test",
+    "fromDisplayName": "Bilgisayar Müh. ÇAP / YDP"
+  },
   "clients": [
     {
       "clientId": "cap-web",
-      "name": "Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonu",
+      "name": "Bilgisayar Mühendisliği ÇAP / YDP Takip Sistemi",
       "enabled": true,
       "publicClient": false,
       "secret": "cap-web-dev-secret",
       "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "redirectUris": [
         "http://localhost:3000/*"
       ],
@@ -46,9 +64,46 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "cap-api",
+      "name": "ÇAP / YDP API (hesap yönetimi)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "cap-api-dev-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
     }
   ],
   "users": [
+    {
+      "username": "service-account-cap-api",
+      "enabled": true,
+      "serviceAccountClientId": "cap-api",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
+    },
+    {
+      "username": "koord.bilgisayar",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "koord.bilgisayar@personel.test",
+      "firstName": "ÇAP",
+      "lastName": "ve YDP Koordinatörü",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
     {
       "username": "bolum.bilgisayar",
       "enabled": true,
@@ -65,207 +120,12 @@
       ]
     },
     {
-      "username": "koord.bilgisayar",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.bilgisayar@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Komisyonu Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "koord.uye",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "koord.uye@personel.test",
-      "firstName": "ÇAP",
-      "lastName": "ve Yan Dal Komisyonu Üyesi",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "bolum.eem",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.eem@personel.test",
-      "firstName": "Elektrik-Elektronik",
-      "lastName": "Mühendisliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "bolum.makine",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "bolum.makine@personel.test",
-      "firstName": "Makine",
-      "lastName": "Mühendisliği Bölüm Başkanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "danisman.eem",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.eem@personel.test",
-      "firstName": "Elektrik-Elektronik",
-      "lastName": "Mühendisliği Danışmanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "danisman.makine",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "danisman.makine@personel.test",
-      "firstName": "Makine",
-      "lastName": "Mühendisliği Danışmanı",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
       "username": "253302001",
       "enabled": true,
       "emailVerified": true,
-      "email": "253302001@ogrenci.test",
+      "email": "253302001@ogrenci.selcuk.test",
       "firstName": "Ayşe",
       "lastName": "Demirtaş",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302002",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302002@ogrenci.test",
-      "firstName": "Mehmet",
-      "lastName": "Kaya",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302003",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302003@ogrenci.test",
-      "firstName": "Zeynep",
-      "lastName": "Arslan",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302004",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302004@ogrenci.test",
-      "firstName": "Emre",
-      "lastName": "Yıldırım",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302005",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302005@ogrenci.test",
-      "firstName": "Elif",
-      "lastName": "Şahin",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302006",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302006@ogrenci.test",
-      "firstName": "Burak",
-      "lastName": "Çelik",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "233302007",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "233302007@ogrenci.test",
-      "firstName": "Selin",
-      "lastName": "Aydın",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253303008",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253303008@ogrenci.test",
-      "firstName": "Kerem",
-      "lastName": "Polat",
       "credentials": [
         {
           "type": "password",
@@ -278,7 +138,7 @@
       "username": "253302009",
       "enabled": true,
       "emailVerified": true,
-      "email": "253302009@ogrenci.test",
+      "email": "253302009@ogrenci.selcuk.test",
       "firstName": "Büşra",
       "lastName": "Yalçın",
       "credentials": [
@@ -290,42 +150,12 @@
       ]
     },
     {
-      "username": "253302010",
+      "username": "253303008",
       "enabled": true,
       "emailVerified": true,
-      "email": "253302010@ogrenci.test",
-      "firstName": "Can",
-      "lastName": "Öztürk",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302011",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302011@ogrenci.test",
-      "firstName": "Deniz",
-      "lastName": "Acar",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "Deneme.2026",
-          "temporary": false
-        }
-      ]
-    },
-    {
-      "username": "253302012",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "253302012@ogrenci.test",
-      "firstName": "Mert",
-      "lastName": "Güneş",
+      "email": "253303008@ogrenci.selcuk.test",
+      "firstName": "Kerem",
+      "lastName": "Polat",
       "credentials": [
         {
           "type": "password",
@@ -338,7 +168,7 @@
       "username": "243302013",
       "enabled": true,
       "emailVerified": true,
-      "email": "243302013@ogrenci.test",
+      "email": "243302013@ogrenci.selcuk.test",
       "firstName": "Gizem",
       "lastName": "Kurt",
       "credentials": [
@@ -353,7 +183,7 @@
       "username": "243303014",
       "enabled": true,
       "emailVerified": true,
-      "email": "243303014@ogrenci.test",
+      "email": "243303014@ogrenci.selcuk.test",
       "firstName": "Onur",
       "lastName": "Tekin",
       "credentials": [
@@ -368,7 +198,7 @@
       "username": "243302015",
       "enabled": true,
       "emailVerified": true,
-      "email": "243302015@ogrenci.test",
+      "email": "243302015@ogrenci.selcuk.test",
       "firstName": "Hakan",
       "lastName": "Doğan",
       "credentials": [
@@ -383,7 +213,7 @@
       "username": "243302016",
       "enabled": true,
       "emailVerified": true,
-      "email": "243302016@ogrenci.test",
+      "email": "243302016@ogrenci.selcuk.test",
       "firstName": "İrem",
       "lastName": "Koç",
       "credentials": [
@@ -398,9 +228,24 @@
       "username": "243303017",
       "enabled": true,
       "emailVerified": true,
-      "email": "243303017@ogrenci.test",
+      "email": "243303017@ogrenci.selcuk.test",
       "firstName": "Tolga",
       "lastName": "Arı",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Deneme.2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "233302020",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "233302020@ogrenci.selcuk.test",
+      "firstName": "Selin",
+      "lastName": "Aydın",
       "credentials": [
         {
           "type": "password",

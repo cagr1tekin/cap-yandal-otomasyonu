@@ -38,10 +38,10 @@ describe('bağlam yoksa NOT_APPLICABLE', () => {
     'SEMESTER_WINDOW', 'MAX_ACTIVE_TRACKS', 'NOT_SAME_PROGRAM_BOTH', 'NOT_OWN_PROGRAM', 'TALENT_EXAM_PASSED',
     'SOURCE_PROGRAM_ALLOWED', 'MIN_QUOTA_RATIO', 'CONSECUTIVE_TERMS_NO_COURSE', 'GANO_DROP_STRIKES',
     'MAIN_GANO_BELOW', 'TRACK_GPA_CONSECUTIVE_BELOW', 'NOT_PREVIOUSLY_REMOVED', 'MINOR_PLAN_LIMITS',
-    'GRADUATION_CAP', 'GRADUATION_MINOR', 'FROZEN_WITH_MAIN', 'PROTOCOL_TOTAL_ECTS', 'NO_MAIN_OVERLAP',
+    'GRADUATION_CAP', 'GRADUATION_MINOR', 'FROZEN_WITH_MAIN', 'PROTOCOL_TOTAL_ECTS', 'NO_MAIN_OVERLAP', 'MAX_DURATION',
   ];
   it.each(kinds)('%s', (kind) => {
-    expect(evaluateRule(rule(kind, { min: 1 }), {}).status).toBe('NOT_APPLICABLE');
+    expect(evaluateRule(rule(kind, { min: 1, maxTerms: 2 }), {}).status).toBe('NOT_APPLICABLE');
   });
 });
 
@@ -419,4 +419,27 @@ describe('dönem izni (Erasmus/Farabi) ders almama kuralını askıya alır', ()
     const r = rule('CONSECUTIVE_TERMS_NO_COURSE', { terms: 2 });
     expect(evaluateRule(r, { history: history({ consecutiveTermsWithoutCourse: 2, onLeave: true }) }).status).toBe('NOT_APPLICABLE');
   });
+});
+
+describe('MAX_DURATION (ÇAP Yön. m.8/1-d; Yan Dal Yön. m.7/9)', () => {
+  const h = (over: object) => ({ mainGano: 3, trackGpaByTerm: [], consecutiveTermsWithoutCourse: 0, ganoStrikes: 0, ...over });
+  const minor = rule('MAX_DURATION', { basis: 'MAIN_GRADUATION', maxTerms: 2 });
+  const cap = rule('MAX_DURATION', { basis: 'ADMISSION', maxTerms: 14 });
+  it('mezun değilse uygulanmaz', () => expect(evaluateRule(minor, { history: h({ termsSinceMainGraduation: null }) }).status).toBe('NOT_APPLICABLE'));
+  it('alan hiç yoksa uygulanmaz', () => expect(evaluateRule(minor, { history: h({}) }).status).toBe('NOT_APPLICABLE'));
+  it.each([
+    [1, 'PASS'],
+    [2, 'WARN'],
+    [3, 'FAIL'],
+  ])('yan dal: mezuniyetten sonra %i yarıyıl → %s', (n, status) => {
+    expect(evaluateRule(minor, { history: h({ termsSinceMainGraduation: n }) }).status).toBe(status);
+  });
+  it.each([
+    [10, 'PASS'],
+    [14, 'WARN'],
+    [15, 'FAIL'],
+  ])('ÇAP: kabulden %i yarıyıl → %s', (n, status) => {
+    expect(evaluateRule(cap, { history: h({ termsSinceAdmission: n, termsSinceMainGraduation: 0 }) }).status).toBe(status);
+  });
+  it('kabul sayısı yoksa 0 sayılır', () => expect(evaluateRule(cap, { history: h({ termsSinceMainGraduation: 0 }) }).status).toBe('PASS'));
 });

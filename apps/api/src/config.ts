@@ -11,11 +11,16 @@ const EnvSchema = z.object({
   WEB_ORIGIN: z.string().url(),
   OIDC_ISSUER: z.string().url(),
   OIDC_AUDIENCE: z.string().min(1),
+  /** Hesap açmak için Keycloak yönetim API'si (yalnızca kullanıcı yönetimi yetkili servis hesabı). */
+  KEYCLOAK_URL: z.string().url().default('http://localhost:8088'),
+  KEYCLOAK_REALM: z.string().default('selcuk'),
+  KEYCLOAK_ADMIN_CLIENT_ID: z.string().default('cap-api'),
+  KEYCLOAK_ADMIN_CLIENT_SECRET: z.string().min(1),
   /** Öğrencilerin yüklediği belgelerin tutulduğu dizin (sürüm denetimine girmez). */
   UPLOAD_DIR: z.string().default('./storage'),
   SMTP_HOST: z.string().default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().default(1035),
-  MAIL_FROM: z.string().default('Bilgisayar Müh. ÇAP-Yan Dal <noreply@cap.test>'),
+  MAIL_FROM: z.string().default('Bilgisayar Müh. ÇAP-YDP <noreply@cap.test>'),
   WORKER_ENABLED: z
     .string()
     .default('true')

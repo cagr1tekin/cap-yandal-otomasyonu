@@ -3,32 +3,29 @@ import { Global, Module, type Provider } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { UserThrottlerGuard } from './common/throttle';
 import { LoggerModule } from 'nestjs-pino';
-import { AdminController, TasksService } from './admin/admin';
-import { ApplicationsController } from './applications/applications.controller';
-import { ApplicationsService } from './applications/applications.service';
 import { AuditModule } from './audit/audit.service';
 import { AccessModule } from './auth/access.service';
 import { AuthModule } from './auth/auth';
-import { CatalogController } from './catalog/catalog.controller';
-import { CatalogService } from './catalog/catalog.service';
+import { CatalogController, CatalogService } from './catalog/catalog';
+import { UserThrottlerGuard } from './common/throttle';
 import { APP_CONFIG, loadConfig, type AppConfig } from './config';
-import { EnrollmentsController } from './enrollments/enrollments.controller';
-import { EnrollmentsService } from './enrollments/enrollments.service';
-import { FormsService } from './forms/forms.service';
-import { TemplatesController, TemplatesService } from './forms/templates';
+import { CourseRequestsService, CurriculumController, TemplatesService } from './curriculum/curriculum.controller';
+import { CurriculumService } from './curriculum/curriculum.service';
+import { DocumentsController, DocumentsService } from './documents/documents';
+import { IdentityModule } from './identity/identity';
+import { ImportsController, ImportsService } from './imports/imports';
 import { IntegrationsModule } from './integrations/integrations.module';
-import { HealthController, MeController, ReportsController } from './misc/misc';
-import { MonitoringController, MonitoringService, SCAN_QUEUE, ScanProcessor } from './monitoring/monitoring';
+import { MessagesController, MessagesService } from './messages/messages';
+import { HealthController, MeController } from './misc/misc';
 import { MAIL_QUEUE, MailProcessor, NotificationsController, NotificationsService } from './notifications/notifications';
 import { PrismaModule } from './prisma/prisma.service';
-import { ReviewController } from './review/review.controller';
-import { ReviewService } from './review/review.service';
-import { ContextService } from './rules/context.service';
+import { ReviewsController, ReviewsService } from './reviews/reviews';
+import { ChecksService } from './rules/checks.service';
 import { RulesController } from './rules/rules.controller';
 import { RulesService } from './rules/rules.service';
-import { StudentsController, StudentsService } from './students/students';
+import { StudentRecordsController, StudentsController, StudentsService } from './students/students';
+import { UsersController, UsersService } from './users/users';
 
 const config = loadConfig();
 
@@ -42,7 +39,7 @@ function redisConnection(c: AppConfig) {
   return { host: u.hostname, port: Number(u.port || 6379), db: Number(u.pathname.slice(1) || 0) };
 }
 
-const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcessor] : [];
+const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor] : [];
 
 @Module({
   imports: [
@@ -59,45 +56,47 @@ const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor, ScanProcesso
         },
       },
     }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: config.NODE_ENV === 'test' ? 5000 : 300 }]),
     BullModule.forRoot({ connection: redisConnection(config) }),
-    BullModule.registerQueue({ name: MAIL_QUEUE }, { name: SCAN_QUEUE }),
+    BullModule.registerQueue({ name: MAIL_QUEUE }),
     TerminusModule,
     PrismaModule,
     AuthModule,
     AccessModule,
     AuditModule,
+    IdentityModule,
     IntegrationsModule,
   ],
   controllers: [
     MeController,
     HealthController,
-    ReportsController,
-    StudentsController,
     CatalogController,
+    StudentsController,
+    StudentRecordsController,
+    UsersController,
+    CurriculumController,
+    DocumentsController,
+    MessagesController,
+    ReviewsController,
     RulesController,
-    TemplatesController,
-    ApplicationsController,
-    ReviewController,
-    EnrollmentsController,
-    MonitoringController,
+    ImportsController,
     NotificationsController,
-    AdminController,
   ],
   providers: [
     { provide: APP_GUARD, useClass: UserThrottlerGuard },
     NotificationsService,
-    RulesService,
-    ContextService,
     CatalogService,
-    StudentsService,
+    RulesService,
+    ChecksService,
+    CurriculumService,
+    CourseRequestsService,
     TemplatesService,
-    ApplicationsService,
-    ReviewService,
-    EnrollmentsService,
-    FormsService,
-    TasksService,
-    MonitoringService,
+    DocumentsService,
+    MessagesService,
+    StudentsService,
+    UsersService,
+    ReviewsService,
+    ImportsService,
     ...workers,
   ],
 })

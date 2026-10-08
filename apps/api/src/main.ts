@@ -1,29 +1,30 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
-import { ProblemFilter } from './common/http';
 import { loadConfig } from './config';
+import { configureApp } from './setup';
 
 async function bootstrap() {
   const config = loadConfig();
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
-  app.use(helmet());
-  app.enableCors({ origin: config.WEB_ORIGIN, credentials: true });
-  app.setGlobalPrefix('api/v1');
-  app.useGlobalFilters(new ProblemFilter());
+  configureApp(app, config);
   app.enableShutdownHooks();
 
-  const doc = new DocumentBuilder()
-    .setTitle('Bilgisayar Mühendisliği ÇAP / Yan Dal API')
-    .setDescription('Selçuk Üniversitesi Teknoloji Fakültesi Bilgisayar Mühendisliği çift ana dal ve yan dal otomasyonu')
-    .setVersion('0.3')
-    .addBearerAuth()
-    .build();
-  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, doc));
+  // API belgesi yalnızca geliştirmede yayımlanır.
+  if (config.NODE_ENV !== 'production') {
+    const doc = new DocumentBuilder()
+      .setTitle('Bilgisayar Mühendisliği ÇAP / YDP Takip API')
+      .setDescription(
+        'Selçuk Üniversitesi Teknoloji Fakültesi Bilgisayar Mühendisliği çift ana dal ve yan dal öğrenci takip sistemi',
+      )
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, doc));
+  }
 
   await app.listen(config.PORT, '127.0.0.1');
 }

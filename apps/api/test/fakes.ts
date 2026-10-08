@@ -1,13 +1,33 @@
 import { USERS } from '@cap/seed-data';
 import type { JWTPayload } from 'jose';
 import { TokenVerifier } from '../src/auth/auth';
+import { IdentityPort, type IdentityAccount } from '../src/identity/identity';
 
-/** Testte belirteç = kullanıcı adı. Yetki veritabanındaki rol atamalarından gelir. */
+/** Testte belirteç = kullanıcı adı ("sub:" önekiyle sahte kimlik de verilebilir). */
 export class FakeTokenVerifier extends TokenVerifier {
   async verify(token: string): Promise<JWTPayload> {
-    // "yeni." ile başlayan belirteç: Keycloak'ta kendi hesabını yeni açmış kullanıcı.
-    const u = USERS.find((x) => x.username === token) ?? (token.startsWith('yeni.') ? { username: token, displayName: token, email: `${token}@ogrenci.test` } : null);
-    if (!u) throw new Error('bilinmeyen kullanıcı');
-    return { sub: `sub-${u.username}`, preferred_username: u.username, name: u.displayName, email: u.email } as JWTPayload;
+    if (token === 'bozuk') throw new Error('imza geçersiz');
+    const [username, sub] = token.split('|');
+    const known = USERS.find((x) => x.username === username);
+    return { sub: sub ?? `sub-${username}`, preferred_username: username, name: known?.displayName ?? username, email: known?.email };
+  }
+}
+
+/** Bellek içi kimlik servisi: açılan hesapları ve gönderilen davetleri kaydeder. */
+export class FakeIdentity extends IdentityPort {
+  accounts = new Map<string, IdentityAccount & { enabled: boolean }>();
+  invites: string[] = [];
+
+  async ensure(a: IdentityAccount) {
+    this.accounts.set(a.username, { ...a, enabled: true });
+  }
+
+  async invite(username: string) {
+    this.invites.push(username);
+  }
+
+  async setEnabled(username: string, enabled: boolean) {
+    const a = this.accounts.get(username);
+    if (a) a.enabled = enabled;
   }
 }

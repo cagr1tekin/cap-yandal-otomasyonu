@@ -10,35 +10,31 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
-import type { Role, StaffRole } from '@cap/contracts';
+import type { Role } from '@cap/contracts';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import type { Request } from 'express';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { forbidden } from '../common/http';
 import { PrismaService } from '../prisma/prisma.service';
 
-export interface Assignment {
-  role: StaffRole;
-  programId: string | null;
-}
-
 export interface AuthUser {
+  id: string;
   username: string;
-  sub: string;
   displayName: string;
-  email: string | null;
-  /** Personel rolleri; hiç atama yoksa hesap öğrenci hesabıdır (['OGRENCI']). */
-  roles: Role[];
-  assignments: Assignment[];
-  /** Öğrenci bilgilerini girdiyse öğrenci numarası. */
+  email: string;
+  role: Role;
+  /** Öğrenci hesabının öğrenci numarası */
   studentNo: string | null;
 }
 
 const IS_PUBLIC = 'isPublic';
 const ROLES_KEY = 'roles';
+const READ_ONLY_SAFE = 'readOnlySafe';
 
 export const Public = () => SetMetadata(IS_PUBLIC, true);
 export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);
+/** Bölüm başkanının da çağırabileceği, veri değiştirmeyen POST (ör. bildirimi okundu işaretleme). */
+export const ReadOnlySafe = () => SetMetadata(READ_ONLY_SAFE, true);
 export const CurrentUser = createParamDecorator(
   (_: unknown, ctx: ExecutionContext): AuthUser => ctx.switchToHttp().getRequest<Request & { user: AuthUser }>().user,
 );
@@ -58,14 +54,19 @@ export class OidcTokenVerifier extends TokenVerifier {
   }
 
   async verify(token: string): Promise<JWTPayload> {
-    const { payload } = await jwtVerify(token, this.jwks, {
-      issuer: this.config.OIDC_ISSUER,
-      audience: this.config.OIDC_AUDIENCE,
-    });
+    // Yalnızca RS256 kabul edilir: "alg: none" ve simetrik anahtar karışıklığı saldırılarına karşı.
+    const { payload } = await jwtVerify(token, this.jwks, { issuer: this.config.OIDC_ISSUER, audience: this.config.OIDC_AUDIENCE, algorithms: ['RS256'] });
     return payload;
   }
 }
 
+const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
+/**
+ * Kimlik doğrulama ve yetki. Keycloak yalnızca kimliği doğrular; rol ve hesabın etkinliği veritabanındadır.
+ * Hesapları koordinatör açar: veritabanında olmayan ya da pasif hesap hiçbir işlem yapamaz.
+ * Bölüm başkanı yalnızca izler: veri değiştiren her istek burada reddedilir.
+ */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -75,47 +76,40 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [ctx.getHandler(), ctx.getClass()]);
-    if (isPublic) return true;
+    const targets = [ctx.getHandler(), ctx.getClass()];
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, targets)) return true;
 
     const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
     const header = req.header('authorization') ?? '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) throw new UnauthorizedException('Oturum açmanız gerekiyor.');
 
-    let payload: JWTPayload & { preferred_username?: string; name?: string; email?: string };
+    let payload: JWTPayload & { preferred_username?: string };
     try {
       payload = await this.verifier.verify(token);
     } catch {
       throw new UnauthorizedException('Oturum geçersiz ya da süresi dolmuş.');
     }
-
     const username = payload.preferred_username;
     if (!username || !payload.sub) throw new UnauthorizedException('Belirteçte kullanıcı bilgisi yok.');
-    // Keycloak yalnızca kimlik doğrular. Personel yetkisinin tek kaynağı bölüm başkanının yönettiği rol
-    // atamalarıdır; ataması olmayan hesap öğrenci hesabıdır ve yalnızca kendi kayıtlarını görür.
-    const user = await this.prisma.user.upsert({
-      where: { username },
-      create: { username, oidcSub: payload.sub, displayName: payload.name ?? username, email: payload.email ?? null, lastLoginAt: new Date() },
-      update: { oidcSub: payload.sub, lastLoginAt: new Date() },
-      include: { assignments: true, profile: { select: { studentNo: true } } },
-    });
 
-    const assignments = user.assignments.map((a) => ({ role: a.role as StaffRole, programId: a.programId }));
-    const staffRoles = [...new Set(assignments.map((a) => a.role))] as Role[];
-    req.user = {
-      username,
-      sub: payload.sub,
-      displayName: user.displayName,
-      email: user.email,
-      roles: staffRoles.length ? staffRoles : ['OGRENCI'],
-      assignments,
-      studentNo: user.profile?.studentNo ?? null,
-    };
-    const roles = req.user.roles;
+    const user = await this.prisma.user.findUnique({ where: { username }, include: { student: { select: { studentNo: true } } } });
+    if (!user) throw forbidden('Hesabınız bu sistemde tanımlı değil. Hesapları ÇAP / YDP koordinatörü açar.');
+    if (!user.active) throw forbidden('Hesabınız pasif durumda.');
+    // Kimlik servisinde aynı kullanıcı adıyla yeniden açılmış başka bir hesap bu kaydı devralamaz.
+    if (user.oidcSub && user.oidcSub !== payload.sub) throw new UnauthorizedException('Hesap eşleşmesi doğrulanamadı.');
+    const stale = !user.lastLoginAt || Date.now() - user.lastLoginAt.getTime() > 5 * 60_000;
+    if (!user.oidcSub || stale) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { oidcSub: payload.sub, lastLoginAt: new Date() } });
+    }
 
-    const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [ctx.getHandler(), ctx.getClass()]);
-    if (required?.length && !required.some((r) => roles.includes(r))) throw forbidden();
+    req.user = { id: user.id, username, displayName: user.displayName, email: user.email, role: user.role, studentNo: user.student?.studentNo ?? null };
+
+    if (user.role === 'BOLUM_BASKANI' && !SAFE_METHODS.includes(req.method) && !this.reflector.getAllAndOverride<boolean>(READ_ONLY_SAFE, targets)) {
+      throw forbidden('Bölüm başkanı hesabı yalnızca izleme yetkisine sahiptir.');
+    }
+    const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, targets);
+    if (required?.length && !required.includes(user.role)) throw forbidden();
     return true;
   }
 }

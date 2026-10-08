@@ -1,18 +1,24 @@
 /**
- * Geliştirme verisi. Her çalıştırmada tabloları boşaltıp yeniden doldurur.
- * Kaynak: @cap/seed-data (gerçek müfredat ve protokoller, uydurma öğrenciler) + @cap/rules varsayılan kural setleri.
+ * Geliştirme verisi (yalnızca sentetik). Her çalıştırmada tabloları boşaltıp yeniden doldurur.
+ * Geçmiş dönem kayıtları koordinatörün sistem açılışındaki geriye dönük girişinin karşılığıdır.
  */
 import { createHash } from 'node:crypto';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { DEFAULT_RULE_SETS } from '@cap/rules';
-import { COURSES, CURRENT_TERM_ID, OFFERINGS, PROGRAMS, STUDENTS, TEMPLATES, TERMS, USERS, YEAR_STATS, studentEmail } from '@cap/seed-data';
+import { COURSES, CURRENT_TERM_ID, PROGRAMS, STUDENTS, TEMPLATES, TERMS, USERS, studentEmail, type SeedStudent } from '@cap/seed-data';
+import { AuditService } from '../src/audit/audit.service';
+import type { NotificationsService } from '../src/notifications/notifications';
+import type { PrismaService } from '../src/prisma/prisma.service';
+import { ChecksService } from '../src/rules/checks.service';
+import { RulesService } from '../src/rules/rules.service';
+import { resultForGrade } from '../src/curriculum/progress';
 
 const prisma = new PrismaClient();
 const STORAGE = resolve(process.env.UPLOAD_DIR ?? './storage');
-const SIGNED_AT = new Date('2025-09-25T10:00:00+03:00');
 const COORD = 'koord.bilgisayar';
+const SETUP = new Date('2026-09-10T10:00:00+03:00');
 
 /** Deneme belgesi: tek sayfalık, geçerli en küçük PDF. */
 function placeholderPdf(title: string) {
@@ -36,48 +42,108 @@ function placeholderPdf(title: string) {
   return Buffer.from(body, 'latin1');
 }
 
-async function main() {
-  const tables = [
-    'AuditLog', 'Notification', 'WithdrawalRequest', 'ScanFinding', '_RuleSetToTermScan', 'TermScan', 'TermLeave', 'TermRecord',
-    'Approval', 'ExemptionRequest', 'CourseRegistrationItem', 'CourseRegistration', 'ProtocolCourse', 'Protocol',
-    'ProtocolCondition', 'ProtocolTemplateItem', 'ProtocolTemplate', 'Enrollment', 'BoardDecision', 'Ranking',
-    'ApplicationDocument', 'Application', 'Document', 'StudentProfile', 'RuleDefinition', 'RuleSet', 'YearStat',
-    'OfferingSourceProgram', 'Offering', 'Term', 'Course', 'RoleAssignment', 'User', 'Program',
-  ];
-  // TRUNCATE satır tetikleyicilerini çalıştırmaz; denetim kaydı yalnızca seed ile sıfırlanabilir.
-  await prisma.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE`);
-  rmSync(STORAGE, { recursive: true, force: true });
-
-  await prisma.program.createMany({ data: PROGRAMS.map((p) => ({ id: p.id, name: p.name, faculty: p.faculty, codePrefix: p.codePrefix, isHome: p.isHome })) });
-  await prisma.course.createMany({ data: COURSES });
-  await prisma.term.createMany({
-    data: TERMS.map((t) => ({ id: t.id, year: t.year, season: t.season, startsAt: new Date(`${t.startsAt}T00:00:00+03:00`), endsAt: new Date(`${t.endsAt}T23:59:59+03:00`), isCurrent: t.id === CURRENT_TERM_ID })),
+async function seedStudent(s: SeedStudent) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { username: s.studentNo } });
+  await prisma.student.create({
+    data: {
+      studentNo: s.studentNo,
+      userId: user.id,
+      fullName: s.fullName,
+      schoolEmail: studentEmail(s.studentNo),
+      track: s.track,
+      admissionTermId: s.admissionTermId,
+      mainProgramId: s.mainProgramId,
+      commonEcts: s.templateId ? (TEMPLATES.find((t) => t.id === s.templateId)?.commonEcts ?? 0) : 0,
+      source: 'BACKFILL',
+      createdBy: COORD,
+      createdAt: SETUP,
+    },
   });
-  await prisma.yearStat.createMany({ data: YEAR_STATS.map((s) => ({ ...s, updatedBy: 'seed' })) });
+  if (s.invited) await prisma.user.update({ where: { id: user.id }, data: { invitedAt: SETUP } });
 
-  for (const o of OFFERINGS) {
-    const current = o.termId === CURRENT_TERM_ID;
-    await prisma.offering.create({
+  // Ders listesi: şablondan (onaylı) ya da öğrencinin girdiği (onay bekliyor).
+  const template = TEMPLATES.find((t) => t.id === s.templateId);
+  for (const i of template?.items ?? []) {
+    await prisma.planItem.create({
+      data: { studentNo: s.studentNo, kind: i.kind, courseCode: i.code, name: i.name, ects: i.ects, semester: i.semester, status: 'APPROVED', source: 'BACKFILL', addReason: `Kurulum: ${template!.title}`, createdBy: COORD, createdAt: SETUP, reviewedBy: COORD, reviewedAt: SETUP },
+    });
+  }
+  for (const code of s.pendingPlan ?? []) {
+    const c = COURSES.find((x) => x.code === code)!;
+    await prisma.planItem.create({ data: { studentNo: s.studentNo, kind: 'COURSE', courseCode: c.code, name: c.name, ects: c.ects, semester: c.semester, status: 'PENDING', source: 'STUDENT', createdBy: s.studentNo } });
+  }
+
+  // Denemeler: ders satırına, yoksa aynı yarıyılın boş seçmeli yerine bağlanır.
+  const plan = await prisma.planItem.findMany({ where: { studentNo: s.studentNo }, include: { attempts: true } });
+  const usedSlots = new Set<string>();
+  for (const a of s.attempts) {
+    const c = COURSES.find((x) => x.code === a.code)!;
+    let item = plan.find((p) => p.courseCode === a.code);
+    if (!item) {
+      item = plan.find((p) => p.kind === 'ELECTIVE_SLOT' && p.semester === c.semester && !usedSlots.has(p.id));
+      if (!item) throw new Error(`${s.studentNo}: ${a.code} için liste satırı yok`);
+      usedSlots.add(item.id);
+    }
+    const pending = a.status === 'PENDING';
+    await prisma.courseAttempt.create({
       data: {
-        id: o.id,
-        termId: o.termId,
-        type: o.type,
-        quota: o.quota,
-        firstYearIntake: o.firstYearIntake,
-        status: current ? 'PUBLISHED' : 'CLOSED',
-        // İçinde bulunulan dönem gösterim için açık; geçen yılın takvimi kapanmış.
-        opensAt: new Date(current ? '2026-09-01T09:00:00+03:00' : '2025-08-01T09:00:00+03:00'),
-        closesAt: new Date(current ? '2026-12-31T17:00:00+03:00' : '2025-08-15T17:00:00+03:00'),
-        announceAt: new Date(current ? '2027-01-05T09:00:00+03:00' : '2025-09-01T09:00:00+03:00'),
-        registrationDeadline: new Date(current ? '2027-01-12T17:00:00+03:00' : '2025-09-08T17:00:00+03:00'),
-        waitlistDeadline: new Date(current ? '2027-01-15T17:00:00+03:00' : '2025-09-10T17:00:00+03:00'),
-        rankingLockedAt: current ? null : new Date('2025-08-20T12:00:00+03:00'),
-        registrationClosedAt: current ? null : new Date('2025-09-10T17:00:00+03:00'),
-        sourcePrograms: { create: o.sourceProgramIds.map((programId) => ({ programId })) },
+        studentNo: s.studentNo,
+        planItemId: item.id,
+        termId: a.termId,
+        courseCode: c.code,
+        courseName: c.name,
+        ects: c.ects,
+        status: pending ? 'PENDING' : 'APPROVED',
+        source: pending ? 'STUDENT' : a.termId === CURRENT_TERM_ID ? 'COORDINATOR' : 'BACKFILL',
+        grade: a.grade ?? null,
+        // DC şartlı geçer: deneme verisinde başarılı sayıldı.
+        result: resultForGrade(a.grade, true),
+        gradedAt: a.grade ? SETUP : null,
+        createdBy: pending ? s.studentNo : COORD,
+        ...(pending ? {} : { reviewedBy: COORD, reviewedAt: SETUP }),
       },
     });
   }
 
+  for (const g of s.gano) {
+    await prisma.ganoRecord.create({ data: { studentNo: s.studentNo, termId: g.termId, gano: g.gano, source: 'TRANSKRIPT', sourceNote: 'Kurulum: transkriptten', mainFrozen: g.mainFrozen ?? false, mainGraduated: g.mainGraduated ?? false, enteredBy: COORD, createdAt: SETUP } });
+  }
+
+  mkdirSync(join(STORAGE, s.studentNo), { recursive: true });
+  for (const [i, d] of s.documents.entries()) {
+    const file = placeholderPdf(`Sentetik belge - ${d.kind} - ${s.studentNo}`);
+    const storageKey = `${s.studentNo}/seed-${i}.pdf`;
+    writeFileSync(join(STORAGE, storageKey), file);
+    const pending = d.status === 'PENDING';
+    await prisma.document.create({
+      data: {
+        studentNo: s.studentNo,
+        kind: d.kind as 'PROTOKOL',
+        termId: d.termId ?? null,
+        fileName: `${d.kind.toLowerCase().replace(/_/g, '-')}${d.termId ? `-${d.termId.toLowerCase()}` : ''}.pdf`,
+        mimeType: 'application/pdf',
+        size: file.length,
+        sha256: createHash('sha256').update(file).digest('hex'),
+        storageKey,
+        status: d.status,
+        uploadedBy: s.studentNo,
+        ...(pending ? {} : { reviewedBy: COORD, reviewedAt: SETUP }),
+      },
+    });
+  }
+}
+
+async function main() {
+  const tables = (await prisma.$queryRaw<{ tablename: string }[]>`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '\_prisma%'`).map((t) => t.tablename);
+  // TRUNCATE satır tetikleyicilerini çalıştırmaz; silinmezlik ve denetim kaydı yalnızca seed ile sıfırlanabilir.
+  await prisma.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE`);
+  rmSync(STORAGE, { recursive: true, force: true });
+
+  await prisma.program.createMany({ data: PROGRAMS.map((p) => ({ id: p.id, name: p.name, faculty: p.faculty, codePrefix: p.codePrefix, isHome: p.isHome })) });
+  await prisma.course.createMany({ data: COURSES.map((c) => ({ ...c, updatedBy: 'seed' })) });
+  await prisma.term.createMany({
+    data: TERMS.map((t) => ({ id: t.id, year: t.year, season: t.season, startsAt: new Date(`${t.startsAt}T00:00:00+03:00`), endsAt: new Date(`${t.endsAt}T23:59:59+03:00`), isCurrent: t.id === CURRENT_TERM_ID })),
+  });
   for (const set of DEFAULT_RULE_SETS) {
     await prisma.ruleSet.create({
       data: {
@@ -91,7 +157,6 @@ async function main() {
       },
     });
   }
-
   for (const t of TEMPLATES) {
     await prisma.protocolTemplate.create({
       data: {
@@ -107,106 +172,26 @@ async function main() {
       },
     });
   }
-
   for (const u of USERS) {
-    await prisma.user.create({
-      data: { username: u.username, displayName: u.displayName, email: u.email, assignments: { create: u.assignments.map((a) => ({ role: a.role, programId: a.programId ?? null })) } },
-    });
+    await prisma.user.create({ data: { username: u.username, displayName: u.displayName, email: u.email, role: u.role, createdBy: 'seed', invitedAt: u.role === 'OGRENCI' ? null : SETUP } });
   }
+  for (const s of STUDENTS) await seedStudent(s);
 
-  // Öğrenci bilgileri ve örnek belgeler (öğrencinin "Bilgilerim" ekranında yapacağı işlemlerin karşılığı).
-  for (const s of STUDENTS) {
-    if (!s.profile) continue;
-    const user = await prisma.user.findUniqueOrThrow({ where: { username: s.studentNo } });
-    await prisma.studentProfile.create({ data: { studentNo: s.studentNo, userId: user.id, fullName: s.fullName, email: studentEmail(s.studentNo), ...s.profile } });
-    mkdirSync(join(STORAGE, s.studentNo), { recursive: true });
-    for (const kind of ['YKS_BELGESI', 'TRANSKRIPT'] as const) {
-      const file = placeholderPdf(`Deneme belgesi - ${kind} - ${s.studentNo}`);
-      const storageKey = `${s.studentNo}/${kind.toLowerCase()}.pdf`;
-      writeFileSync(join(STORAGE, storageKey), file);
-      await prisma.document.create({
-        data: { studentNo: s.studentNo, kind, fileName: `${kind.toLowerCase()}-${s.studentNo}.pdf`, mimeType: 'application/pdf', size: file.length, sha256: createHash('sha256').update(file).digest('hex'), storageKey },
-      });
-    }
-  }
+  // Açılış kural kontrolleri (bildirim gönderilmez).
+  const audit = new AuditService(prisma as unknown as PrismaService);
+  const silent = { notify: async () => undefined, notifyCoordinators: async () => undefined } as unknown as NotificationsService;
+  const checks = new ChecksService(prisma as unknown as PrismaService, new RulesService(prisma as unknown as PrismaService, audit), audit, silent);
+  for (const s of STUDENTS) await checks.run(s.studentNo, 'KURULUM', 'sistem');
 
-  // Geçen yıl kabul edilen öğrenciler: imzaları tamamlanmış protokol, iki dönemin ders kayıt formları, notlar, dönem beyanları.
-  const heads = Object.fromEntries(USERS.flatMap((u) => u.assignments.filter((a) => a.role === 'BOLUM_BASKANI').map((a) => [a.programId!, u.username])));
-  for (const s of STUDENTS) {
-    if (!s.enrollment || !s.profile) continue;
-    const o = OFFERINGS.find((x) => x.id === s.enrollment!.offeringId)!;
-    const template = TEMPLATES.find((t) => (o.type === 'CAP' ? t.type === 'CAP' && t.sourceProgramId === s.profile!.programId : t.type === 'YANDAL'))!;
-    const items = o.type === 'CAP' ? template.items : template.items.slice(0, 8);
-    const e = await prisma.enrollment.create({
-      data: { studentNo: s.studentNo, offeringId: o.id, type: o.type, startTermId: o.termId, ganoStrikes: s.enrollment.ganoStrikes, mainAdvisorUsername: s.profile.advisorUsername },
-    });
-    const protocol = await prisma.protocol.create({
-      data: {
-        enrollmentId: e.id,
-        templateId: template.id,
-        status: 'APPROVED',
-        commonEcts: template.commonEcts,
-        createdBy: COORD,
-        submittedAt: new Date('2025-09-20T10:00:00+03:00'),
-        approvedAt: SIGNED_AT,
-        courses: {
-          create: items.map((i, position) => {
-            const g = s.enrollment!.grades.find((x) => x.code === i.code);
-            return { position, ...i, ...(g ? { status: 'PASSED' as const, grade: g.grade, termId: g.termId } : {}) };
-          }),
-        },
-      },
-      include: { courses: true },
-    });
-    const who: Record<string, string | null> = {
-      OGRENCI: s.studentNo,
-      ANA_DAL_DANISMANI: s.profile.advisorUsername,
-      ANA_DAL_BOLUM_BASKANI: heads[s.profile.programId] ?? null,
-      KOORDINATOR: null,
-      CAP_BOLUM_BASKANI: heads['P-BIL'],
-    };
-    const sign = (subjectType: 'PROTOCOL' | 'COURSE_REG', subjectId: string, roles: string[], at: Date) =>
-      prisma.approval.createMany({
-        data: roles.map((role) => ({ subjectType, subjectId, round: 1, role: role as 'OGRENCI', assigneeUsername: who[role], decision: 'APPROVED' as const, decidedBy: who[role] ?? COORD, decidedAt: at })),
-      });
-    await sign('PROTOCOL', protocol.id, ['OGRENCI', 'ANA_DAL_DANISMANI', 'ANA_DAL_BOLUM_BASKANI', 'KOORDINATOR', 'CAP_BOLUM_BASKANI'], SIGNED_AT);
-
-    for (const [termId, codes] of Object.entries(s.enrollment.registrations)) {
-      if (!codes.length) continue;
-      const at = new Date(termId === 'T-2025-GUZ' ? '2025-09-28T10:00:00+03:00' : '2026-02-12T10:00:00+03:00');
-      const reg = await prisma.courseRegistration.create({
-        data: {
-          enrollmentId: e.id,
-          termId,
-          status: 'APPROVED',
-          createdBy: s.studentNo,
-          submittedAt: at,
-          approvedAt: at,
-          items: { create: codes.map((code) => { const pc = protocol.courses.find((c) => c.code === code)!; return { protocolCourseId: pc.id, code, name: pc.name, ects: pc.ects }; }) },
-        },
-      });
-      await sign('COURSE_REG', reg.id, ['OGRENCI', 'ANA_DAL_DANISMANI', 'KOORDINATOR'], at);
-    }
-    const entries = Object.entries(s.enrollment.termRecords);
-    for (const [i, [termId, mainGano]] of entries.entries()) {
-      // İrem'in son beyanı doğrulanmamış bırakılır ("doğrulanacak dönem beyanları" görevi için).
-      const verified = !(s.scenario === 'iki-donem-ders-yok' && i === entries.length - 1);
-      await prisma.termRecord.create({
-        data: { enrollmentId: e.id, termId, mainGano, declaredBy: s.studentNo, declaredAt: new Date('2026-07-01T10:00:00+03:00'), verifiedBy: verified ? COORD : null, verifiedAt: verified ? new Date('2026-07-03T10:00:00+03:00') : null },
-      });
-    }
-  }
-
-  const counts = {
-    bolum: await prisma.program.count(),
+  console.log('Seed tamam:', {
     ders: await prisma.course.count(),
-    teklif: await prisma.offering.count(),
     sablon: await prisma.protocolTemplate.count(),
     kullanici: await prisma.user.count(),
-    ogrenci: await prisma.studentProfile.count(),
-    kayit: await prisma.enrollment.count(),
-  };
-  console.log('Seed tamam:', counts);
+    ogrenci: await prisma.student.count(),
+    listeSatiri: await prisma.planItem.count(),
+    deneme: await prisma.courseAttempt.count(),
+    kontrol: await prisma.ruleCheck.count(),
+  });
 }
 
 main()
