@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { login } from './helpers';
 
-/** Panel telefonda da kullanılabilir: yatay kaydırma yok, menü açılır. */
-for (const path of ['/panel', '/birim/basvurular', '/birim/basvurular/yeni?no=230201001&tur=CAP', '/birim/kararlar']) {
+/** Öğrenci ekranları telefonda da kullanılabilir: yatay kaydırma yok, menü açılır. */
+for (const path of ['/panel', '/ogrenci/bilgilerim', '/ogrenci/basvuru', '/ogrenci/kayitlarim', '/belgeler']) {
   test(`mobil: ${path}`, async ({ page }) => {
-    await login(page, 'birim.iibf', path);
+    await login(page, '253302004', path);
     await expect(page.locator('main')).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
@@ -14,6 +14,6 @@ for (const path of ['/panel', '/birim/basvurular', '/birim/basvurular/yeni?no=23
 }
 
 test('mobil ekran görüntüsü', async ({ page }) => {
-  await login(page, 'birim.iibf', '/panel');
-  await page.screenshot({ path: '../docs/ekranlar/15-mobil-panel.png' });
+  await login(page, '253302004', '/ogrenci/basvuru');
+  await page.screenshot({ path: '../docs/ekranlar/21-mobil-basvuru.png' });
 });

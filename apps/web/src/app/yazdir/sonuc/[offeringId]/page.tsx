@@ -1,63 +1,55 @@
-import { LABELS } from '@cap/contracts';
-import { PrintButton } from '@/components/print-button';
+import { LABELS, type Proposal } from '@cap/contracts';
+import { PrintShell } from '@/components/print';
 import { api } from '@/lib/api';
 import { fmtDate, fmtGpa, termLabel } from '@/lib/format';
-import type { ReviewData } from '@/lib/types';
+import type { Decision, OfferingRow } from '@/lib/types';
 
-export const metadata = { title: 'Yazdırılabilir liste' };
+export const metadata = { title: 'Sonuç listesi' };
 
-/** FR-18: birim web sitesinde yayımlanabilir sonuç listesi (kişisel veri en aza indirilmiş). */
-export default async function PrintList({ params }: { params: Promise<{ offeringId: string }> }) {
+interface Result {
+  offering: OfferingRow;
+  decision: Decision;
+  rows: { rank: number; studentNo: string; fullName: string; mainProgramName: string; gano: number; proposal: Proposal }[];
+}
+
+/** İlan edilecek sonuç listesi: öğrenci numarası ve ad API'de maskelenir (fakülte ilanlarındaki uygulama). */
+export default async function PrintResult({ params }: { params: Promise<{ offeringId: string }> }) {
   const { offeringId } = await params;
-  const d = await api<ReviewData>(`/offerings/${offeringId}/applications`);
-  const o = d.offering;
-  const listed = d.rows.filter((r) => ['ACCEPTED', 'ENROLLED', 'WAITLISTED', 'NOT_ENROLLED'].includes(r.status));
-  // Yayımlanan listede ad soyad yerine maskelenmiş ad ve numaranın son 4 hanesi kullanılır.
-  const mask = (name: string) =>
-    name
-      .split(' ')
-      .map((p) => `${p[0]}${'*'.repeat(Math.max(2, p.length - 1))}`)
-      .join(' ');
-
+  const d = await api<Result>(`/offerings/${offeringId}/result`);
   return (
-    <div className="mx-auto max-w-3xl bg-white p-8 print:p-0">
-      <div className="no-print mb-6 flex justify-end">
-        <PrintButton />
-      </div>
-      <p className="text-center text-xs uppercase tracking-[0.2em] text-su-muted">T.C. Selçuk Üniversitesi · {o.program.unit.name}</p>
-      <h1 className="mt-2 text-center text-xl font-semibold">
-        {termLabel(o.term)} {o.program.name} {LABELS.track[o.type]} Programı Sonuç Listesi
-      </h1>
-      {d.decision && (
-        <p className="mt-1 text-center text-sm text-su-muted">
-          Yönetim Kurulu Kararı: {fmtDate(d.decision.decisionDate)} / {d.decision.decisionNo}
-        </p>
-      )}
-      <table className="mt-6 w-full border-collapse text-sm">
+    <PrintShell title={`${termLabel(d.offering.term)} Bilgisayar Mühendisliği ${LABELS.track[d.offering.type]} Programı Sonuç Listesi`}>
+      <p className="mt-1 text-center text-xs">
+        Teknoloji Fakültesi Yönetim Kurulu Kararı: {fmtDate(d.decision.decisionDate)} / {d.decision.decisionNo} · Kontenjan: {d.offering.quota}
+      </p>
+      <table className="mt-6 w-full border-collapse">
         <thead>
-          <tr className="border-b-2 border-su-heading text-left">
-            <th className="py-2">Sıra</th>
-            <th>Öğrenci</th>
-            <th>Numara</th>
+          <tr className="border-b-2 border-black text-left">
+            <th className="py-1.5">Sıra</th>
+            <th>Öğrenci No</th>
+            <th>Adı Soyadı</th>
+            <th>Ana Dal</th>
             <th>GNO</th>
             <th>Sonuç</th>
           </tr>
         </thead>
         <tbody>
-          {listed.map((r) => (
-            <tr key={r.id} className="border-b border-su-border">
-              <td className="py-1.5">{r.ranking?.rank}</td>
-              <td>{mask(r.fullName)}</td>
-              <td>*****{r.studentNo.slice(-4)}</td>
+          {d.rows.map((r) => (
+            <tr key={r.rank} className="border-b border-slate-300">
+              <td className="py-1.5">{r.rank}</td>
+              <td>{r.studentNo}</td>
+              <td>{r.fullName}</td>
+              <td>{r.mainProgramName}</td>
               <td>{fmtGpa(r.gano)}</td>
-              <td>{r.status === 'WAITLISTED' ? 'Yedek' : 'Asil'}</td>
+              <td>{LABELS.proposal[r.proposal]}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="mt-6 text-xs text-su-muted">
-        Asil adayların kesin kaydı OBİS üzerinden yapılır. Bu liste bitirme projesi kapsamında üretilmiştir; resmî ilan değildir.
+      <p className="mt-6 text-xs">
+        Asil adaylar kesin kayıtlarını sistemde “Başvuru” sayfasından onaylar
+        {d.offering.registrationDeadline && ` (son gün ${fmtDate(d.offering.registrationDeadline)})`}. Kaydını onaylamayan asilin yerine sıradaki yedek çağrılır
+        {d.offering.waitlistDeadline && ` (yedek son gün ${fmtDate(d.offering.waitlistDeadline)})`}.
       </p>
-    </div>
+    </PrintShell>
   );
 }

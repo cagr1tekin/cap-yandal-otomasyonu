@@ -2,138 +2,222 @@ import { expect, test, type Page } from '@playwright/test';
 import { acceptDialogs, login } from './helpers';
 
 /**
- * Rol bazlı personel paneli — arayüzden uçtan uca (Keycloak girişi dahil):
- * başvuru girişi → pencere kapanışı → sıralama/kilit → karar/yayın → kesin kayıt
- * → protokol (5 imza) → dosyalama → dönemlik ders kaydı → toplu teslim → OBİS listesi.
+ * Bilgisayar Mühendisliği ÇAP / yan dal otomasyonu — arayüzden uçtan uca (Keycloak girişi dahil):
+ * öğrenci bilgilerini girer ve belge yükler → başvuru → komisyon beyanı doğrular → sıralama, karar, ilan →
+ * öğrenci kesin kaydını onaylar → protokol (5 imza) → ders kayıt formu (3 imza) → not girişi →
+ * özel şartlı ders muafiyeti → dönem sonu taraması → yönetim.
  */
 test.describe.configure({ mode: 'serial' });
 
-const IKT = 'O-2026-GUZ-CAP-IIBF-IKT';
+const CAP = 'O-2026-GUZ-CAP';
+const KOORD = 'koord.bilgisayar';
+const AYSE = '253302001';
+const MERT = '253302012';
+const PDF = Buffer.from('%PDF-1.4\n1 0 obj\n<< >>\nendobj\ntrailer\n<< >>\n%%EOF\n', 'latin1');
 let enrollmentUrl = '';
 
-async function enterApplication(page: Page, studentNo: string, documentNo: string) {
-  await page.goto(`/birim/basvurular/yeni?no=${studentNo}&tur=CAP&teklif=${IKT}`);
-  await page.getByLabel('Evrak kayıt numarası').fill(documentNo);
-  await page.getByRole('button', { name: 'Başvuruyu kaydet' }).click();
-  await page.waitForURL(/\/birim\/basvurular\/[^/]+\?kaydedildi=1/);
+async function applyCap(page: Page, user: string) {
+  await login(page, user, '/ogrenci/basvuru');
+  const card = page.locator('section').filter({ hasText: 'Bilgisayar Mühendisliği Çift Ana Dal' }).first();
+  await card.getByRole('checkbox').check();
+  await card.getByRole('button', { name: 'Çift Ana Dal başvurusu yap' }).click();
+  await page.waitForURL(/\/ogrenci\/basvuru\/[^/]+\?gonderildi=1/);
 }
 
-async function approveAll(page: Page, user: string) {
+async function signAll(page: Page, user: string) {
   await login(page, user, '/onaylar');
-  // Onaylanan imza listeden düşer; bekleyen kalmayana kadar ilk kartı onayla.
-  const buttons = page.getByRole('button', { name: /^(Onayla|Öğrencinin ıslak imzası alındı)$/ });
-  // Saymadan önce sayfa içeriğinin gelmesini bekle (kartlar ya da "bekleyen yok" mesajı).
-  await expect(page.getByText(/İmzanız:|İmzanızı bekleyen form yok/).first()).toBeVisible();
+  // Atılan imza listeden düşer; bekleyen kalmayana kadar ilk kartı imzala.
+  const buttons = page.getByRole('button', { name: /^(İmzala|Islak imza alındı)$/ });
+  await expect(page.getByText(/İmzanız:|Islak imza:|İmzanızı bekleyen form yok/).first()).toBeVisible();
   for (let n = await buttons.count(); n > 0; n--) {
     await buttons.first().click();
     await expect(buttons).toHaveCount(n - 1);
   }
 }
 
-test('birim öğrenci işleri dilekçeleri panele girer (uygunluk + belge kontrolü)', async ({ page }) => {
-  await login(page, 'birim.iibf', '/birim/basvurular/yeni');
-  await page.getByLabel('Öğrenci numarası').fill('230201001');
-  await page.getByRole('button', { name: "OBİS'ten getir" }).click();
-  await expect(page.getByText('Ayşe Demirtaş · 230201001')).toBeVisible();
-  const ikt = page.locator('li').filter({ hasText: 'İktisat' });
-  await expect(ikt.getByText('Uygun', { exact: true })).toBeVisible();
-  await ikt.getByRole('link', { name: 'Seç' }).click();
+test('öğrenci bilgilerini kendisi girer ve belgesini yükler', async ({ page }) => {
+  await login(page, MERT, '/panel');
+  await expect(page.getByText('Bilgilerinizi girin')).toBeVisible();
+  await page.goto('/ogrenci/bilgilerim');
+  await expect(page.getByText('Başvurabilmek için önce bilgilerinizi kaydedin.')).toBeVisible();
+  await expect(page.getByLabel('Öğrenci numarası')).toHaveValue(MERT);
+  await page.getByLabel('Ana dal bölümü').selectOption('P-EEM');
+  await page.getByLabel('Kayıt yılı').fill('2025');
+  await page.getByLabel('Başlayacağınız yarıyıl').fill('3');
+  await page.getByLabel('Ana dal danışmanı').selectOption('danisman.eem');
+  // Geçersiz GNO sunucuda reddedilir; girilen değerler formda kalır.
+  await page.getByLabel('Genel not ortalaması (GNO)').fill('2,90');
+  await page.getByLabel('Sınıftaki başarı sıranız').fill('90');
+  await page.getByLabel('Sınıf mevcudu').fill('82');
+  await page.getByRole('button', { name: 'Bilgilerimi kaydet' }).click();
+  await expect(page.getByText('Sınıf sırası mevcuttan büyük olamaz')).toBeVisible();
+  await expect(page.getByLabel('Kayıt yılı')).toHaveValue('2025');
+  await page.getByLabel('Sınıftaki başarı sıranız').fill('12');
+  await page.getByLabel('Yerleştirme puanı').fill('384,5');
+  await page.getByLabel('Başarı sırası', { exact: false }).last().fill('115000');
+  await page.getByRole('button', { name: 'Bilgilerimi kaydet' }).click();
+  await expect(page.getByText('Bilgileriniz kaydedildi.')).toBeVisible();
+  await expect(page.getByText('Sınıfınızda en üst %14,6 içindesiniz.')).toBeVisible();
 
-  // Zorunlu belge işareti kaldırılırsa kayıt reddedilir
-  await page.getByLabel('Evrak kayıt numarası').fill('E-2026/1001');
-  await page.getByRole('checkbox', { name: /Öğrenci işlerinden/ }).uncheck();
-  await page.getByRole('button', { name: 'Başvuruyu kaydet' }).click();
-  await expect(page.getByText('Zorunlu belgeler eksik; başvuru işleme alınamaz.')).toBeVisible();
-  await page.getByRole('checkbox', { name: /Öğrenci işlerinden/ }).check();
-  await page.getByRole('button', { name: 'Başvuruyu kaydet' }).click();
-  await expect(page.getByText('Başvuru kaydedildi.')).toBeVisible();
-
-  await enterApplication(page, '230201030', 'E-2026/1002');
-  await enterApplication(page, '230201031', 'E-2026/1003');
-  await enterApplication(page, '230201003', 'E-2026/1004');
-  await expect(page.getByText('Başvuru kayda alındı: koşulları sağlamıyor.')).toBeVisible();
-  await expect(page.getByText('GNO 2,74 < 2,75')).toBeVisible();
+  await page.getByLabel('Dosya').setInputFiles({ name: 'yks-sonuc-belgesi.pdf', mimeType: 'application/pdf', buffer: PDF });
+  await page.getByRole('button', { name: 'Yükle' }).click();
+  await expect(page.getByRole('link', { name: 'yks-sonuc-belgesi.pdf' })).toBeVisible();
 });
 
-test('birim başvuru dönemini kapatır; koordinatör sıralamayı kilitler', async ({ page }) => {
-  acceptDialogs(page);
-  await login(page, 'birim.iibf', '/birim/takvim');
-  const card = page.locator('section').filter({ hasText: 'Çift Ana Dal' }).filter({ hasText: 'İktisadi ve İdari Bilimler' });
-  await card.getByRole('button', { name: 'Başvuruyu şimdi kapat' }).click();
-  await expect(page.getByText('Başvuru dönemi kapatıldı.')).toBeVisible();
+test('öğrenci uygunluğunu kural kural görür ve çevrim içi başvurur', async ({ page }) => {
+  // Koşulu sağlamayan öğrenci nedenini görür; başvuru düğmesi çıkmaz.
+  await login(page, '253302003', '/ogrenci/basvuru');
+  const cap = page.locator('section').filter({ hasText: 'Bilgisayar Mühendisliği Çift Ana Dal' }).first();
+  await expect(cap.getByText('Uygun değil', { exact: true })).toBeVisible();
+  await expect(cap.getByText('GNO 2,74 < 2,75')).toBeVisible();
+  await expect(cap.getByRole('button', { name: /başvurusu yap/ })).toHaveCount(0);
+  // Aynı öğrenci yan dal için uygundur.
+  await expect(page.locator('section').filter({ hasText: 'Bilgisayar Mühendisliği Yan Dal' }).first().getByText('Uygun', { exact: true })).toBeVisible();
 
-  await login(page, 'koord.iktisat', `/koordinator/${IKT}`);
+  await applyCap(page, MERT);
+  await expect(page.getByText('Başvurunuz alındı.')).toBeVisible();
+  await expect(page.getByText('Doğrulama bekliyor').first()).toBeVisible();
+  for (const s of [AYSE, '253302009', '253302010', '253302011']) await applyCap(page, s);
+});
+
+test('komisyon beyanları belgeyle doğrular, başvuruyu kapatır ve sıralamayı kilitler', async ({ page }) => {
+  acceptDialogs(page);
+  await login(page, KOORD, '/panel');
+  await expect(page.getByText('Beyanı doğrulanacak başvurular')).toBeVisible();
+
+  const list = '/koordinator/basvurular?durum=SUBMITTED&dogrulama=PENDING';
+  for (let i = 0; i < 5; i++) {
+    await page.goto(list);
+    await page.locator('tbody tr').first().getByRole('link').click();
+    await expect(page.getByRole('heading', { name: 'Öğrencinin beyanı' })).toBeVisible();
+    await page.getByRole('button', { name: 'Beyan belgelerle uyuşuyor' }).click();
+    await expect(page.getByText('Belgeyle doğrulandı').first()).toBeVisible();
+  }
+  await page.goto(list);
+  await expect(page.getByText('Bu süzgece uyan başvuru yok.')).toBeVisible();
+
+  await page.goto('/koordinator/donem');
+  const card = page.locator('section').filter({ hasText: 'Bilgisayar Mühendisliği Çift Ana Dal' }).first();
+  await card.getByRole('button', { name: 'Başvuruyu şimdi kapat' }).click();
+  await expect(card.getByText('Başvuru kapandı')).toBeVisible();
+
+  await page.goto(`/koordinator/degerlendirme/${CAP}`);
   const rows = page.locator('tbody tr');
-  await expect(rows).toHaveCount(3);
+  await expect(rows).toHaveCount(5);
   await expect(rows.nth(0)).toContainText('Büşra Yalçın');
-  await page.getByRole('button', { name: 'Öneriyi kilitle ve birime gönder' }).click();
+  await expect(rows.nth(2)).toContainText('Ayşe Demirtaş');
+  await expect(rows.nth(3)).toContainText('Yedek');
+  await page.getByRole('button', { name: 'Öneriyi kilitle' }).click();
   await expect(page.getByText(/tarihinde kilitlendi/)).toBeVisible();
 });
 
-test('birim kararı girer, yayımlar ve kesin kaydı belge kontrolüyle yapar', async ({ page }) => {
+test('kurul kararı girilir ve sonuçlar ilan edilir', async ({ page }) => {
   acceptDialogs(page);
-  await login(page, 'birim.iibf', `/birim/kararlar/${IKT}`);
-  await page.getByLabel('Karar sayısı').fill('2026/45-3');
+  await login(page, KOORD, `/koordinator/degerlendirme/${CAP}`);
+  await page.getByLabel('Karar sayısı').fill('2026/41-7');
   await page.getByRole('button', { name: 'Kararı kaydet' }).click();
-  await expect(page.getByText(/Karar 2026\/45-3/)).toBeVisible();
+  await expect(page.getByText(/Karar 2026\/41-7/)).toBeVisible();
   await page.getByRole('button', { name: 'Sonuçları yayımla' }).click();
   await expect(page.getByText(/tarihinde yayımlandı/)).toBeVisible();
-
-  const row = page.locator('details').filter({ hasText: 'Ayşe Demirtaş' });
-  await row.locator('summary').click();
-  for (const box of await row.getByRole('checkbox').all()) await box.check();
-  await row.getByRole('button', { name: 'Kesin kaydı yap' }).click();
-  await expect(page.getByText(/Kesin kayıt yapıldı/)).toBeVisible();
+  await page.goto(`/yazdir/sonuc/${CAP}`);
+  await expect(page.getByText('253***009')).toBeVisible();
 });
 
-test('koordinatör protokolü hazırlar ve imzacılara gönderir', async ({ page }) => {
-  await login(page, 'koord.iktisat', '/panel');
-  await expect(page.getByText('Protokolü hazırlanacak öğrenciler')).toBeVisible();
-  await page.goto(`/koordinator/${IKT}/ogrenciler`);
-  await page.getByRole('link', { name: 'Ayşe Demirtaş' }).click();
-  await page.waitForURL(/\/kayitlar\//);
-  enrollmentUrl = new URL(page.url()).pathname;
-  await page.getByRole('button', { name: 'Taslağı kaydet ve denetle' }).click();
-  await expect(page.getByText('Protokol taslağı kaydedildi; kurallar sağlanıyor.')).toBeVisible();
-  await expect(page.getByText(/228 protokol \+ 14 ortak = 242 AKTS/)).toBeVisible();
-  await page.getByRole('button', { name: 'İmzacılara gönder' }).click();
-  await expect(page.getByText('İmzalar · 1. tur')).toBeVisible();
-  await expect(page.getByText('Onayda', { exact: true }).first()).toBeVisible();
-});
-
-test('beş imza: koordinatör (öğrenci ıslak imzası dahil), danışman, iki bölüm başkanı', async ({ page }) => {
-  for (const u of ['koord.iktisat', 'danisman.isletme', 'bolum.isletme', 'bolum.iktisat']) await approveAll(page, u);
-  await login(page, 'birim.iibf', enrollmentUrl);
-  await page.getByRole('button', { name: 'Aslı öğrenci dosyasına kaldırıldı' }).click();
-  await expect(page.getByText(/^Aslı dosyada: birim\.iibf/)).toBeVisible();
-});
-
-test('dönemlik ders kayıt formu: onaylar, toplu teslim, OBİS listesi', async ({ page }) => {
+test('öğrenci kesin kaydını kendisi onaylar', async ({ page }) => {
   acceptDialogs(page);
-  await login(page, 'koord.iktisat', enrollmentUrl);
-  const section = page.locator('section').filter({ hasText: 'Ders kayıt formu' });
-  const boxes = section.getByRole('checkbox');
-  for (let i = 0; i < 4; i++) await boxes.nth(i).check();
-  await section.getByRole('button', { name: 'Formu kaydet' }).click();
-  await expect(page.getByText('Ders kayıt formu kaydedildi.')).toBeVisible();
-  await section.getByRole('button', { name: /İmzacılara gönder/ }).click();
-  await expect(section.getByText('İmzalar · 1. tur')).toBeVisible();
-
-  for (const u of ['koord.iktisat', 'danisman.isletme', 'bolum.isletme', 'bolum.iktisat']) await approveAll(page, u);
-
-  await login(page, 'koord.iktisat', '/koordinator/teslim');
-  await page.getByRole('button', { name: 'Onaylı 1 formu teslim et' }).click();
-  await expect(page.getByText('Öğrenci işlerine teslim edildi', { exact: true })).toBeVisible();
-
-  await login(page, 'birim.iibf', '/birim/ders-kayitlari');
-  await expect(page.getByRole('link', { name: 'OBİS listesi (CSV)' })).toBeVisible();
-  await page.getByRole('button', { name: "Seçilenleri OBİS'e girildi olarak işaretle" }).click();
-  await expect(page.getByText("OBİS'e girildi", { exact: true })).toBeVisible();
+  await login(page, AYSE, '/panel');
+  await expect(page.getByText('Kesin kaydınızı onaylayın')).toBeVisible();
+  await page.goto('/ogrenci/basvuru');
+  await page.getByRole('link', { name: 'Kesin kaydı onayla' }).click();
+  await page.getByRole('button', { name: 'Kesin kaydımı onaylıyorum' }).click();
+  await page.waitForURL(/\/kayitlar\/[^/]+\?kayit=1/);
+  await expect(page.getByText('Kesin kaydınız yapıldı.')).toBeVisible();
+  enrollmentUrl = new URL(page.url()).pathname;
 });
 
-test('ÖİDB: denetim kaydında imzalar görünür; kullanıcı ekranı açılır', async ({ page }) => {
-  await login(page, 'oidb.yonetici', '/oidb/denetim?islem=APPROVAL');
+test('protokol gerçek EEM şablonundan üretilir ve beş imzayla tamamlanır', async ({ page }) => {
+  acceptDialogs(page);
+  await login(page, KOORD, enrollmentUrl);
+  await page.getByRole('button', { name: 'Protokolü şablondan üret' }).click();
+  await expect(page.getByText('+ 105 AKTS ana dalda alınan ortak dersler = 240')).toBeVisible();
+  await expect(page.getByText(/135 protokol \+ 105 ortak = 240 AKTS/)).toBeVisible();
+  await page.getByRole('button', { name: 'İmzaya gönder' }).click();
+  await expect(page.getByText('İmzalar · 1. tur')).toBeVisible();
+
+  for (const u of [AYSE, 'danisman.eem', 'bolum.eem', 'bolum.bilgisayar']) await signAll(page, u);
+  await login(page, AYSE, enrollmentUrl);
+  await expect(page.getByText('İmzalar tamam', { exact: true }).first()).toBeVisible();
+  await page.goto(enrollmentUrl.replace('/kayitlar/', '/yazdir/protokol/'));
+  await expect(page.getByText('ÇİFT ANADAL KABUL ve DERS PROTOKOL FORMU')).toBeVisible();
+  await expect(page.getByText(/3302458 kodlu Veri Yapıları/)).toBeVisible();
+});
+
+test('öğrenci ders kayıt formunu hazırlar; danışman ve koordinatör imzalar', async ({ page }) => {
+  acceptDialogs(page);
+  await login(page, AYSE, enrollmentUrl);
+  const form = page.locator('section').filter({ hasText: 'Ders kayıt formu' }).first();
+  await form.getByRole('checkbox', { name: /Bilgisayar Mühendisliğine Giriş/ }).check();
+  await form.getByLabel('5. Yarıyıl Teknik Seçmeli Ders (1)').selectOption('3301562');
+  await form.getByRole('button', { name: 'Formu kaydet' }).click();
+  await expect(form.getByText('Formda 2 ders, 8 AKTS var.')).toBeVisible();
+  await form.getByRole('button', { name: 'İmzaya gönder' }).click();
+  await expect(form.getByText('İmzada', { exact: true }).first()).toBeVisible();
+
+  await signAll(page, 'danisman.eem');
+  await signAll(page, 'koord.uye');
+  await login(page, AYSE, enrollmentUrl);
+  await expect(page.locator('section').filter({ hasText: 'Ders kayıt formu' }).first().getByText('İmzalar tamam', { exact: true }).first()).toBeVisible();
+});
+
+test('komisyon not girer; öğrenci özel şartlı ders muafiyeti başvurusu yapar', async ({ page }) => {
+  acceptDialogs(page);
+  await login(page, KOORD, enrollmentUrl);
+  await page.getByLabel('Bilgisayar Mühendisliğine Giriş notu').selectOption('BA');
+  await page.getByLabel('Tasarım Desenleri notu').selectOption('BB');
+  await page.getByRole('button', { name: 'Notları kaydet' }).click();
+  await expect(page.getByText('2 dersin notu işlendi.')).toBeVisible();
+  await expect(page.getByText('Geçti · BA')).toBeVisible();
+
+  await login(page, AYSE, enrollmentUrl);
+  await page.getByLabel('Şart 1: dersi aldığı dönem').fill('2025-2026 Bahar');
+  await page.getByLabel('Şart 1: ana daldaki not').selectOption('BB');
+  await page.locator('li').filter({ hasText: '3302458' }).getByRole('button', { name: 'Muafiyet başvurusu yap' }).click();
+  await expect(page.getByText('Beyan: 2025-2026 Bahar döneminde BB')).toBeVisible();
+
+  await signAll(page, 'danisman.eem');
+  await signAll(page, KOORD);
+  await login(page, AYSE, enrollmentUrl);
+  await expect(page.getByText('Muaf · M')).toBeVisible();
+  // 4 + 4 AKTS geçildi, 4 AKTS muaf
+  await expect(page.getByText('12/135 (%9)')).toBeVisible();
+});
+
+test('dönem sonu taraması bulguları üretir; kayıt silme kararı komisyondadır', async ({ page }) => {
+  acceptDialogs(page);
+  await login(page, KOORD, '/koordinator/taramalar');
+  await expect(page.getByLabel('Dönem')).toHaveValue('T-2025-BAHAR');
+  await page.getByRole('button', { name: 'Taramayı başlat' }).click();
+  await page.waitForURL(/\/koordinator\/taramalar\/[^/]+$/);
+  const hakan = page.locator('section').filter({ hasText: 'Hakan Doğan' });
+  await expect(hakan.getByText('Kayıt silme adayı')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('section').filter({ hasText: 'Onur Tekin' }).getByText('Uyarı', { exact: true })).toBeVisible();
+  await hakan.getByLabel('Gerekçe (karar sayısı vb.)').fill('Fakülte Yönetim Kurulu 2026/42-3');
+  await hakan.getByRole('button', { name: 'Onayla (kaydı sil)' }).click();
+  await expect(hakan.getByText(/Onaylandı — koord\.bilgisayar/)).toBeVisible();
+  await expect(hakan.getByText('Kaydı silindi')).toBeVisible();
+});
+
+test('ana dal imzacısı yalnız kendi bölümünü görür; bölüm başkanı kullanıcıları ve denetim kaydını yönetir', async ({ page }) => {
+  await login(page, 'danisman.makine', '/ana-dal');
+  await expect(page.getByRole('link', { name: 'Onur Tekin' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ayşe Demirtaş' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Başvurular' })).toHaveCount(0);
+
+  await login(page, 'bolum.bilgisayar', '/yonetim/kullanicilar');
+  await expect(page.getByRole('heading', { name: 'Personel (7)' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Rol ata' })).toBeVisible();
+  await page.goto('/yonetim/denetim?islem=APPROVAL');
   await expect(page.getByText('APPROVAL_APPROVED').first()).toBeVisible();
-  await page.goto('/oidb/kullanicilar');
-  await expect(page.getByRole('heading', { name: /Kullanıcılar \(/ })).toBeVisible();
+  await page.goto('/raporlar');
+  await expect(page.getByRole('heading', { name: 'Bu dönemin başvuruları' })).toBeVisible();
 });

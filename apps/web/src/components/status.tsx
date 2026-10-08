@@ -98,9 +98,6 @@ const formTone: Record<FormStatus, Tone> = {
   IN_APPROVAL: 'warn',
   APPROVED: 'ok',
   REJECTED: 'bad',
-  SUBMITTED: 'neutral',
-  ENTERED: 'ok',
-  FILED: 'ok',
 };
 
 export function FormBadge({ value }: { value: FormStatus | null }) {
@@ -123,10 +120,10 @@ export function ApprovalTable({ approvals }: { approvals: Approval[] }) {
           {list.map((a) => (
             <tr key={a.id} className="border-t border-su-border/60">
               <td className="px-3 py-2 font-medium">{LABELS.approvalRole[a.role]}</td>
-              <td className="px-3 py-2 text-su-muted">{a.assigneeUsername ?? '— atanmamış —'}</td>
+              <td className="px-3 py-2 text-su-muted">{a.assigneeUsername ?? (a.role === 'KOORDINATOR' ? 'komisyon' : 'hesabı yok (ıslak imza)')}</td>
               <td className="px-3 py-2">
                 {a.decision === 'APPROVED' ? (
-                  <Badge tone="ok">Onayladı</Badge>
+                  <Badge tone="ok">İmzaladı</Badge>
                 ) : a.decision === 'REJECTED' ? (
                   <Badge tone="bad">Reddetti</Badge>
                 ) : (

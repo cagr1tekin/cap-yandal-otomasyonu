@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Önkoşul: altyapı (docker compose), sahte OBİS, API ve web çalışıyor olmalı; veritabanı temiz seed'de.
+ * Önkoşul: altyapı (docker compose), API ve web çalışıyor olmalı; veritabanı her koşuda seed durumuna döner.
  * Ayrıntı: README "Uçtan uca test".
  */
 export default defineConfig({

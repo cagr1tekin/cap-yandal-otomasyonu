@@ -1,129 +1,105 @@
-import { LABELS } from '@cap/contracts';
-import { PrintButton } from '@/components/print-button';
+import { SIGNERS } from '@cap/contracts';
+import { Parties, PrintShell, Signatures } from '@/components/print';
 import { api } from '@/lib/api';
-import { fmtDateTime } from '@/lib/format';
+import { fmtDate } from '@/lib/format';
 import type { EnrollmentDetail } from '@/lib/types';
 
 export const metadata = { title: 'Kabul ve Ders Protokol Formu' };
 
-/**
- * Selçuk Üniversitesi "Çift Ana Dal / Yan Dal Kabul ve Ders Protokol Formu"nun düzeni (kaynaklar/mevcut-surec).
- * Panelde alınan onaylar imza kutularında gösterilir; kâğıt nüsha ıslak imza için de basılabilir.
- */
-export default async function ProtocolPrint({ params }: { params: Promise<{ id: string }> }) {
+/** "Çift Anadal / Yan Dal Kabul ve Ders Protokol Formu"nun yazdırılabilir karşılığı. */
+export default async function PrintProtocol({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const d = await api<EnrollmentDetail>(`/enrollments/${id}`);
+  const cap = d.enrollment.type === 'CAP';
+  const word = cap ? 'ÇİFT ANADAL' : 'YAN DAL';
   const p = d.protocol;
-  const track = d.enrollment.type === 'CAP' ? 'ÇİFT ANA DAL' : 'YAN DAL';
-  const round = p?.approvals.length ? Math.max(...p.approvals.map((a) => a.round)) : 0;
-  const sig = (role: string) => p?.approvals.find((a) => a.round === round && a.role === role);
-  const box = (role: keyof typeof LABELS.approvalRole) => {
-    const a = sig(role);
-    return (
-      <td className="h-24 w-1/3 border border-su-heading p-2 align-top text-xs">
-        <p className="font-semibold">{LABELS.approvalRole[role]}</p>
-        <p className="text-su-muted">{a?.assigneeUsername ?? ''}</p>
-        {a?.decision === 'APPROVED' && (
-          <p className="mt-2 text-ok">
-            Panelde onaylandı
-            <br />
-            {fmtDateTime(a.decidedAt)}
-          </p>
-        )}
-        <p className="mt-4">İmza:</p>
-      </td>
-    );
-  };
+  if (!p) return <PrintShell title={`${word} KABUL ve DERS PROTOKOL FORMU`}>
+      <p className="mt-6 text-center">Protokol henüz hazırlanmadı.</p>
+    </PrintShell>;
+  const total = p.courses.reduce((t, c) => t + c.ects, 0);
+  const conditions = d.exemptions;
+  const footnote = (code: string | null) => conditions.filter((c) => c.targetCourseCode === code).map((c) => c.no);
 
   return (
-    <div className="mx-auto max-w-3xl bg-white p-8 text-sm print:p-0">
-      <div className="no-print mb-6 flex justify-end">
-        <PrintButton />
-      </div>
-      <p className="text-center font-semibold">SELÇUK ÜNİVERSİTESİ</p>
-      <h1 className="text-center text-base font-semibold">{track} KABUL ve DERS PROTOKOL FORMU</h1>
-      <table className="mt-4 w-full border-collapse">
-        <tbody>
-          <tr>
-            <td className="border border-su-heading p-2">Öğrenci No: {d.student.studentNo}</td>
-            <td className="border border-su-heading p-2" rowSpan={2}>
-              <b>{track}</b>
-              <br />
-              Fakültesi: {d.enrollment.program.unitName}
-              <br />
-              Bölümü / Programı: {d.enrollment.program.name}
-            </td>
-          </tr>
-          <tr>
-            <td className="border border-su-heading p-2">
-              Adı Soyadı: {d.student.fullName}
-              <br />
-              <b>ANA DAL</b> Fakültesi: {d.student.mainUnit}
-              <br />
-              Bölümü: {d.student.mainProgram}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p className="mt-4 font-semibold">ÖĞRENCİNİN {track} PROGRAMINDA ALACAĞI DERSLER</p>
-      <table className="mt-1 w-full border-collapse text-xs">
+    <PrintShell
+      title={`${word} KABUL ve DERS PROTOKOL FORMU`}
+      note={
+        <>
+          <p>Not: Bu form dört nüsha olarak düzenlenecek,</p>
+          <ul className="ml-4 list-['-_']">
+            <li>Bir tanesi öğrenci,</li>
+            <li>Bir tanesi anadal danışmanı,</li>
+            <li>Bir tanesi {cap ? 'çift anadal' : 'yan dal'} koordinatörü,</li>
+            <li>Bir tanesi de {cap ? 'çift anadal' : 'yan dal'} bölüm/anabilim dalı başkanlığı tarafından saklanacaktır.</li>
+          </ul>
+        </>
+      }
+    >
+      <Parties
+        left={[
+          ['Öğrenci No', d.student.studentNo],
+          ['Adı Soyadı', d.student.fullName],
+          ['ANADAL', ''],
+          ['Fakültesi', d.student.mainFaculty],
+          ['Bölümü/Anabilim Dalı', d.student.mainProgram],
+        ]}
+        right={[
+          [word, ''],
+          ['Fakültesi', d.enrollment.program.faculty],
+          ['Bölümü/Anabilim Dalı', d.enrollment.program.name],
+        ]}
+      />
+      <p className="mt-5 text-center font-semibold">ÖĞRENCİNİN {word} PROGRAMINDA ALACAĞI DERSLER</p>
+      <table className="mt-2 w-full border-collapse border border-black">
         <thead>
-          <tr>
-            <th className="border border-su-heading p-1 text-left">Ders Kodu</th>
-            <th className="border border-su-heading p-1 text-left">Ders Adı</th>
-            <th className="border border-su-heading p-1">AKTS</th>
+          <tr className="border-b border-black text-left">
+            <th className="w-24 border-r border-black px-2 py-1">Ders Kodu</th>
+            <th className="w-20 border-r border-black px-2 py-1">Kredisi (AKTS)</th>
+            <th className="px-2 py-1">Ders Adı</th>
           </tr>
         </thead>
         <tbody>
-          {(p?.courses ?? []).map((c) => (
-            <tr key={c.code}>
-              <td className="border border-su-heading p-1 font-mono">{c.code}</td>
-              <td className="border border-su-heading p-1">{c.name}</td>
-              <td className="border border-su-heading p-1 text-center">{c.ects}</td>
+          {p.courses.map((c) => (
+            <tr key={c.id} className="border-b border-slate-300">
+              <td className="border-r border-black px-2 py-0.5">{c.code ?? ''}</td>
+              <td className="border-r border-black px-2 py-0.5">{c.ects}</td>
+              <td className="px-2 py-0.5">
+                {c.name.toLocaleUpperCase('tr')}
+                {footnote(c.code).map((n) => (
+                  <sup key={n}>{n}</sup>
+                ))}
+                {c.status === 'EXEMPT' && <span className="ml-2 text-[11px]">(muaf{c.fulfilledName ? `: ${c.fulfilledName}` : ''})</span>}
+              </td>
             </tr>
           ))}
-          {p && p.commonEcts > 0 && (
-            <tr>
-              <td className="border border-su-heading p-1" colSpan={2}>
-                Ana dalda alınan ve iki program için ortak kabul edilen dersler (Yönerge m.7/2)
-              </td>
-              <td className="border border-su-heading p-1 text-center">{p.commonEcts}</td>
-            </tr>
-          )}
           <tr>
-            <td className="border border-su-heading p-1 text-right font-semibold" colSpan={2}>
-              Toplam
-            </td>
-            <td className="border border-su-heading p-1 text-center font-semibold">
-              {(p?.courses.reduce((t, c) => t + c.ects, 0) ?? 0) + (p?.commonEcts ?? 0)}
-            </td>
+            <td className="border-r border-black px-2 py-1" />
+            <td className="border-r border-black px-2 py-1 font-semibold">{total}</td>
+            <td className="px-2 py-1 text-[11px]">{p.commonEcts > 0 && `Ana dalda alınan ortak derslerle birlikte ${total + p.commonEcts} AKTS`}</td>
           </tr>
         </tbody>
       </table>
-      <table className="mt-6 w-full border-collapse">
-        <tbody>
-          <tr>
-            {box('OGRENCI_IMZA')}
-            {box('ANA_DAL_DANISMANI')}
-            {box('ANA_DAL_BOLUM_BASKANI')}
-          </tr>
-          <tr>
-            {box('KOORDINATOR')}
-            {box('HEDEF_BOLUM_BASKANI')}
-            <td className="border border-su-heading p-2 align-top text-xs">
-              Tarih:
-              <br />
-              {p?.approvedAt ? fmtDateTime(p.approvedAt) : ''}
-              <br />
-              Durum: {p ? LABELS.form[p.status] : '—'} ({round}. tur)
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p className="mt-3 text-xs">
-        Not: Bu form dört nüsha olarak düzenlenir; öğrenci, ana dal danışmanı, koordinatör ve {track.toLocaleLowerCase('tr')} bölüm başkanlığı birer nüsha saklar.
-        Aslı öğrenci işlerindeki öğrenci dosyasında bulunur.
-      </p>
-    </div>
+      {conditions.length > 0 && (
+        <ol className="mt-3 space-y-1 text-[12px]">
+          {conditions.map((c) => (
+            <li key={c.id}>
+              <sup>{c.no}</sup> Öğrenci {d.student.mainProgram} bölümünden {c.sourceCourseCode} kodlu {c.sourceCourseName} dersini alırsa {c.targetCourseCode} kodlu {c.targetCourseName} dersinden muaf
+              sayılacaktır.{c.note && ` (${c.note})`}
+            </li>
+          ))}
+        </ol>
+      )}
+      <Signatures
+        approvals={p.approvals}
+        roles={SIGNERS.PROTOCOL}
+        labels={{
+          ANA_DAL_DANISMANI: 'Anadal Danışmanı',
+          ANA_DAL_BOLUM_BASKANI: 'Anadal Bölüm/Anabilim Dalı Başkanı',
+          KOORDINATOR: `${cap ? 'Çift Anadal' : 'Yan Dal'} Koordinatörü`,
+          CAP_BOLUM_BASKANI: `${cap ? 'Çift Anadal' : 'Yan Dal'} Bölüm/Anabilim Dalı Başkanı`,
+        }}
+      />
+      <p className="mt-4 text-right">Tarih: {fmtDate(p.approvedAt ?? p.submittedAt)}</p>
+    </PrintShell>
   );
 }

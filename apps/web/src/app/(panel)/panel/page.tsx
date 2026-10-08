@@ -9,7 +9,7 @@ import type { Task, Term } from '@/lib/types';
 
 export const metadata = { title: 'Görevlerim' };
 
-const roleTitle: Record<Task['role'], string> = { ...LABELS.role, ONAY: 'İmzalar' };
+const roleTitle: Record<Task['role'], string> = { ...LABELS.role, IMZA: 'İmzalar' };
 
 /** Rol bazlı pano: kullanıcının o an yapması gereken işler, sayılarıyla. */
 export default async function Dashboard() {
@@ -23,14 +23,14 @@ export default async function Dashboard() {
         crumbs={['Görevlerim', data.term ? termLabel(data.term) : '']}
         subtitle={
           <>
-            Rolleriniz:{' '}
+            {me?.assignments.length ? 'Rolleriniz: ' : 'Öğrenci hesabı'}
             {me?.assignments.map((a, i) => (
               <span key={i} className="mr-1 inline-block rounded-pill bg-white/15 px-2 py-0.5 text-xs">
                 {LABELS.role[a.role]}
-                {a.unitId ? ` · ${me.units.find((u) => u.id === a.unitId)?.name ?? a.unitId}` : ''}
                 {a.programId ? ` · ${me.programs.find((p) => p.id === a.programId)?.name ?? a.programId}` : ''}
               </span>
             ))}
+            {me?.studentNo && <span className="ml-1 inline-block rounded-pill bg-white/15 px-2 py-0.5 text-xs">{me.studentNo}</span>}
           </>
         }
       />

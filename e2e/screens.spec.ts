@@ -4,38 +4,55 @@ import { login } from './helpers';
 /** Belgelendirme için ekran görüntüleri (docs/ekranlar/). flow.spec.ts sonrası çalışır; veriler dolu olur. */
 const shot = (name: string) => ({ path: `../docs/ekranlar/${name}.png`, fullPage: true });
 
-test('personel paneli ekranları', async ({ page }) => {
+test('öğrenci ekranları', async ({ page }) => {
   await page.goto('/');
-  await page.screenshot(shot('01-giris-sayfasi'));
-  await login(page, 'birim.iibf', '/panel');
-  await page.screenshot(shot('02-birim-gorevlerim'));
-  await page.goto('/birim/basvurular');
-  await page.screenshot(shot('03-birim-basvurular'));
-  await page.goto('/birim/basvurular/yeni?no=230301004&tur=CAP&teklif=O-2026-GUZ-CAP-IIBF-IKT');
-  await page.screenshot(shot('04-basvuru-girisi'));
-  await page.goto('/birim/kararlar/O-2026-GUZ-CAP-IIBF-IKT');
-  await page.screenshot(shot('05-karar-ve-kesin-kayit'));
-  await page.goto('/birim/ders-kayitlari');
-  await page.screenshot(shot('06-ders-kayit-formlari'));
-
-  await login(page, 'koord.iktisat', '/koordinator/O-2026-GUZ-CAP-IIBF-IKT/ogrenciler');
-  await page.screenshot(shot('07-koordinator-ogrenciler'));
-  await page.getByRole('link', { name: 'Ayşe Demirtaş' }).click();
+  await page.screenshot(shot('01-ana-sayfa'));
+  await login(page, '253302004', '/panel');
+  await page.screenshot(shot('02-ogrenci-gorevlerim'));
+  await page.goto('/ogrenci/bilgilerim');
+  await page.screenshot(shot('03-ogrenci-bilgilerim'));
+  await login(page, '253302003', '/ogrenci/basvuru');
+  await page.screenshot(shot('04-ogrenci-uygunluk-ve-basvuru'));
+  await login(page, '253302001', '/ogrenci/kayitlarim');
+  await page.getByRole('link', { name: 'Bilgisayar Mühendisliği Çift Ana Dal' }).click();
   await page.waitForURL(/\/kayitlar\//);
-  await page.screenshot(shot('08-kayit-protokol-ders-kaydi'));
+  await page.screenshot(shot('05-kayit-protokol-ders-kaydi-muafiyet'));
   const enrollment = new URL(page.url()).pathname.split('/').pop();
   await page.goto(`/yazdir/protokol/${enrollment}`);
-  await page.screenshot(shot('09-protokol-formu-yazdir'));
+  await page.screenshot(shot('06-protokol-formu-yazdir'));
+  await page.goto(`/yazdir/ders-kayit/${enrollment}`);
+  await page.screenshot(shot('07-ders-kayit-formu-yazdir'));
+});
 
-  await login(page, 'danisman.isletme', '/danisman');
-  await page.screenshot(shot('10-danisman'));
+test('komisyon ve yönetim ekranları', async ({ page }) => {
+  await login(page, 'koord.bilgisayar', '/panel');
+  await page.screenshot(shot('08-koordinator-gorevlerim'));
+  await page.goto('/koordinator/donem');
+  await page.screenshot(shot('09-kontenjan-ve-takvim'));
+  await page.goto('/koordinator/basvurular');
+  await page.screenshot(shot('10-basvurular'));
+  await page.locator('tbody tr').first().getByRole('link').click();
+  await page.waitForURL(/\/koordinator\/basvurular\/.+/);
+  await page.screenshot(shot('11-beyan-dogrulama'));
+  await page.goto('/koordinator/degerlendirme/O-2026-GUZ-CAP');
+  await page.screenshot(shot('12-siralama-ve-karar'));
+  await page.goto('/koordinator/ogrenciler');
+  await page.screenshot(shot('13-ogrenciler'));
+  await page.goto('/koordinator/protokoller/PT-CAP-EEM');
+  await page.screenshot(shot('14-protokol-sablonu'));
+  await page.goto('/koordinator/taramalar');
+  await page.locator('tbody tr').first().getByRole('link', { name: 'Aç' }).click();
+  await page.waitForURL(/\/koordinator\/taramalar\/.+/);
+  await page.screenshot(shot('15-donem-sonu-taramasi'));
+  await page.goto('/belgeler');
+  await page.screenshot(shot('16-yonerge-ve-formlar'));
 
-  await login(page, 'oidb.yonetici', '/panel');
-  await page.screenshot(shot('11-oidb-gorevlerim'));
-  await page.goto('/oidb/kullanicilar');
-  await page.screenshot(shot('12-kullanicilar-roller'));
-  await page.goto('/oidb/denetim');
-  await page.screenshot(shot('13-denetim-kaydi'));
-  await page.goto('/yazdir/kontenjan');
-  await page.screenshot(shot('14-kontenjan-ilani'));
+  await login(page, 'bolum.bilgisayar', '/yonetim/kullanicilar');
+  await page.screenshot(shot('17-kullanicilar-ve-roller'));
+  await page.goto('/yonetim/denetim');
+  await page.screenshot(shot('18-denetim-kaydi'));
+  await page.goto('/raporlar');
+  await page.screenshot(shot('19-raporlar'));
+  await login(page, 'danisman.eem', '/onaylar');
+  await page.screenshot(shot('20-imzalarim'));
 });

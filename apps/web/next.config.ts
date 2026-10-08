@@ -3,6 +3,8 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   transpilePackages: ['@cap/contracts', '@cap/rules'],
   poweredByHeader: false,
+  // Belge yükleme sunucu eylemiyle yapılır; API sınırı 5 MB.
+  experimental: { serverActions: { bodySizeLimit: '6mb' } },
   async headers() {
     return [
       {

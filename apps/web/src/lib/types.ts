@@ -1,14 +1,21 @@
 import type {
   ApplicationStatus,
   ApprovalRole,
+  ApprovalSubject,
+  CourseKind,
   DocumentDef,
+  DocumentKind,
   EnrollmentStatus,
   FindingDecision,
   FormStatus,
   LeaveReason,
   Proposal,
+  ProtocolItemKind,
+  ProtocolItemStatus,
   Role,
+  StaffRole,
   TrackType,
+  VerificationStatus,
 } from '@cap/contracts';
 import type { RuleResult, Verdict } from '@cap/rules';
 
@@ -19,22 +26,41 @@ export interface Term {
   isCurrent: boolean;
 }
 
+export interface Program {
+  id: string;
+  name: string;
+  faculty: string;
+  codePrefix: string | null;
+  isHome: boolean;
+}
+
+export interface Course {
+  code: string;
+  name: string;
+  ects: number;
+  semester: number;
+  kind: CourseKind;
+}
+
 export interface WindowState {
   open: boolean;
-  phase: 'TANIMSIZ' | 'ONCE' | 'ACIK' | 'KAPANDI';
-  opensAt: string | null;
-  closesAt: string | null;
+  phase: 'TASLAK' | 'ONCE' | 'ACIK' | 'KAPANDI';
+  opensAt: string;
+  closesAt: string;
   announceAt?: string | null;
 }
 
 export interface Me {
   username: string;
   displayName: string;
+  email: string | null;
   roles: Role[];
-  assignments: { role: Role; unitId: string | null; programId: string | null }[];
-  units: { id: string; name: string }[];
+  assignments: { role: StaffRole; programId: string | null }[];
+  studentNo: string | null;
   programs: { id: string; name: string }[];
-  coordinated: { id: string; type: TrackType; termId: string; program: { name: string }; term: Term }[];
+  home: Program;
+  homeHead: boolean;
+  mainDepartmentSigner: boolean;
   currentTerm: Term | null;
 }
 
@@ -46,74 +72,112 @@ export interface ExternalLink {
   description: string;
 }
 
-export interface PoolCourse {
-  id: string;
-  courseCode: string;
-  name: string;
-  ects: number;
-}
-
-export interface Program {
-  id: string;
-  name: string;
-  unitId: string;
-  unit: { id: string; name: string };
-}
-
 export interface OfferingRow {
   id: string;
   type: TrackType;
   quota: number;
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED';
-  coordinatorUsername: string;
   firstYearIntake: number | null;
   quotaJustification: string | null;
+  opensAt: string;
+  closesAt: string;
+  announceAt: string | null;
+  registrationDeadline: string | null;
+  waitlistDeadline: string | null;
   rankingLockedAt: string | null;
   registrationClosedAt: string | null;
   termId: string;
   term: Term;
-  program: Program & { category: string };
   sourcePrograms: { programId: string; program: { name: string } }[];
-  poolCourses: PoolCourse[];
+  window: WindowState;
   _count?: { applications: number; enrollments: number };
 }
 
-export interface Candidates {
+export interface OfferingBrief {
+  id: string;
+  type: TrackType;
+  quota: number;
+  term: Term;
+  sourcePrograms: string[];
+  announceAt: string | null;
+  registrationDeadline: string | null;
+}
+
+export interface StudentDocument {
+  id: string;
+  kind: DocumentKind;
+  fileName: string;
+  size: number;
+  uploadedAt: string;
+  _count?: { applications: number };
+}
+
+export interface StudentProfile {
+  studentNo: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  programId: string;
+  program: Program;
+  entryYear: number;
+  semesterNo: number;
+  gano: number;
+  completedAllCourses: boolean;
+  classRank: number | null;
+  classSize: number | null;
+  classRankPercentile: number | null;
+  entryScore: number | null;
+  successRank: number | null;
+  advisorUsername: string | null;
+  updatedAt: string;
+  documents: StudentDocument[];
+}
+
+export interface ProfileData {
+  account: { username: string; displayName: string; email: string | null };
+  profile: StudentProfile | null;
+  programs: Program[];
+  advisors: { username: string; displayName: string; programId: string }[];
+}
+
+export interface EligibilityData {
   term: Term | null;
-  student: {
-    studentNo: string;
-    fullName: string;
-    email: string;
-    programName: string;
-    unitName: string;
-    semesterNo: number;
-    gano: number;
-    classRankPercentile: number | null;
-    entryScore: { year: number; score: number } | null;
-  } | null;
-  otherApplications: { id: string; status: ApplicationStatus; programName: string; type: TrackType }[];
+  hasProfile: boolean;
   items: {
-    offering: { id: string; type: TrackType; quota: number; programName: string; unitName: string; sourcePrograms: string[] };
+    offering: OfferingBrief;
     window: WindowState;
-    verdict: Verdict;
-    path: 'RANK' | 'ENTRY_SCORE';
-    requiredDocuments: DocumentDef[];
+    verdict: Verdict | null;
+    path?: 'RANK' | 'ENTRY_SCORE';
     results: RuleResult[];
+    requiredDocuments: DocumentDef[];
+    missingDocuments: DocumentDef[];
     application: { id: string; status: ApplicationStatus } | null;
   }[];
+}
+
+export interface MyApplication {
+  id: string;
+  status: ApplicationStatus;
+  verification: VerificationStatus;
+  path: 'RANK' | 'ENTRY_SCORE';
+  submittedAt: string;
+  rank: number | null;
+  enrollmentId: string | null;
+  offering: OfferingBrief;
+  registrationOpen: boolean;
 }
 
 export interface ApplicationListRow {
   id: string;
   studentNo: string;
   fullName: string;
+  mainProgramName: string;
+  gano: number;
   status: ApplicationStatus;
+  verification: VerificationStatus;
   path: 'RANK' | 'ENTRY_SCORE';
-  documentNo: string | null;
-  documentDate: string | null;
   submittedAt: string;
-  enteredBy: string | null;
-  offering: { id: string; type: TrackType; programName: string; unitName: string };
+  offering: { id: string; type: TrackType; term: Term };
 }
 
 export interface AuditRow {
@@ -128,28 +192,42 @@ export interface AuditRow {
   reason: string | null;
 }
 
+export interface Declared {
+  gano: number;
+  semesterNo: number;
+  completedAllCourses: boolean;
+  classRank: number | null;
+  classSize: number | null;
+  entryYear: number;
+  entryScore: number | null;
+  successRank: number | null;
+}
+
 export interface ApplicationDetail {
   id: string;
   studentNo: string;
   status: ApplicationStatus;
+  verification: VerificationStatus;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  verificationNote: string | null;
   path: 'RANK' | 'ENTRY_SCORE';
-  documentNo: string | null;
-  documentDate: string | null;
-  documents: string[] | null;
-  enteredBy: string | null;
-  note: string | null;
   withdrawReason: string | null;
-  osymDocNo: string | null;
-  osymVerified: boolean;
   submittedAt: string;
-  obisSnapshot: { fullName: string; takenAt: string; ctx: { student: { gano: number; semesterNo: number; classRankPercentile: number | null; programId: string } } };
+  snapshot: { fullName: string; mainProgramName: string; takenAt: string; declared: Declared };
   eligibility: { verdict: Verdict; results: RuleResult[] };
   ruleSet: { version: string };
   ranking: { rank: number; proposal: Proposal; overriddenBy: string | null; overrideReason: string | null } | null;
   enrollment: { id: string } | null;
-  offering: OfferingRow;
+  offering: Omit<OfferingRow, 'window'>;
+  student: { studentNo: string; fullName: string; email: string; phone: string | null; program: Program; advisorUsername: string | null };
+  documents: StudentDocument[];
   requiredDocuments: DocumentDef[];
+  sameFaculty: boolean;
+  window: WindowState;
+  decisionPublished: boolean;
   audit: AuditRow[];
+  can: { verify: boolean; withdraw: boolean; accept: boolean };
 }
 
 export interface ReviewRow {
@@ -161,7 +239,7 @@ export interface ReviewRow {
   classRankPercentile: number | null;
   semesterNo: number;
   path: 'RANK' | 'ENTRY_SCORE';
-  osymVerified: boolean;
+  verification: VerificationStatus;
   status: ApplicationStatus;
   submittedAt: string;
   ranking: { rank: number; score: number; proposal: Proposal; overriddenBy: string | null; overrideReason: string | null } | null;
@@ -176,9 +254,11 @@ export interface Decision {
 }
 
 export interface ReviewData {
-  offering: OfferingRow;
+  offering: Omit<OfferingRow, 'window'>;
+  window: WindowState;
   windowClosed: boolean;
   decision: Decision | null;
+  unverified: number;
   strategy: string;
   rows: ReviewRow[];
 }
@@ -194,24 +274,114 @@ export interface Approval {
   comment: string | null;
 }
 
-export interface CourseItem {
-  code: string;
+export interface TemplateItem {
+  id: string;
+  position: number;
+  kind: ProtocolItemKind;
+  code: string | null;
   name: string;
   ects: number;
+  semester: number;
+}
+
+export interface Condition {
+  id: string;
+  no: number;
+  sourceCourseCode: string;
+  sourceCourseName: string;
+  targetCourseCode: string;
+  note: string | null;
+}
+
+export interface Template {
+  id: string;
+  type: TrackType;
+  sourceProgramId: string | null;
+  sourceProgram: Program | null;
+  title: string;
+  commonEcts: number;
+  source: string | null;
+  updatedBy: string | null;
+  updatedAt: string;
+  items: TemplateItem[];
+  conditions: Condition[];
+  ects: number;
+  totalEcts: number;
+  results: RuleResult[];
+  ok: boolean;
+  _count?: { protocols: number };
+}
+
+export interface ProtocolCourse {
+  id: string;
+  position: number;
+  kind: ProtocolItemKind;
+  code: string | null;
+  name: string;
+  ects: number;
+  semester: number;
+  status: ProtocolItemStatus;
+  grade: string | null;
+  fulfilledCode: string | null;
+  fulfilledName: string | null;
+  termId: string | null;
+}
+
+export interface RegistrationOption {
+  protocolCourseId: string;
+  kind: ProtocolItemKind;
+  code: string | null;
+  name: string;
+  ects: number;
+  semester: number;
+  status: ProtocolItemStatus;
+  choices: { code: string; name: string; ects: number }[];
+}
+
+export interface CourseRegistration {
+  id: string;
+  termId: string;
+  term: Term;
+  status: FormStatus;
+  round: number;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  items: { id: string; protocolCourseId: string; code: string; name: string; ects: number; protocolCourse: { status: ProtocolItemStatus; grade: string | null; kind: ProtocolItemKind; name: string } }[];
+  approvals: Approval[];
+}
+
+export interface ExemptionOption extends Condition {
+  targetCourseName: string;
+  targetLabel: string | null;
+  targetProtocolCourseId: string | null;
+  request: { id: string; status: FormStatus; round: number; sourceGrade: string; sourceTerm: string; createdAt: string; approvedAt: string | null } | null;
+  available: boolean;
+  approvals: Approval[];
+}
+
+export interface CapToMinor {
+  hasMinorProgram: boolean;
+  passedPoolCourses?: string[];
+  passedPoolEcts?: number;
+  eligibleForCertificate?: boolean;
+  message?: string;
 }
 
 export interface EnrollmentListRow {
   id: string;
   studentNo: string;
-  fullName?: string;
+  fullName: string;
+  mainProgramName: string;
   type: TrackType;
   status: EnrollmentStatus;
   statusLabel: string;
   ganoStrikes: number;
   createdAt: string;
-  program: { id: string; name: string; unitName: string };
+  term: Term;
   protocolStatus: FormStatus | null;
   currentRegistrationStatus: FormStatus | null;
+  trackEcts: number;
+  requiredEcts: number;
   warnings: { id: string; ruleCode: string; status: 'WARN' | 'FAIL'; decision: FindingDecision; result: RuleResult; at: string }[];
 }
 
@@ -224,13 +394,13 @@ export interface EnrollmentDetail {
     ganoStrikes: number;
     startTermId: string;
     createdAt: string;
-    registeredBy: string | null;
-    registrationDocuments: string[] | null;
-    trackAdvisorUsername: string | null;
-    coordinatorUsername: string;
-    program: { id: string; name: string; unitName: string };
+    completedAt: string | null;
+    mainAdvisorUsername: string | null;
+    mainGraduationGano: number | null;
+    program: { id: string; name: string; faculty: string };
+    offering: { id: string; term: Term };
   };
-  student: { studentNo: string; fullName: string; email: string; advisorUsername: string; mainProgram?: string; mainUnit?: string };
+  student: { studentNo: string; fullName: string; email: string; mainProgram: string; mainFaculty: string; mainProgramId: string };
   protocol: {
     id: string;
     status: FormStatus;
@@ -239,92 +409,62 @@ export interface EnrollmentDetail {
     createdBy: string;
     submittedAt: string | null;
     approvedAt: string | null;
-    filedAt: string | null;
-    filedBy: string | null;
-    courses: CourseItem[];
+    template: { title: string; source: string | null };
+    courses: ProtocolCourse[];
     approvals: Approval[];
     results: RuleResult[];
   } | null;
-  protocolOptions: {
-    courses: (CourseItem & { semester: number | null; inMain: boolean })[];
-    commonCourses: (CourseItem & { semester: number })[];
-    commonEcts: number;
-    poolEcts: number;
-  };
-  courseRegistrations: { id: string; termId: string; status: FormStatus; round: number; items: CourseItem[]; approvals: Approval[]; submittedAt: string | null; enteredAt: string | null }[];
-  leaves: { id: string; termId: string; reason: LeaveReason; note: string | null; createdBy: string; createdAt: string }[];
-  findings: { id: string; ruleCode: string; status: 'WARN' | 'FAIL'; decision: FindingDecision; result: RuleResult; reason: string | null; scan: { createdAt: string } }[];
-  withdrawals: { id: string; reason: string; createdAt: string; capToMinorOutcome: CapToMinor | null }[];
-  progress: {
-    trackEcts: number;
-    requiredEcts: number;
-    trackGpa: number | null;
-    mainGano: number;
-    semesterNo: number;
-    courses: { code: string; name: string; ects: number; grade: string; passed: boolean }[];
-    graduation: RuleResult | null;
-  } | null;
+  template: { id: string; title: string; commonEcts: number; items: TemplateItem[]; ects: number } | null;
+  courseRegistrations: CourseRegistration[];
+  registrationOptions: RegistrationOption[];
+  exemptions: ExemptionOption[];
+  termRecords: { id: string; termId: string; term: Term; mainGano: number; mainFrozen: boolean; declaredBy: string; declaredAt: string; verifiedBy: string | null; verifiedAt: string | null }[];
+  leaves: { id: string; termId: string; term: Term; reason: LeaveReason; note: string | null; createdBy: string; createdAt: string }[];
+  findings: { id: string; ruleCode: string; status: 'WARN' | 'FAIL'; decision: FindingDecision; result: RuleResult; reason: string | null; scan: { createdAt: string; term: Term } }[];
+  withdrawals: { id: string; reason: string; requestedBy: string; createdAt: string; capToMinorOutcome: CapToMinor | null }[];
+  progress: { trackEcts: number; requiredEcts: number; trackGpa: number | null; mainGano: number; graduation: RuleResult | null } | null;
   currentTerm: Term | null;
-  terms: Term[];
-  window: { registrationDeadline: string | null; waitlistDeadline: string | null; courseRegistrationDeadline: string | null } | null;
+  terms: (Term & { startsAt: string; endsAt: string })[];
+  advisors: { username: string; displayName: string }[];
   links: ExternalLink[];
-  can: { editProtocol: boolean; fileProtocol: boolean; courseRegistration: boolean; withdraw: boolean; leave: boolean; setTrackAdvisor: boolean };
-}
-
-export interface CapToMinor {
-  hasMinorProgram: boolean;
-  passedPoolCourses?: string[];
-  passedPoolEcts?: number;
-  eligibleForCertificate?: boolean;
-  eligibleForMinorEnrollment?: boolean;
-  message?: string;
+  viewer: { owner: boolean; coordinator: boolean };
+  can: {
+    createProtocol: boolean;
+    submitProtocol: boolean;
+    courseRegistration: boolean;
+    exemption: boolean;
+    grades: boolean;
+    termRecord: boolean;
+    verifyTermRecord: boolean;
+    withdraw: boolean;
+    leave: boolean;
+    setAdvisor: boolean;
+    complete: boolean;
+  };
 }
 
 export interface MyApproval {
   id: string;
   role: ApprovalRole;
   roleLabel: string;
+  proxy: boolean;
   createdAt: string;
-  subject: { kind: 'PROTOCOL' | 'COURSE_REG'; label: string; enrollmentId: string; round: number; ects: number; courseCount: number; termId: string | null };
-  enrollment: { id: string; studentNo: string; fullName: string; type: TrackType; programName: string };
+  subject: { id: string; kind: ApprovalSubject; label: string; enrollmentId: string; round: number; summary: string };
+  enrollment: { id: string; studentNo: string; fullName: string; type: TrackType; mainProgramName: string };
 }
 
 export interface Task {
   key: string;
-  role: Role | 'ONAY';
+  role: Role | 'IMZA';
   title: string;
   detail: string;
   count: number;
   link: string;
 }
 
-export interface CourseRegRow {
-  id: string;
-  status: FormStatus;
-  termId: string;
-  enrollmentId: string;
-  studentNo: string;
-  fullName: string;
-  type: TrackType;
-  programName: string;
-  unitName: string;
-  submittedAt: string | null;
-  enteredAt: string | null;
-  items: CourseItem[];
-}
-
-export interface ProtocolRow {
-  id: string;
-  status: FormStatus;
-  round: number;
-  updatedAt: string;
-  approvedAt: string | null;
-  filedAt: string | null;
-  ects: number;
-  enrollmentId: string;
-  studentNo: string;
-  fullName: string;
-  type: TrackType;
-  programName: string;
-  unitName: string;
+export interface YearStat {
+  year: number;
+  baseScore: number;
+  successRankLimit: number | null;
+  updatedBy: string | null;
 }

@@ -1,362 +1,507 @@
 import Link from 'next/link';
-import { Printer } from 'lucide-react';
-import { LABELS, LEAVE_REASONS, REGISTRATION_DOCUMENTS } from '@cap/contracts';
+import { GRADES, LABELS, LEAVE_REASONS, PASSING_GRADES } from '@cap/contracts';
 import { ActionForm, SubmitButton } from '@/components/forms';
 import { ApprovalTable, EnrollmentBadge, FormBadge, RuleList } from '@/components/status';
-import { Alert, Badge, buttonVariants, Card, CardTitle, Empty, Field, Input, Page, PageHero, Progress, Select, Textarea } from '@/components/ui';
+import { Alert, Badge, buttonVariants, Card, CardTitle, Empty, Field, Input, Page, PageHero, Progress, Select, Stat, Table, Td, Th } from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDate, fmtDateTime, fmtGpa, termLabel } from '@/lib/format';
 import {
-  fileProtocolAction,
+  advisorAction,
+  completeAction,
+  createProtocolAction,
+  exemptionAction,
+  gradesAction,
   leaveAction,
   saveCourseRegAction,
-  saveProtocolAction,
   submitCourseRegAction,
   submitProtocolAction,
-  trackAdvisorAction,
+  termRecordAction,
+  verifyTermRecordAction,
   withdrawEnrollmentAction,
-} from '@/lib/panel-actions';
+} from '@/lib/actions';
 import type { EnrollmentDetail } from '@/lib/types';
 
 export const metadata = { title: 'Kayıt' };
 
-function ProtocolSection({ d }: { d: EnrollmentDetail }) {
-  const p = d.protocol;
-  const editable = d.can.editProtocol && (!p || ['DRAFT', 'REJECTED', 'APPROVED', 'FILED'].includes(p.status));
-  const revision = !!p && ['APPROVED', 'FILED'].includes(p.status);
-  const chosen = new Set(p?.courses.map((c) => c.code) ?? []);
-  const isCap = d.enrollment.type === 'CAP';
-  // ÇAP'ta ilk taslakta ana dalda olmayan tüm alan dersleri önerilir; yan dalda seçim boş başlar.
-  const preselect = !p && isCap;
-  const bySemester = new Map<string, typeof d.protocolOptions.courses>();
-  for (const c of d.protocolOptions.courses) {
-    const key = c.semester ? `${c.semester}. yarıyıl` : 'Ders havuzu';
-    bySemester.set(key, [...(bySemester.get(key) ?? []), c]);
-  }
-  const total = (p?.courses.reduce((t, c) => t + c.ects, 0) ?? 0) + (p?.commonEcts ?? 0);
+const itemTone = { PENDING: 'muted', PASSED: 'ok', FAILED: 'bad', EXEMPT: 'neutral' } as const;
 
-  return (
-    <Card>
-      <CardTitle
-        aside={
-          <div className="flex items-center gap-2">
-            <FormBadge value={p?.status ?? null} />
-            {p && (
-              <Link href={`/yazdir/protokol/${d.enrollment.id}`} className={buttonVariants({ size: 'sm', variant: 'outline' })}>
-                <Printer aria-hidden className="size-3.5" /> Yazdır
-              </Link>
-            )}
-          </div>
-        }
-      >
-        Kabul ve Ders Protokolü
-        <span className="block text-xs font-normal text-su-muted">
-          ÇAP Uygulama Esasları m.3 · {isCap ? 'ana dal ortak dersleri dahil lisansta 240, ön lisansta 120 AKTS (Yönerge m.7/2)' : 'en az 30 AKTS ve 6 ders (Yan Dal Yön. m.5/1-g)'}
-          {p && ` · ${p.round}. tur · toplam ${total} AKTS`}
-        </span>
-      </CardTitle>
-
-      {isCap && d.protocolOptions.commonCourses.length > 0 && (
-        <p className="mb-3 rounded-lg bg-su-bg p-3 text-xs text-su-muted">
-          Ortak sayılan ana dal dersleri ({d.protocolOptions.commonEcts} AKTS, Yönerge m.7/2):{' '}
-          {d.protocolOptions.commonCourses.map((c) => `${c.code} ${c.name}`).join(', ')}
-        </p>
-      )}
-
-      {p?.results && p.results.length > 0 && (
-        <div className="mb-3">
-          <RuleList results={p.results} />
-        </div>
-      )}
-
-      {editable ? (
-        <ActionForm action={saveProtocolAction}>
-          <input type="hidden" name="enrollmentId" value={d.enrollment.id} />
-          {[...bySemester.entries()].map(([sem, list]) => (
-            <fieldset key={sem} className="rounded-xl border border-su-border/70 p-3">
-              <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-su-muted">{sem}</legend>
-              <div className="grid gap-1.5 sm:grid-cols-2">
-                {list.map((c) => (
-                  <label key={c.code} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name="course"
-                      value={c.code}
-                      defaultChecked={preselect ? !c.inMain : chosen.has(c.code)}
-                      className="size-4 accent-[var(--color-su-primary)]"
-                    />
-                    <span className="font-mono text-xs text-su-subtle">{c.code}</span>
-                    <span className="flex-1">{c.name}</span>
-                    <span className="text-xs text-su-muted">{c.ects}</span>
-                    {c.inMain && <Badge tone="warn">ana dalda var</Badge>}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-          {revision && (
-            <Field label="Değişiklik gerekçesi" hint="Onaylanmış protokolde değişiklik tüm imzaları yeniden ister (Esaslar m.3).">
-              <Input name="reason" required minLength={5} placeholder="Örn. dersin programdan kaldırılması" />
-            </Field>
-          )}
-          <SubmitButton size="sm" variant={revision ? 'outline' : 'primary'} confirm={revision ? 'Onaylanmış protokol taslağa dönecek ve tüm imzalar yeniden istenecek. Devam edilsin mi?' : undefined}>
-            {revision ? 'Değişiklik taslağı oluştur' : 'Taslağı kaydet ve denetle'}
-          </SubmitButton>
-        </ActionForm>
-      ) : p ? (
-        <ul className="grid gap-1 text-sm sm:grid-cols-2">
-          {p.courses.map((c) => (
-            <li key={c.code}>
-              <span className="font-mono text-xs text-su-subtle">{c.code}</span> {c.name} <span className="text-xs text-su-muted">({c.ects})</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <Empty>Protokol henüz hazırlanmadı. Koordinatör hazırlar.</Empty>
-      )}
-
-      {d.can.editProtocol && p && ['DRAFT', 'REJECTED'].includes(p.status) && (
-        <ActionForm action={submitProtocolAction} className="mt-3">
-          <input type="hidden" name="enrollmentId" value={d.enrollment.id} />
-          <SubmitButton size="sm" variant="accent">
-            İmzacılara gönder
-          </SubmitButton>
-        </ActionForm>
-      )}
-
-      {p && p.approvals.length > 0 && (
-        <div className="mt-4">
-          <ApprovalTable approvals={p.approvals} />
-        </div>
-      )}
-
-      {d.can.fileProtocol && (
-        <ActionForm action={fileProtocolAction} className="mt-3">
-          <input type="hidden" name="enrollmentId" value={d.enrollment.id} />
-          <SubmitButton size="sm">Aslı öğrenci dosyasına kaldırıldı</SubmitButton>
-        </ActionForm>
-      )}
-      {p?.filedAt && (
-        <p className="mt-2 text-xs text-su-muted">
-          Aslı dosyada: {p.filedBy} · {fmtDateTime(p.filedAt)}
-        </p>
-      )}
-    </Card>
-  );
-}
-
-function CourseRegSection({ d }: { d: EnrollmentDetail }) {
-  const term = d.currentTerm;
-  const reg = d.courseRegistrations.find((r) => r.termId === term?.id);
-  const passed = new Set(d.progress?.courses.filter((c) => c.passed).map((c) => c.code) ?? []);
-  const allowed = d.protocol?.courses.filter((c) => !passed.has(c.code)) ?? [];
-  const selected = new Set(reg?.items.map((i) => i.code) ?? []);
-  const editable = d.can.courseRegistration && (!reg || ['DRAFT', 'REJECTED'].includes(reg.status));
-  const leave = d.leaves.find((l) => l.termId === term?.id);
-
-  return (
-    <Card>
-      <CardTitle aside={<FormBadge value={reg?.status ?? null} />}>
-        Ders kayıt formu · {term ? termLabel(term) : ''}
-        <span className="block text-xs font-normal text-su-muted">
-          ÇAP Uygulama Esasları m.4 · son tarih {fmtDateTime(d.window?.courseRegistrationDeadline)} · her dönem yenilenir
-        </span>
-      </CardTitle>
-      {leave && (
-        <Alert tone="info" className="mb-3">
-          Bu dönem için dönem izni kayıtlı: {LABELS.leave[leave.reason]}.
-        </Alert>
-      )}
-      {!d.protocol || !['APPROVED', 'FILED'].includes(d.protocol.status) ? (
-        <Empty>Ders kaydı için önce Kabul ve Ders Protokolünün onaylanması gerekir.</Empty>
-      ) : editable && term ? (
-        <>
-          <ActionForm action={saveCourseRegAction}>
-            <input type="hidden" name="enrollmentId" value={d.enrollment.id} />
-            <input type="hidden" name="termId" value={term.id} />
-            <p className="text-xs text-su-muted">Protokoldeki, henüz geçilmemiş dersler. Ana dal ders programıyla çakışma kontrolü öğrenci ve danışmanın sorumluluğundadır (Esaslar m.4).</p>
-            <div className="grid max-h-80 gap-1.5 overflow-y-auto rounded-xl border border-su-border/70 p-3 sm:grid-cols-2">
-              {allowed.map((c) => (
-                <label key={c.code} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="course" value={c.code} defaultChecked={selected.has(c.code)} className="size-4 accent-[var(--color-su-primary)]" />
-                  <span className="font-mono text-xs text-su-subtle">{c.code}</span>
-                  <span className="flex-1">{c.name}</span>
-                  <span className="text-xs text-su-muted">{c.ects}</span>
-                </label>
-              ))}
-            </div>
-            <SubmitButton size="sm">Formu kaydet</SubmitButton>
-          </ActionForm>
-          {reg && reg.items.length > 0 && (
-            <ActionForm action={submitCourseRegAction} className="mt-3">
-              <input type="hidden" name="enrollmentId" value={d.enrollment.id} />
-              <input type="hidden" name="termId" value={term.id} />
-              <SubmitButton size="sm" variant="accent">
-                İmzacılara gönder ({reg.items.length} ders, {reg.items.reduce((t, i) => t + i.ects, 0)} AKTS)
-              </SubmitButton>
-            </ActionForm>
-          )}
-        </>
-      ) : reg ? (
-        <ul className="grid gap-1 text-sm sm:grid-cols-2">
-          {reg.items.map((c) => (
-            <li key={c.code}>
-              <span className="font-mono text-xs text-su-subtle">{c.code}</span> {c.name}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <Empty>Bu dönem için form yok.</Empty>
-      )}
-      {reg && reg.approvals.length > 0 && (
-        <div className="mt-4">
-          <ApprovalTable approvals={reg.approvals} />
-        </div>
-      )}
-      {d.courseRegistrations.filter((r) => r.termId !== term?.id).length > 0 && (
-        <details className="mt-3 text-sm">
-          <summary className="text-su-primary">Önceki dönemler</summary>
-          <ul className="mt-2 space-y-1">
-            {d.courseRegistrations
-              .filter((r) => r.termId !== term?.id)
-              .map((r) => (
-                <li key={r.id}>
-                  {r.termId}: <FormBadge value={r.status} /> {r.items.length} ders
-                </li>
-              ))}
-          </ul>
-        </details>
-      )}
-    </Card>
-  );
-}
-
-export default async function EnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+/** Bir öğrencinin ÇAP / yan dal kaydı: öğrenci, komisyon ve ana dal imzacılarının ortak ekranı. */
+export default async function EnrollmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ kayit?: string }> }) {
+  const [{ id }, { kayit }] = await Promise.all([params, searchParams]);
   const d = await api<EnrollmentDetail>(`/enrollments/${id}`);
-  const e = d.enrollment;
-  const outcome = d.withdrawals[0]?.capToMinorOutcome;
-  const active = e.status === 'ACTIVE' || e.status === 'FROZEN';
+  const { enrollment: e, student, protocol, can, viewer } = d;
+  const track = LABELS.track[e.type];
+  const term = d.currentTerm;
+  const currentReg = d.courseRegistrations.find((r) => r.termId === term?.id);
+  const editableReg = can.courseRegistration && term;
+  const chosen = new Map(currentReg?.items.map((i) => [i.protocolCourseId, i.code]) ?? []);
+  const startIndex = d.terms.findIndex((t) => t.id === e.startTermId);
+  const started = d.terms.filter((t, i) => new Date(t.startsAt) <= new Date() && i >= startIndex);
+  const protocolEcts = protocol?.courses.reduce((t, c) => t + c.ects, 0) ?? 0;
+  const gradable = d.courseRegistrations.filter((r) => r.status === 'APPROVED');
 
   return (
     <>
       <PageHero
-        title={`${d.student.fullName} · ${d.student.studentNo}`}
-        crumbs={['Kayıtlı öğrenciler', LABELS.track[e.type]]}
-        subtitle={`${e.program.name} (${e.program.unitName}) · ana dal: ${d.student.mainProgram ?? '—'}`}
+        title={`${student.fullName} · ${track}`}
+        crumbs={[viewer.owner ? 'Kayıtlarım' : 'Öğrenciler', student.studentNo]}
+        subtitle={
+          <>
+            Ana dal: {student.mainProgram} ({student.mainFaculty}) · {track}: {e.program.name} · başlangıç {termLabel(e.offering.term)}
+          </>
+        }
         actions={<EnrollmentBadge value={e.status} />}
       />
-      <Page className="max-w-7xl">
-        <div className="grid gap-6 xl:grid-cols-3">
-          <div className="space-y-6 xl:col-span-2">
-            <ProtocolSection d={d} />
-            <CourseRegSection d={d} />
+      <Page>
+        {kayit && <Alert tone="ok" title="Kesin kaydınız yapıldı.">Komisyon Kabul ve Ders Protokolünüzü hazırlayıp imzaya gönderecek; imzanız istendiğinde “İmzalarım” sayfasında görünür.</Alert>}
+        {d.withdrawals[0] && (
+          <Alert tone="info" title={`Programdan ayrıldı (${fmtDate(d.withdrawals[0].createdAt)})`}>
+            {d.withdrawals[0].reason}
+            {d.withdrawals[0].capToMinorOutcome?.message && <span className="mt-1 block">{d.withdrawals[0].capToMinorOutcome.message}</span>}
+          </Alert>
+        )}
+
+        {d.progress && (
+          <div className="grid gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-su-border/70 bg-white p-4 sm:col-span-2">
+              <Progress value={d.progress.trackEcts} max={d.progress.requiredEcts} label="Protokol AKTS (geçilen + muaf)" />
+              {d.progress.graduation && <p className="mt-2 text-xs text-su-muted">{d.progress.graduation.message}</p>}
+            </div>
+            <Stat label={`${track} ortalaması`} value={fmtGpa(d.progress.trackGpa)} hint="Girilen notlardan" />
+            <Stat label="Ana dal GNO" value={fmtGpa(d.progress.mainGano)} hint={e.ganoStrikes ? `GNO düşüşü: ${e.ganoStrikes}` : 'Son dönem beyanı'} />
           </div>
-          <div className="space-y-6">
-            <Card>
-              <CardTitle>Kayıt</CardTitle>
-              <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-su-muted">Kesin kayıt</dt>
-                  <dd>
-                    {fmtDate(e.createdAt)} · {e.registeredBy ?? 'önceki dönem'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-su-muted">Ana dal danışmanı · program danışmanı</dt>
-                  <dd>
-                    {d.student.advisorUsername} · {e.trackAdvisorUsername ?? '—'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-su-muted">Koordinatör</dt>
-                  <dd>{e.coordinatorUsername}</dd>
-                </div>
-                {e.ganoStrikes > 0 && (
-                  <div>
-                    <dt className="text-su-muted">GNO düşüş sayacı (YÖK m.17/4)</dt>
-                    <dd className="text-warn">{e.ganoStrikes}</dd>
-                  </div>
+        )}
+
+        {/* ---------------- Kabul ve Ders Protokolü ---------------- */}
+        <Card>
+          <CardTitle
+            aside={
+              <div className="flex flex-wrap items-center gap-2">
+                <FormBadge value={protocol?.status ?? null} />
+                {protocol && (
+                  <Link href={`/yazdir/protokol/${e.id}`} className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+                    Yazdır
+                  </Link>
                 )}
-                {e.registrationDocuments && (
-                  <div>
-                    <dt className="text-su-muted">Kayıt belgeleri</dt>
-                    <dd className="text-xs">
-                      {REGISTRATION_DOCUMENTS.filter((x) => e.registrationDocuments!.includes(x.key))
-                        .map((x) => x.label)
-                        .join(', ')}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-              {d.can.setTrackAdvisor && (
-                <ActionForm action={trackAdvisorAction} className="mt-3 flex items-end gap-2">
+              </div>
+            }
+          >
+            Kabul ve Ders Protokolü
+            {protocol && <span className="block text-xs font-normal text-su-muted">Şablon: {protocol.template.title}</span>}
+          </CardTitle>
+
+          {!protocol && !d.template && (
+            <Alert tone="warn" title={`${student.mainProgram} için ${track.toLowerCase()} protokol şablonu tanımlı değil.`}>
+              {viewer.coordinator ? <Link href="/koordinator/protokoller">Protokol şablonları</Link> : 'Komisyon şablonu tanımladığında protokolünüz hazırlanacak.'}
+            </Alert>
+          )}
+          {!protocol && d.template && !can.createProtocol && <Empty>Protokol komisyon tarafından henüz hazırlanmadı.</Empty>}
+
+          {protocol && (
+            <>
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Ders kodu</Th>
+                    <Th>Ders adı</Th>
+                    <Th>AKTS</Th>
+                    <Th>Yarıyıl</Th>
+                    <Th>Durum</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {protocol.courses.map((c) => (
+                    <tr key={c.id}>
+                      <Td className="font-mono text-xs">{c.code ?? c.fulfilledCode ?? '—'}</Td>
+                      <Td>
+                        {c.name}
+                        {c.fulfilledName && <span className="block text-xs text-su-muted">→ {c.fulfilledName}</span>}
+                      </Td>
+                      <Td>{c.ects}</Td>
+                      <Td>{c.semester}</Td>
+                      <Td>
+                        <Badge tone={itemTone[c.status]}>
+                          {LABELS.itemStatus[c.status]}
+                          {c.grade ? ` · ${c.grade}` : ''}
+                        </Badge>
+                      </Td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <Td colSpan={2} className="text-right font-semibold">
+                      Toplam
+                    </Td>
+                    <Td className="font-semibold">{protocolEcts}</Td>
+                    <Td colSpan={2} className="text-xs text-su-muted">
+                      {protocol.commonEcts > 0 && `+ ${protocol.commonEcts} AKTS ana dalda alınan ortak dersler = ${protocolEcts + protocol.commonEcts}`}
+                    </Td>
+                  </tr>
+                </tbody>
+              </Table>
+              {protocol.results.length > 0 && (
+                <div className="mt-3">
+                  <RuleList results={protocol.results} />
+                </div>
+              )}
+              <div className="mt-4">
+                <ApprovalTable approvals={protocol.approvals} />
+              </div>
+              {can.submitProtocol && (
+                <ActionForm action={submitProtocolAction} className="mt-4">
                   <input type="hidden" name="enrollmentId" value={e.id} />
-                  <div className="flex-1">
-                    <Field label="Program danışmanı (Danışmanlık Yön. m.6/5)">
-                      <Input name="username" defaultValue={e.trackAdvisorUsername ?? ''} required />
-                    </Field>
-                  </div>
-                  <SubmitButton size="sm" variant="outline">
-                    Ata
-                  </SubmitButton>
+                  <SubmitButton confirm="Protokol beş imzacıya gönderilecek. Devam edilsin mi?">İmzaya gönder</SubmitButton>
                 </ActionForm>
               )}
-            </Card>
+            </>
+          )}
 
-            {d.progress && (
-              <Card>
-                <CardTitle>İlerleme (OBİS)</CardTitle>
-                <Progress value={d.progress.trackEcts} max={d.progress.requiredEcts} label="Tamamlanan AKTS" />
-                <p className="mt-2 text-sm text-su-muted">
-                  Ana dal GNO {fmtGpa(d.progress.mainGano)} · program ortalaması {fmtGpa(d.progress.trackGpa)} · {d.progress.semesterNo}. yarıyıl
-                </p>
-                {d.progress.graduation && (
-                  <div className="mt-2">
-                    <RuleList results={[d.progress.graduation]} />
+          {can.createProtocol && d.template && (
+            <ActionForm action={createProtocolAction} className="mt-4 rounded-lg bg-su-bg p-3">
+              <input type="hidden" name="enrollmentId" value={e.id} />
+              {e.type === 'YANDAL' ? (
+                <fieldset>
+                  <legend className="text-sm font-medium text-su-heading">Yan dal planı: havuzdan en az 30 AKTS ve 6 ders seçin (Yan Dal Yön. m.5/1-g)</legend>
+                  <div className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+                    {d.template.items.map((i) => (
+                      <label key={i.id} className="flex items-center gap-2">
+                        <input type="checkbox" name="item" value={i.id} defaultChecked={protocol?.courses.some((c) => c.code === i.code)} />
+                        <span className="font-mono text-xs">{i.code}</span> {i.name} <span className="text-xs text-su-subtle">{i.ects} AKTS</span>
+                      </label>
+                    ))}
                   </div>
+                </fieldset>
+              ) : (
+                <p className="text-sm text-su-muted">
+                  “{d.template.title}” protokolünden üretilir: {d.template.items.length} satır, {d.template.ects} AKTS + {d.template.commonEcts} ortak AKTS.
+                </p>
+              )}
+              <SubmitButton size="sm" variant={protocol ? 'outline' : 'primary'}>
+                {protocol ? 'Şablondan yeniden üret' : 'Protokolü şablondan üret'}
+              </SubmitButton>
+            </ActionForm>
+          )}
+        </Card>
+
+        {/* ---------------- Ders kayıt formu (FORM01) ---------------- */}
+        {protocol?.status === 'APPROVED' && (
+          <Card>
+            <CardTitle aside={currentReg && <FormBadge value={currentReg.status} />}>
+              Ders kayıt formu
+              <span className="block text-xs font-normal text-su-muted">
+                {term ? termLabel(term) : ''} · öğrenci hazırlar; öğrenci, ana dal danışmanı ve koordinatör imzalar (FORM01)
+              </span>
+            </CardTitle>
+            {editableReg ? (
+              <>
+                <ActionForm action={saveCourseRegAction}>
+                  <input type="hidden" name="enrollmentId" value={e.id} />
+                  <input type="hidden" name="termId" value={term.id} />
+                  <fieldset>
+                    <legend className="text-sm font-medium text-su-heading">Bu dönem alınacak dersler</legend>
+                    <div className="mt-2 grid gap-x-6 gap-y-1.5 text-sm lg:grid-cols-2">
+                      {d.registrationOptions
+                        .filter((o) => o.kind === 'COURSE')
+                        .map((o) => (
+                          <label key={o.protocolCourseId} className="flex items-center gap-2">
+                            <input type="checkbox" name="item" value={o.protocolCourseId} defaultChecked={chosen.has(o.protocolCourseId)} />
+                            <span className="font-mono text-xs">{o.code}</span> {o.name}
+                            <span className="text-xs text-su-subtle">
+                              {o.ects} AKTS · {o.semester}. yy{o.status === 'FAILED' ? ' · tekrar' : ''}
+                            </span>
+                          </label>
+                        ))}
+                    </div>
+                  </fieldset>
+                  {d.registrationOptions.some((o) => o.kind === 'ELECTIVE_SLOT') && (
+                    <fieldset>
+                      <legend className="text-sm font-medium text-su-heading">Teknik seçmeli ders yerleri</legend>
+                      <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {d.registrationOptions
+                          .filter((o) => o.kind === 'ELECTIVE_SLOT')
+                          .map((o, i) => (
+                            <Field key={o.protocolCourseId} label={`${o.name} (${i + 1})`}>
+                              <Select name={`slot:${o.protocolCourseId}`} defaultValue={chosen.get(o.protocolCourseId) ?? ''}>
+                                <option value="">— bu dönem alınmayacak —</option>
+                                {o.choices.map((c) => (
+                                  <option key={c.code} value={c.code}>
+                                    {c.code} {c.name} ({c.ects})
+                                  </option>
+                                ))}
+                              </Select>
+                            </Field>
+                          ))}
+                      </div>
+                    </fieldset>
+                  )}
+                  <SubmitButton size="sm" variant="outline">
+                    Formu kaydet
+                  </SubmitButton>
+                </ActionForm>
+                {currentReg && currentReg.items.length > 0 && (
+                  <ActionForm action={submitCourseRegAction} className="mt-3 border-t border-su-border/60 pt-3">
+                    <input type="hidden" name="enrollmentId" value={e.id} />
+                    <input type="hidden" name="termId" value={term.id} />
+                    <p className="text-sm text-su-muted">
+                      Formda {currentReg.items.length} ders, {currentReg.items.reduce((t, i) => t + i.ects, 0)} AKTS var.
+                    </p>
+                    <SubmitButton confirm="Form imzaya gönderilecek ve sonra değiştirilemeyecek. Devam edilsin mi?">İmzaya gönder</SubmitButton>
+                  </ActionForm>
                 )}
-              </Card>
+              </>
+            ) : (
+              !currentReg && <Empty>Bu dönem için ders kayıt formu hazırlanmadı.</Empty>
             )}
 
+            {d.courseRegistrations.map((r) => (
+              <details key={r.id} open={r.termId === term?.id} className="mt-4 rounded-lg border border-su-border/60 p-3">
+                <summary className="flex flex-wrap items-center gap-2 text-sm font-medium text-su-heading">
+                  {termLabel(r.term)} <FormBadge value={r.status} />
+                  <span className="text-xs font-normal text-su-muted">
+                    {r.items.length} ders · {r.items.reduce((t, i) => t + i.ects, 0)} AKTS
+                  </span>
+                  <Link href={`/yazdir/ders-kayit/${e.id}?donem=${r.termId}`} className="ml-auto text-xs font-normal">
+                    Yazdır
+                  </Link>
+                </summary>
+                <ul className="mt-2 space-y-0.5 text-sm">
+                  {r.items.map((i) => (
+                    <li key={i.id}>
+                      <span className="font-mono text-xs">{i.code}</span> {i.name} <span className="text-xs text-su-subtle">{i.ects} AKTS</span>
+                      {i.protocolCourse.grade && <Badge tone={itemTone[i.protocolCourse.status]} className="ml-2">{i.protocolCourse.grade}</Badge>}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3">
+                  <ApprovalTable approvals={r.approvals} />
+                </div>
+              </details>
+            ))}
+          </Card>
+        )}
+
+        {/* ---------------- Not girişi ---------------- */}
+        {can.grades && gradable.length > 0 && (
+          <Card>
+            <CardTitle>
+              Dönem sonu not girişi
+              <span className="block text-xs font-normal text-su-muted">OBİS bağlantısı olmadığı için notları komisyon girer. DC şartlı geçer: başarılı sayılıyorsa işaretleyin (Yönetmelik m.13).</span>
+            </CardTitle>
+            <ActionForm action={gradesAction}>
+              <input type="hidden" name="enrollmentId" value={e.id} />
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Dönem</Th>
+                    <Th>Ders</Th>
+                    <Th>Not</Th>
+                    <Th>DC başarılı</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gradable.flatMap((r) =>
+                    r.items
+                      .filter((i) => i.protocolCourse.status !== 'EXEMPT')
+                      .map((i) => (
+                        <tr key={i.id}>
+                          <Td className="text-xs">{termLabel(r.term)}</Td>
+                          <Td>
+                            <span className="font-mono text-xs">{i.code}</span> {i.name}
+                          </Td>
+                          <Td>
+                            <Select name={`grade:${i.id}`} defaultValue={i.protocolCourse.grade ?? ''} aria-label={`${i.name} notu`} className="w-28">
+                              <option value="">—</option>
+                              {GRADES.map((g) => (
+                                <option key={g} value={g}>
+                                  {g}
+                                </option>
+                              ))}
+                            </Select>
+                          </Td>
+                          <Td>
+                            <input type="checkbox" name={`passed:${i.id}`} aria-label={`${i.name}: DC başarılı sayılır`} defaultChecked={i.protocolCourse.grade === 'DC' && i.protocolCourse.status === 'PASSED'} />
+                          </Td>
+                        </tr>
+                      )),
+                  )}
+                </tbody>
+              </Table>
+              <SubmitButton size="sm">Notları kaydet</SubmitButton>
+            </ActionForm>
+          </Card>
+        )}
+
+        {/* ---------------- Özel şartlı derslerin muafiyeti ---------------- */}
+        {protocol && d.exemptions.length > 0 && (
+          <Card>
+            <CardTitle>
+              Özel şartlı derslerin muafiyeti
+              <span className="block text-xs font-normal text-su-muted">
+                Protokolün altındaki numaralı şartlardan birini sağlayan öğrenci, mezuniyetten önce muafiyet formuyla başvurur; ana dal danışmanı ve koordinatör imzalar (Rehber).
+              </span>
+            </CardTitle>
+            <ul className="space-y-3">
+              {d.exemptions.map((x) => (
+                <li key={x.id} className="rounded-lg border border-su-border/60 p-3 text-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p>
+                      <span className="font-semibold">{x.no}.</span> {student.mainProgram} bölümünden <span className="font-mono text-xs">{x.sourceCourseCode}</span> {x.sourceCourseName} dersini alan öğrenci{' '}
+                      <span className="font-mono text-xs">{x.targetCourseCode}</span> {x.targetCourseName} dersinden muaf sayılır.
+                      {x.note && <span className="block text-xs text-su-muted">({x.note})</span>}
+                    </p>
+                    {x.request ? <FormBadge value={x.request.status} /> : !x.targetLabel && <Badge tone="muted">Karşılığı kalmadı</Badge>}
+                  </div>
+                  {x.request && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-xs text-su-muted">
+                        Beyan: {x.request.sourceTerm} döneminde {x.request.sourceGrade} · {x.request.round}. tur ·{' '}
+                        <Link href={`/yazdir/muafiyet/${e.id}?sart=${x.id}`}>Formu yazdır</Link>
+                      </p>
+                      <ApprovalTable approvals={x.approvals} />
+                    </div>
+                  )}
+                  {can.exemption && x.available && (
+                    <ActionForm action={exemptionAction} className="mt-3 flex flex-wrap items-end gap-3 rounded-lg bg-su-bg p-3">
+                      <input type="hidden" name="enrollmentId" value={e.id} />
+                      <input type="hidden" name="conditionId" value={x.id} />
+                      <p className="w-full text-xs text-su-muted">Muaf sayılacak satır: {x.targetLabel}</p>
+                      <Field label="Ana daldaki not">
+                        <Select name="sourceGrade" className="w-28" aria-label={`Şart ${x.no}: ana daldaki not`}>
+                          {GRADES.filter((g) => PASSING_GRADES.includes(g) && g !== 'G').map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field label="Dersi aldığı dönem">
+                        <Input name="sourceTerm" required placeholder="2025-2026 Bahar" className="w-48" aria-label={`Şart ${x.no}: dersi aldığı dönem`} />
+                      </Field>
+                      <SubmitButton size="sm">{x.request ? 'Yeniden başvur' : 'Muafiyet başvurusu yap'}</SubmitButton>
+                    </ActionForm>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        {/* ---------------- Dönem sonu beyanı ---------------- */}
+        <Card>
+          <CardTitle>
+            Dönem sonu beyanı
+            <span className="block text-xs font-normal text-su-muted">
+              Her dönem sonunda ana dal genel not ortalaması girilir; komisyon transkriptle doğrular. Dönem sonu taraması bu beyanla çalışır (ÇAP Yön. m.9/1-e).
+            </span>
+          </CardTitle>
+          {d.termRecords.length === 0 ? (
+            <Empty>Henüz dönem beyanı yok.</Empty>
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Dönem</Th>
+                  <Th>Ana dal GNO</Th>
+                  <Th>Ana dalda kayıt</Th>
+                  <Th>Beyan eden</Th>
+                  <Th>Doğrulama</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.termRecords.map((r) => (
+                  <tr key={r.id}>
+                    <Td>{termLabel(r.term)}</Td>
+                    <Td className="font-semibold">{fmtGpa(r.mainGano)}</Td>
+                    <Td>{r.mainFrozen ? 'Dondurulmuş' : 'Etkin'}</Td>
+                    <Td className="text-xs">
+                      {r.declaredBy} · {fmtDateTime(r.declaredAt)}
+                    </Td>
+                    <Td>
+                      {r.verifiedAt ? (
+                        <Badge tone="ok">Doğrulandı · {r.verifiedBy}</Badge>
+                      ) : can.verifyTermRecord ? (
+                        <ActionForm action={verifyTermRecordAction} className="space-y-0">
+                          <input type="hidden" name="id" value={r.id} />
+                          <SubmitButton size="sm" variant="outline">
+                            Transkriptle doğrula
+                          </SubmitButton>
+                        </ActionForm>
+                      ) : (
+                        <Badge tone="warn">Doğrulama bekliyor</Badge>
+                      )}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+          {can.termRecord && (
+            <ActionForm action={termRecordAction} className="mt-4 flex flex-wrap items-end gap-3 rounded-lg bg-su-bg p-3">
+              <input type="hidden" name="enrollmentId" value={e.id} />
+              <Field label="Dönem">
+                <Select name="termId" defaultValue={started.at(-1)?.id} className="w-48">
+                  {started.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {termLabel(t)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Ana dal GNO">
+                <Input name="mainGano" required inputMode="decimal" pattern="[0-4]([.,][0-9]{1,2})?" className="w-28" />
+              </Field>
+              <label className="flex items-center gap-2 pb-2 text-sm">
+                <input type="checkbox" name="mainFrozen" /> Ana dalda kaydım donduruldu
+              </label>
+              <SubmitButton size="sm">Beyanı kaydet</SubmitButton>
+            </ActionForm>
+          )}
+        </Card>
+
+        {/* ---------------- Uyarılar ve izinler ---------------- */}
+        {(d.findings.length > 0 || d.leaves.length > 0 || can.leave) && (
+          <div className="grid gap-6 lg:grid-cols-2">
             <Card>
-              <CardTitle>Uyarılar ve tarama bulguları</CardTitle>
+              <CardTitle>Tarama bulguları</CardTitle>
               {d.findings.length === 0 ? (
-                <p className="text-sm text-su-muted">Bulgu yok.</p>
+                <Empty>Bulgu yok.</Empty>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {d.findings.map((f) => (
-                    <li key={f.id}>
-                      <Badge tone={f.status === 'FAIL' ? 'bad' : 'warn'}>{f.ruleCode}</Badge> {f.result.message}
-                      <span className="block text-xs text-su-subtle">
-                        {fmtDate(f.scan.createdAt)} · {LABELS.finding[f.decision]}
-                        {f.reason && ` · ${f.reason}`}
-                      </span>
+                    <li key={f.id} className="rounded-lg border border-su-border/60 p-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge tone={f.status === 'FAIL' ? 'bad' : 'warn'}>{f.status === 'FAIL' ? 'Kayıt silme adayı' : 'Uyarı'}</Badge>
+                        <span className="text-xs text-su-muted">
+                          {termLabel(f.scan.term)} · {LABELS.finding[f.decision]}
+                        </span>
+                      </div>
+                      <p className="mt-1">
+                        <span className="font-medium">{f.result.title}:</span> {f.result.message} <span className="text-xs text-su-subtle">({f.result.article})</span>
+                      </p>
+                      {f.reason && <p className="text-xs text-su-muted">Karar: {f.reason}</p>}
                     </li>
                   ))}
                 </ul>
               )}
             </Card>
-
             <Card>
               <CardTitle>Dönem izinleri</CardTitle>
               {d.leaves.length === 0 ? (
-                <p className="text-sm text-su-muted">Kayıtlı izin yok.</p>
+                <Empty>İzin kaydı yok.</Empty>
               ) : (
                 <ul className="space-y-1 text-sm">
                   {d.leaves.map((l) => (
                     <li key={l.id}>
-                      {l.termId}: <b>{LABELS.leave[l.reason]}</b> {l.note && `· ${l.note}`}
+                      {termLabel(l.term)} · {LABELS.leave[l.reason]} {l.note && <span className="text-xs text-su-muted">({l.note})</span>}
                     </li>
                   ))}
                 </ul>
               )}
-              {d.can.leave && (
-                <ActionForm action={leaveAction} className="mt-3">
+              {can.leave && (
+                <ActionForm action={leaveAction} className="mt-4 rounded-lg bg-su-bg p-3">
                   <input type="hidden" name="enrollmentId" value={e.id} />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Dönem">
-                      <Select name="termId" defaultValue={d.currentTerm?.id}>
+                      <Select name="termId" defaultValue={term?.id}>
                         {d.terms.map((t) => (
                           <option key={t.id} value={t.id}>
                             {termLabel(t)}
@@ -364,7 +509,7 @@ export default async function EnrollmentPage({ params }: { params: Promise<{ id:
                         ))}
                       </Select>
                     </Field>
-                    <Field label="Neden">
+                    <Field label="Gerekçe">
                       <Select name="reason">
                         {LEAVE_REASONS.map((r) => (
                           <option key={r} value={r}>
@@ -374,7 +519,7 @@ export default async function EnrollmentPage({ params }: { params: Promise<{ id:
                       </Select>
                     </Field>
                   </div>
-                  <Field label="Açıklama (dilekçe no vb.)">
+                  <Field label="Not">
                     <Input name="note" />
                   </Field>
                   <SubmitButton size="sm" variant="outline">
@@ -383,30 +528,57 @@ export default async function EnrollmentPage({ params }: { params: Promise<{ id:
                 </ActionForm>
               )}
             </Card>
+          </div>
+        )}
 
-            {outcome?.hasMinorProgram && (
-              <Alert tone={outcome.eligibleForCertificate ? 'ok' : 'info'} title="Çift ana daldan ayrılma sonucu">
-                <p>{outcome.message}</p>
-                {outcome.passedPoolCourses && <p className="mt-1 text-xs">Yan dal havuzundan geçilen ({outcome.passedPoolEcts} AKTS): {outcome.passedPoolCourses.join(', ')}</p>}
-              </Alert>
-            )}
-
-            {d.can.withdraw && active && (
-              <details className="rounded-2xl border border-su-border/70 bg-white px-5 py-4">
-                <summary className="text-sm font-medium text-bad">Öğrencinin ayrılma dilekçesini işle</summary>
-                <ActionForm action={withdrawEnrollmentAction} className="mt-3">
+        {/* ---------------- Komisyon işlemleri ve ayrılma ---------------- */}
+        {(can.setAdvisor || can.complete || can.withdraw) && (
+          <Card>
+            <CardTitle>{viewer.coordinator ? 'Komisyon işlemleri' : 'Programdan ayrılma'}</CardTitle>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {can.setAdvisor && (
+                <ActionForm action={advisorAction}>
                   <input type="hidden" name="enrollmentId" value={e.id} />
-                  <Field label="Gerekçe (dilekçe evrak numarası)">
-                    <Textarea name="reason" required minLength={5} />
+                  <Field label="Ana dal danışmanı" hint="Formlarda imzalayacak hesap; hesabı yoksa ıslak imzayı siz işlersiniz">
+                    <Select name="username" defaultValue={e.mainAdvisorUsername ?? ''}>
+                      <option value="">— hesabı yok —</option>
+                      {d.advisors.map((a) => (
+                        <option key={a.username} value={a.username}>
+                          {a.displayName}
+                        </option>
+                      ))}
+                    </Select>
                   </Field>
-                  <SubmitButton variant="danger" size="sm" confirm="Öğrencinin kaydı 'kendi isteğiyle ayrıldı' olarak kapatılacak. Devam edilsin mi?">
-                    Ayrılmayı işle
+                  <SubmitButton size="sm" variant="outline">
+                    Danışmanı kaydet
                   </SubmitButton>
                 </ActionForm>
-              </details>
-            )}
-          </div>
-        </div>
+              )}
+              {can.complete && (
+                <ActionForm action={completeAction}>
+                  <input type="hidden" name="enrollmentId" value={e.id} />
+                  <Field label="Mezuniyet denetimi" hint="Ana daldan mezuniyet GNO’su girilir; koşullar sağlanıyorsa kayıt tamamlanır">
+                    <Input name="mainGano" required inputMode="decimal" placeholder="Ana dal mezuniyet GNO" />
+                  </Field>
+                  <SubmitButton size="sm" variant="outline" confirm="Mezuniyet koşulları denetlenecek; sağlanıyorsa kayıt tamamlanacak. Devam edilsin mi?">
+                    Denetle ve tamamla
+                  </SubmitButton>
+                </ActionForm>
+              )}
+              {can.withdraw && (
+                <ActionForm action={withdrawEnrollmentAction}>
+                  <input type="hidden" name="enrollmentId" value={e.id} />
+                  <Field label="Programdan ayrılma" hint="Öğrenci kendi isteğiyle ayrılabilir (ÇAP Yön. m.9/1-a)">
+                    <Input name="reason" required minLength={5} placeholder="Gerekçe" />
+                  </Field>
+                  <SubmitButton size="sm" variant="danger" confirm="Programdan ayrılma işlenecek; geri alınamaz. Devam edilsin mi?">
+                    Programdan ayrıl
+                  </SubmitButton>
+                </ActionForm>
+              )}
+            </div>
+          </Card>
+        )}
       </Page>
     </>
   );

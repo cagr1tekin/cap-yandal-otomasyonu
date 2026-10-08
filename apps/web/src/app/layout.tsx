@@ -7,8 +7,8 @@ import './globals.css';
 const montserrat = Montserrat({ subsets: ['latin', 'latin-ext'], variable: '--font-montserrat', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'ÇAP / Yan Dal Yönetim Paneli — Selçuk Üniversitesi', template: '%s · ÇAP / Yan Dal Paneli' },
-  description: 'Çift ana dal ve yan dal süreçleri için rol bazlı personel paneli (bitirme projesi).',
+  title: { default: 'Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonu — Selçuk Üniversitesi', template: '%s · Bilgisayar Müh. ÇAP / Yan Dal' },
+  description: 'Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümü çift ana dal ve yan dal başvuru ve takip otomasyonu (bitirme projesi).',
   robots: { index: false, follow: false },
 };
 
