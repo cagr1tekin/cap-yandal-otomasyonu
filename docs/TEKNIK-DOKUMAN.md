@@ -526,3 +526,41 @@ Kapsam kararı ve kaynakları: [KARARLAR.md](KARARLAR.md) (K-1 … K-11).
 - `packages/rules`: 126 test, %100 kapsam.
 - `apps/api`: 17 entegrasyon testi.
 - `e2e`: 13 Playwright testi. 7 adımlı personel akışı; protokolün 5 imzası ve ders kaydının imzaları 4 farklı hesapla Keycloak girişi yapılarak atılıyor. Ayrıca ekran görüntüleri ve 4 mobil kontrol.
+
+## 18. Pivot: bölüm kapsamı, öğrenci girişi, OBİS'siz veri modeli (v0.4, 2026-10-08)
+
+Kararlar: [KARARLAR.md](KARARLAR.md) K-12 – K-17. Bu bölüm, önceki bölümlerle çeliştiği yerde geçerlidir. Veritabanı şemasının çizimi ve tablo listesi [taslak dosyasının](taslak/Proje-Taslak-Dosyasi.pdf) 6. bölümündedir ve `node docs/taslak/build.cjs` ile `schema.prisma` dosyasından üretilir.
+
+**Kaldırılanlar.** `apps/mock-obis`, `ObisPort` / `OsymPort` ve HTTP adaptörleri; `Unit`, `ApplicationWindow`, `MinorPoolCourse`, `ProgramCourse` tabloları; `BIRIM` ve `OIDB` rolleri; başvuru girişi (intake), belge kontrollü kesin kayıt, protokol dosyalama, toplu teslim ve OBİS listesi uçları.
+
+**Veri kaynağı.** Bağlam servisi (`rules/context.service.ts`) kural girdisini `StudentProfile` (öğrencinin beyanı) ve `YearStat` (taban puan, başarı sırası şartı) tablolarından kurar. Dönem sonu taraması üç iç kaynaktan çalışır: `TermRecord` (ana dal GNO beyanı), imzaları tamamlanmış `CourseRegistration` (ders alıp almadığı), `ProtocolCourse.grade` (program ortalaması).
+
+**Beyana güven** (K-13). Belge içeriği sunucuda tür denetiminden geçer ve SHA-256 özeti saklanır. Doğrulanmamış başvuru varken sıralama kilitlenmez. Doğrulanmamış GNO beyanına dayanan bulgu onaylanamaz. Başvuru, verildiği andaki beyanı `snapshot` alanında saklar.
+
+**Yetki.** Belirteçte rol yoktur; `AuthGuard` her istekte `RoleAssignment` satırlarını okur. Ataması olmayan hesap `OGRENCI` sayılır. `AccessService`: `isDepartmentStaff` (komisyon ya da Bilgisayar Müh. bölüm başkanı), `isHomeHead`, `canSeeStudent` (öğrencinin kendisi, bölüm personeli, ana dal bölüm başkanı, danışmanı).
+
+**Modüller.**
+
+| Modül | Dosya | Uçlar (özet) |
+|---|---|---|
+| Öğrenci | `students/students.ts` | `GET/PUT /me/profile`, `POST/DELETE /me/documents`, `GET /documents/:id` |
+| Katalog | `catalog/*` | `/terms`, `/programs`, `/courses`, `/offerings` (CRUD, `close-now`, `public`), `/year-stats` |
+| Başvuru | `applications/*` | `GET /me/eligibility`, `POST /applications`, `GET /applications`, `POST /applications/:id/verify`, `withdraw` |
+| Değerlendirme | `review/*` | `GET /offerings/:id/applications`, `PATCH /rankings/:id`, `ranking/lock`, `decision`, `publish`, `POST /applications/:id/accept`, `close-registration`, `result`, `export` |
+| Şablonlar | `forms/templates.ts` | `/protocol-templates` (liste, kayıt, PROTOCOL kuralları) |
+| Formlar | `forms/forms.service.ts` | `PUT /enrollments/:id/protocol`, `protocol/submit`, `course-registration`, `grades`, `exemptions`, `/approvals/mine`, `POST /approvals/:id` |
+| Kayıtlar | `enrollments/*` | `GET /enrollments`, `/me/enrollments`, `/main-department/students`, `term-record`, `leaves`, `advisor`, `withdrawal`, `complete` |
+| Tarama | `monitoring/monitoring.ts` | `/scans`, `PATCH /scan-findings/:id` |
+| Yönetim | `admin/admin.ts`, `rules/*`, `misc/misc.ts` | `/me/tasks`, `/users`, `/assignments`, `/audit`, `/rule-sets`, `/reports/summary` |
+
+**İmza akışı.** `SIGNERS` (contracts) her form için imzacı rollerini verir: protokol 5, ders kayıt formu 3, muafiyet 3. `Approval.assigneeUsername` boşsa: `KOORDINATOR` satırını komisyonun herhangi bir üyesi imzalar; diğer rollerde hesabı olmayan imzacının ıslak imzasını koordinatör işler. Formu gönderenin kendi imzası gönderimle atılır. Ret, bekleyen imzaları düşürür; yeniden gönderim yeni tur açar.
+
+**Protokol.** `ProtocolTemplate` bölümler arası belgedir (ÇAP: ana dal bölümü başına; yan dal: tek havuz). Öğrencinin `Protocol` kaydı şablonun kopyasıdır; `ProtocolCourse` satırı ders ya da seçmeli ders yeridir. Seçmeli yer, ders kayıt formunda aynı yarıyılın `TEKNIK_SECMELI` derslerinden biriyle doldurulur; ders geçilince `fulfilledCode` yazılır. Muafiyet onaylanınca hedef satır `EXEMPT` olur (not `M`, ortalamaya katılmaz, AKTS'ye sayılır).
+
+**Belge deposu.** `UPLOAD_DIR` altında `<öğrenci no>/<uuid>.<uzantı>`; sürüm denetimine girmez. Erişim `GET /documents/:id` üzerinden yetkiyle; başkasının belgesini açan personel denetim kaydına yazılır.
+
+**Veritabanı.** Göçler tek dosyada birleştirildi (`20261008150000_bolum_kapsami`). Geliştirme veritabanı `cap_bm`, test veritabanı `cap_bm_test`; önceki kapsamın `cap` ve `cap_test` veritabanlarına dokunulmadı.
+
+**Testler.** 126 kural testi (%100 kapsam), 19 API entegrasyon testi, 18 Playwright testi (10 akış, 2 ekran görüntüsü, 6 mobil).
+
+**Bilinen sınırlar.** İmzalanmış protokol değiştirilemez (şablon değişikliği yalnız yeni protokolleri etkiler). Ortak AKTS şablonda sayı olarak tutulur; ortak derslerin listesi tutulmaz. Kontenjan, taban puan ve yan dal havuzu temsilîdir (K-16).

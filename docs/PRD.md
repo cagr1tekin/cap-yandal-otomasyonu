@@ -340,3 +340,14 @@ Açık soruların yanıtları ve kapsam kararı [KARARLAR.md](KARARLAR.md) dosya
 - **AS-5 (K-6):** Belgeyi birim öğrenci işleri verir; hesaplama yöntemi açık.
 - **Yeni gereksinimler:** başvuru girişi ve belge kontrolü (K-1), belge listeli kesin kayıt (K-8), 5 onaylı Kabul ve Ders Protokolü (K-9), dönemlik ders kayıt formu ve OBİS listesi (K-10).
 - **Mevcut süreç:** [kaynaklar/mevcut-surec/MEVCUT-SUREC.md](../kaynaklar/mevcut-surec/MEVCUT-SUREC.md).
+
+## Güncelleme (v0.3, 2026-10-08): yalnız Bilgisayar Mühendisliği, öğrenci girişi
+
+Danışman kararıyla kapsam değişti; ayrıntı ve kaynaklar [KARARLAR.md](KARARLAR.md) K-12 – K-17 maddelerindedir. Bu bölüm, yukarıdaki metinle çeliştiği yerde geçerlidir.
+
+- **Kapsam:** yalnız Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümüne yapılan ÇAP ve yan dal. Diğer bölümler yalnızca öğrencinin ana dal bölümüdür.
+- **Kullanıcılar:** öğrenci, koordinatör (ÇAP komisyonu), bölüm başkanı, ana dal imzacıları (danışman ve ana dal bölüm başkanı). Birim öğrenci işleri ve ÖİDB rolleri yoktur (bölüm 4'ün yerine).
+- **Veri kaynağı:** OBİS bağlantısı yoktur. Öğrenci akademik bilgilerini kendisi girer; komisyon yüklenen belgeyle doğrular (A1 varsayımı ve FR-17 yönlendirmeleri geçersiz).
+- **Yeni gereksinimler:** öğrenci bilgi ve belge girişi; çevrim içi başvuru ve dilekçe üretimi; beyan doğrulama; öğrencinin kesin kayıt onayı; bölümler arası protokol şablonu ve teknik seçmeli ders yerleri; öğrencinin hazırladığı üç imzalı ders kayıt formu; özel şartlı ders muafiyeti; komisyonun not girişi; öğrencinin dönem sonu GNO beyanı.
+- **Kaldırılanlar:** birimin dilekçe girişi, belge kontrol listesiyle kesin kayıt, protokol dosyalama, ders kayıt formlarının toplu teslimi ve OBİS listesi, çok birimli ve çok programlı yapı.
+- **Kurallar:** bölüm 5'teki kural kimlikleri geçerlidir; KR-ÇAP-07 (yetenek sınavı), KR-ÇAP-19 ve KR-YD-13 (ana dal dersiyle çakışma) kural setinden çıkarıldı. Sistemin kendi denetimleri taslak dosyasının 7.3 bölümündedir.

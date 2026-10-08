@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Bilgisayar Mühendisliği Çift Ana Dal ve Yan Dal Otomasyonu — Proje Taslak Dosyası</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #212529; margin: 0; }
+  .cover { border-bottom: 3px solid #1c458b; padding-bottom: 10px; margin-bottom: 14px; }
+  .cover .uni { font-size: 9.5pt; letter-spacing: 2px; text-transform: uppercase; color: #1c458b; font-weight: 600; }
+  h1 { font-size: 19pt; margin: 4px 0 6px; color: #0d2d5e; font-weight: 600; }
+  .meta { font-size: 9.5pt; color: #475569; }
+  .meta span { display: inline-block; margin-right: 18px; }
+  h2 { font-size: 13pt; color: #1c458b; margin: 18px 0 6px; padding-bottom: 3px; border-bottom: 1px solid #cbd5e1; page-break-after: avoid; }
+  h3 { font-size: 11pt; color: #0d2d5e; margin: 12px 0 4px; page-break-after: avoid; }
+  p { margin: 5px 0; }
+  ul { margin: 4px 0 6px 18px; padding: 0; }
+  li { margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 9.3pt; }
+  th { background: #1c458b; color: #fff; text-align: left; padding: 5px 6px; font-weight: 600; }
+  td { border: 1px solid #cbd5e1; padding: 4px 6px; vertical-align: top; }
+  tr { page-break-inside: avoid; }
+  tbody tr:nth-child(even) td { background: #f6f8fc; }
+  .src { color: #475569; font-size: 8.6pt; }
+  .code { font-family: Consolas, monospace; font-size: 8.8pt; white-space: nowrap; }
+  .note { background: #fdf6e3; border-left: 4px solid #ffc90d; padding: 6px 10px; margin: 8px 0; font-size: 9.5pt; }
+  .info { background: #eef2f9; border-left: 4px solid #1c458b; padding: 6px 10px; margin: 8px 0; font-size: 9.5pt; }
+  .flow { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; font-size: 8.8pt; }
+  .flow div { border: 1px solid #1c458b; border-radius: 12px; padding: 3px 9px; background: #fff; }
+  .flow div b { color: #1c458b; }
+  .flow span { align-self: center; color: #1c458b; }
+  .c { text-align: center; }
+  footer { margin-top: 14px; font-size: 8.5pt; color: #475569; border-top: 1px solid #cbd5e1; padding-top: 6px; }
+  table.schema td { font-size: 8.3pt; line-height: 1.5; }
+  table.schema .col { white-space: nowrap; }
+  .pk { color: #a16207; font-size: 7.4pt; }
+  .fk { color: #1c458b; font-size: 7.4pt; }
+  i { color: #64748b; font-size: 7.6pt; }
+  svg { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="uni">Selçuk Üniversitesi · Teknoloji Fakültesi · Bilgisayar Mühendisliği · Bitirme Projesi</div>
+  <h1>Bilgisayar Mühendisliği Çift Ana Dal ve Yan Dal Otomasyonu<br>Proje Taslak Dosyası</h1>
+  <div class="meta">
+    <span>Tarih: 8 Ekim 2026 (2. sürüm)</span>
+    <span>Hazırlayan: ..............................................</span>
+    <span>Öğrenci No: ........................</span>
+  </div>
+</div>
+
+<div class="note"><b>Bu sürümde değişenler</b> (8 Ekim toplantısındaki kararlar): kapsam yalnızca Bilgisayar Mühendisliği Bölümü · öğrenci girişi eklendi, öğrenci bilgilerini kendisi girer · OBİS bağlantısı yok, veriler sistemde tutulur · Öğrenci İşleri Daire Başkanlığı ve birim öğrenci işleri rolleri kaldırıldı · bölüm sitesindeki belgeler (rehber, FORM01, iki protokol) esas alındı · veritabanı şeması eklendi (bölüm 6).</div>
+
+<h2>1. Amaç ve kapsam</h2>
+<p><b>Mevcut durum.</b> Bölümde çift ana dal (ÇAP) ve yan dal süreci kâğıtla yürür. Öğrenci dilekçe ve belgeleriyle başvurur; sonuç fakülte sayfasında ilan edilir. Kabul ve Ders Protokolü 5 imzayla 4 nüsha, ders kayıt formu her dönem 3 imzayla 3 nüsha, özel şartlı ders muafiyeti formu 3 imzayla 2 nüsha düzenlenir ve elden dolaşır. Koşulların (GNO, başarı sırası, yarıyıl, kaynak bölüm) denetimi ve kayıtlı öğrencilerin dönem sonu takibi elle yapılır.</p>
+<p><b>Önerilen sistem.</b> Bilgisayar Mühendisliğinde ÇAP ya da yan dal yapmak isteyen <b>öğrencinin</b> ve süreci yürüten <b>bölüm komisyonunun</b> kullandığı web uygulaması. Öğrenci bilgilerini girer, uygunluğunu kural kural görür, çevrim içi başvurur ve formlarını imzalar. Komisyon beyanı belgeyle doğrular, sıralar, kararı işler, protokolü üretir ve dönem takibini yapar. Yönetmelik koşulları otomatik denetlenir.</p>
+<p><b>Kapsam dışı.</b> Derslerin resmî kaydı ve notlar OBİS'te, kurul kararının aslı EBYS'de kalır; sistemin bu sistemlerle bağlantısı yoktur. Bilgisayar Mühendisliği öğrencisinin başka bölümde yaptığı ÇAP / yan dal kapsam dışıdır.</p>
+
+<div class="flow">
+  <div><b>1</b> Kontenjan ve takvim</div><span>→</span>
+  <div><b>2</b> Öğrenci: bilgi ve belge</div><span>→</span>
+  <div><b>3</b> Uygunluk ve başvuru</div><span>→</span>
+  <div><b>4</b> Beyan doğrulama</div><span>→</span>
+  <div><b>5</b> Sıralama, karar, ilan</div><span>→</span>
+  <div><b>6</b> Kesin kayıt onayı</div><span>→</span>
+  <div><b>7</b> Protokol (5 imza)</div><span>→</span>
+  <div><b>8</b> Ders kayıt formu (her dönem)</div><span>→</span>
+  <div><b>9</b> Not girişi, muafiyet</div><span>→</span>
+  <div><b>10</b> Dönem sonu taraması</div><span>→</span>
+  <div><b>11</b> Mezuniyet denetimi</div>
+</div>
+
+<h2>2. Kullanılacak teknolojiler</h2>
+<table>
+  <thead><tr><th style="width:19%">Katman</th><th style="width:27%">Teknoloji</th><th>Neden</th></tr></thead>
+  <tbody>
+    <tr><td>Arayüz</td><td>Next.js (React, TypeScript), Tailwind CSS</td><td>Sunucuda işlenen sayfalar, rol bazlı menü, mobil uyum. Görsel kimlik selcuk.edu.tr ile uyumlu (lacivert #1C458B, sarı #FFC90D, Montserrat).</td></tr>
+    <tr><td>Uygulama sunucusu</td><td>NestJS (Node.js, TypeScript), REST API</td><td>Modüler yapı; rol ve kapsam denetimi her istekte sunucuda yapılır. OpenAPI belgesi otomatik üretilir.</td></tr>
+    <tr><td>Veritabanı</td><td>PostgreSQL, Prisma ORM</td><td>İlişkisel veri, sürümlü şema göçü. Kritik kurallar veritabanı kısıtıyla da korunur (bölüm 6).</td></tr>
+    <tr><td>Kural motoru</td><td>Ayrı TypeScript paketi</td><td>Yönetmelik eşikleri koda gömülmez; sürümlü kural setinde tutulur. Yönerge değişince yalnızca kural seti güncellenir.</td></tr>
+    <tr><td>Kimlik doğrulama</td><td>OpenID Connect (geliştirmede Keycloak)</td><td>Sistem şifre saklamaz. Öğrenci hesabını kendisi açar; personel rolünü bölüm başkanı atar.</td></tr>
+    <tr><td>Belge deposu</td><td>Sunucu diski + veritabanında üst veri</td><td>Yüklenen belgenin türü içeriğinden denetlenir (PDF, JPG, PNG; 5 MB), SHA-256 özeti saklanır; erişim yetkiyle sınırlıdır.</td></tr>
+    <tr><td>Arka plan işleri</td><td>Redis + BullMQ</td><td>Dönem sonu taraması ve e-posta bildirimi kuyrukta çalışır.</td></tr>
+    <tr><td>Test</td><td>Vitest, Jest, Playwright</td><td>Her kural için sınır değer testi (126), API entegrasyon testi (19), arayüzden uçtan uca senaryo testi (18).</td></tr>
+    <tr><td>Çalıştırma</td><td>Docker Compose</td><td>Veritabanı, Redis, kimlik servisi ve e-posta test sunucusu tek komutla kalkar.</td></tr>
+  </tbody>
+</table>
+<p class="src">OBİS adaptörü ve sahte OBİS servisi tasarımdan çıkarıldı: OBİS API'si olmadığı için öğrenci verisi sistemde tutulur ve öğrencinin beyanına dayanır.</p>
+
+<h2>3. Kullanıcı rolleri ve yetkileri</h2>
+<p>Dört rol vardır. Yetki rol ile birlikte <b>bölüm kapsamı</b> üzerinden verilir: ana dal bölümünün danışmanı ve başkanı yalnızca kendi bölümünün öğrencilerini görür. Personel rolü olmayan her hesap öğrenci hesabıdır ve yalnızca kendi kayıtlarını görür.</p>
+<table>
+  <thead><tr><th style="width:19%">Rol</th><th>Yetkileri</th><th style="width:23%">Dayanak</th></tr></thead>
+  <tbody>
+    <tr><td><b>Öğrenci</b></td><td>Hesabını açar; öğrenci ve akademik bilgilerini girer; belgelerini yükler; uygunluğunu görür ve başvurur; başvurusunu geri çeker; kabul edilince kesin kaydını onaylar; protokolü imzalar; her dönem ders kayıt formunu hazırlar; özel şartlı ders muafiyeti başvurusu yapar; dönem sonunda ana dal GNO'sunu beyan eder; programdan ayrılır.</td><td class="src">Rehber 2025: formları "öğrenci hazırlar"; ÇAP Yön. m.9/1-a</td></tr>
+    <tr><td><b>ÇAP / yan dal koordinatörü</b> (bölüm komisyonu)</td><td>Dönem kontenjanını, kabul edilen bölümleri ve takvimi tanımlar; öğrencinin beyanını belgeyle doğrular; sıralamayı inceler ve öneriyi kilitler; fakülte yönetim kurulu kararını kaydeder, sonucu ilan eder; kayıt dönemini kapatır ve yedekleri çağırır; protokol şablonlarını yönetir, protokolü üretir; formları imzalar, hesabı olmayan imzacının ıslak imzasını işler; notları girer; dönem beyanını doğrular; taramayı başlatır ve bulgulara karar verir; dönem izni işler; kural setlerini yönetir.</td><td class="src">ÇAP Yön. m.6; Rehber; bölüm sitesindeki komisyon</td></tr>
+    <tr><td><b>Bölüm başkanı</b> (Bilgisayar Müh.)</td><td>Protokolü "çift anadal bölüm başkanı" olarak imzalar; personel hesabı açar, rol ve kapsam atar; denetim kaydını ve raporları görür; bölümün bütün başvuru ve kayıtlarını salt okunur izler.</td><td class="src">ÇAP Yön. m.6 (koordinatörü bölüm başkanı atar); Protokol Formu</td></tr>
+    <tr><td><b>Ana dal imzacıları</b>: ana dal danışmanı, ana dal bölüm başkanı</td><td>Kendi bölümünün öğrencilerinin kayıtlarını görür. Danışman protokolü, ders kayıt formunu ve muafiyet formunu; ana dal bölüm başkanı protokolü imzalar. Başka işlem yapamaz.</td><td class="src">Protokol Formu; FORM01; Rehber</td></tr>
+  </tbody>
+</table>
+
+<h3>İmza matrisi</h3>
+<table>
+  <thead><tr><th>Form</th><th class="c">Öğrenci</th><th class="c">Ana dal danışmanı</th><th class="c">Ana dal bölüm bşk.</th><th class="c">Koordinatör</th><th class="c">ÇAP bölüm bşk.</th><th>Nüsha</th><th>Hazırlayan</th></tr></thead>
+  <tbody>
+    <tr><td>Kabul ve Ders Protokolü (ÇAP ve yan dal)</td><td class="c">✔</td><td class="c">✔</td><td class="c">✔</td><td class="c">✔</td><td class="c">✔</td><td>4</td><td>Koordinatör (şablondan)</td></tr>
+    <tr><td>Ders Kayıt Formu (FORM01; yan dal formu)</td><td class="c">✔</td><td class="c">✔</td><td class="c">—</td><td class="c">✔</td><td class="c">—</td><td>3</td><td>Öğrenci</td></tr>
+    <tr><td>Özel Şartlı Derslerin Muafiyeti Formu</td><td class="c">✔</td><td class="c">✔</td><td class="c">—</td><td class="c">✔</td><td class="c">—</td><td>2</td><td>Öğrenci</td></tr>
+  </tbody>
+</table>
+<p class="src">Bütün imzalar sistemde atılır. Formu hazırlayanın kendi imzası gönderimle atılmış sayılır. Ret hâlinde bekleyen imzalar düşer, form düzeltilip yeni imza turuna gönderilir. İmzacının hesabı yoksa ıslak imza yazdırılan formda alınır ve koordinatör sisteme işler.</p>
+
+<h3>Kaldırılan rollerin görevleri</h3>
+<table>
+  <thead><tr><th style="width:42%">Önceki taslaktaki görev</th><th>Yeni sahibi</th></tr></thead>
+  <tbody>
+    <tr><td>Dilekçenin panele girişi, belge kontrolü (birim)</td><td>Öğrenci başvurur ve belgesini yükler; koordinatör beyanı belgeyle doğrular.</td></tr>
+    <tr><td>Takvim, kurul kararı kaydı, sonuç ilanı (birim)</td><td>Koordinatör. Kararı fakülte yönetim kurulu alır; sisteme sayısı ve tarihi girilir.</td></tr>
+    <tr><td>Kesin kayıt (birim)</td><td>Öğrenci kaydını kendisi onaylar; süre dolunca koordinatör dönemi kapatır.</td></tr>
+    <tr><td>Protokol dosyalama, OBİS'e ders girişi (birim)</td><td>Kaldırıldı; formlar yazdırılabilir.</td></tr>
+    <tr><td>Tarama, bulgu kararı, dönem izni (birim)</td><td>Koordinatör.</td></tr>
+    <tr><td>Kural setleri (ÖİDB)</td><td>Koordinatör.</td></tr>
+    <tr><td>Kullanıcı ve rol yönetimi, denetim kaydı (ÖİDB)</td><td>Bilgisayar Mühendisliği bölüm başkanı.</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Temel ekranlar ve modüller</h2>
+<table>
+  <thead><tr><th style="width:4%">#</th><th style="width:20%">Modül</th><th>Ekranlar ve işlevler</th><th style="width:14%">Kullanan</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Giriş ve ana sayfa</td><td>Dönemin açık teklifleri (kontenjan, kabul edilen bölümler, takvim), yönerge ve formlara bağlantılar; öğrenci ve personel girişi; öğrencinin kendi hesabını açması.</td><td>Herkes</td></tr>
+    <tr><td>2</td><td>Görevlerim</td><td>Role göre o an yapılacak işler, sayılarıyla (ör. "beyanı doğrulanacak başvurular", "kesin kaydınızı onaylayın").</td><td>Tüm roller</td></tr>
+    <tr><td>3</td><td>Bilgilerim ve belgelerim</td><td>Öğrenci no, ana dal bölümü, kayıt yılı, yarıyıl, GNO, tüm dersleri geçme durumu, sınıf sırası ve mevcudu, YKS puanı ve başarı sırası, danışman. Belge yükleme, listeleme, silme.</td><td>Öğrenci</td></tr>
+    <tr><td>4</td><td>Uygunluk ve başvuru</td><td>Her teklif için kural kural sonuç (sağlandı / sağlanmadı, değer ve yönerge maddesi); gereken belgeler; beyan onayıyla çevrim içi başvuru; başvurularım; yazdırılabilir dilekçe.</td><td>Öğrenci</td></tr>
+    <tr><td>5</td><td>Kontenjan ve takvim</td><td>Dönem teklifi: kontenjan, başvuru kabul edilen bölümler, başvuru / ilan / asil ve yedek kayıt tarihleri; yayımlama; yıllara göre taban puan ve başarı sırası şartı tablosu.</td><td>Koordinatör</td></tr>
+    <tr><td>6</td><td>Başvurular ve beyan doğrulama</td><td>Başvuru listesi ve süzgeçler; beyan ile yüklenen belgelerin yan yana görünümü; "uyuşuyor / uyuşmuyor (gerekçeli)" kararı.</td><td>Koordinatör</td></tr>
+    <tr><td>7</td><td>Sıralama ve karar</td><td>GNO sıralaması, asil / yedek önerisi, gerekçeli değişiklik, önerinin kilitlenmesi; kurul kararının kaydı; maskeli sonuç ilanı; kayıt döneminin kapatılması ve yedek çağırma; Excel dışa aktarma.</td><td>Koordinatör</td></tr>
+    <tr><td>8</td><td>Kesin kayıt</td><td>Kabul edilen öğrencinin kaydını onaylaması; kaydın açılması ve komisyona bildirim.</td><td>Öğrenci</td></tr>
+    <tr><td>9</td><td>Protokol şablonları</td><td>Ana dal bölümü başına ÇAP protokolü: müfredattan dersler, yarıyıl başına teknik seçmeli ders yeri, ortak AKTS, numaralı özel şartlar; yan dal ders havuzu. Kural denetimi (240 AKTS).</td><td>Koordinatör</td></tr>
+    <tr><td>10</td><td>Kayıt sayfası: protokol</td><td>Protokolün şablondan üretilmesi, beş imzaya gönderilmesi, imza durumu, yazdırılabilir form.</td><td>Koordinatör, imzacılar</td></tr>
+    <tr><td>11</td><td>Kayıt sayfası: ders kayıt formu</td><td>Protokolde geçilmemiş derslerden ve boş seçmeli yerlerinden dönem seçimi; imzaya gönderme; geçmiş dönem formları; yazdırma.</td><td>Öğrenci</td></tr>
+    <tr><td>12</td><td>Not girişi ve ilerleme</td><td>İmzalı formdaki derslere harf notu; geçilen / kalan / muaf dersler; protokol AKTS ilerlemesi ve program ortalaması.</td><td>Koordinatör</td></tr>
+    <tr><td>13</td><td>Özel şartlı ders muafiyeti</td><td>Protokoldeki özel şartlar; öğrencinin not ve dönem beyanıyla başvurusu; imzalar; onaylanınca dersin "muaf" işlenmesi.</td><td>Öğrenci, imzacılar</td></tr>
+    <tr><td>14</td><td>İmzalarım</td><td>Kullanıcının atması beklenen imzalar; imzala / gerekçeyle reddet; ıslak imza işleme.</td><td>Tüm roller</td></tr>
+    <tr><td>15</td><td>Dönem sonu beyanı ve tarama</td><td>Öğrencinin ana dal GNO beyanı ve doğrulanması; taramanın başlatılması; uyarı ve kayıt silme adayları; gerekçeli komisyon kararı; dönem izni.</td><td>Öğrenci, koordinatör</td></tr>
+    <tr><td>16</td><td>Mezuniyet denetimi ve ayrılma</td><td>Ana dal mezuniyet GNO'suyla diploma / sertifika koşulunun denetimi; öğrencinin ayrılması ve ÇAP'tan ayrılanın yan dal sertifikası durumu.</td><td>Koordinatör, öğrenci</td></tr>
+    <tr><td>17</td><td>Ana dal bölümü görünümü</td><td>Danışmanın ve ana dal bölüm başkanının kendi öğrencilerini izlemesi.</td><td>Ana dal imzacıları</td></tr>
+    <tr><td>18</td><td>Yönetim</td><td>Kullanıcılar ve roller; kural setleri (sürüm, deneme çalıştırma, etkinleştirme); denetim kaydı; raporlar; bildirimler.</td><td>Bölüm başkanı, koordinatör</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Sistemde tutulacak veriler ve belgeler</h2>
+<table>
+  <thead><tr><th style="width:24%">Veri</th><th>İçerik</th><th style="width:24%">Kaynağı</th></tr></thead>
+  <tbody>
+    <tr><td>Bölümler</td><td>Bilgisayar Mühendisliği ve öğrencilerin geldiği ana dal bölümleri (fakülte, ders kodu öneki).</td><td>Kontenjan ilanı</td></tr>
+    <tr><td>Müfredat</td><td>Bilgisayar Mühendisliğinin 118 dersi: kod, ad, AKTS, yarıyıl, zorunlu / teknik seçmeli / sosyal seçmeli.</td><td><b>Gerçek:</b> Bologna ders paketi</td></tr>
+    <tr><td>Protokol şablonları</td><td>EEM → Bilgisayar (28 satır, 135 AKTS, 8 özel şart), Makine → Bilgisayar (36 satır, 171 AKTS, 2 özel şart); yan dal ders havuzu.</td><td><b>Gerçek:</b> bölüm sitesi (yan dal havuzu temsilî)</td></tr>
+    <tr><td>Dönem teklifi</td><td>Kontenjan, kabul edilen bölümler, başvuru ve kayıt tarihleri, durum.</td><td>Koordinatör girer</td></tr>
+    <tr><td>Taban puan tablosu</td><td>Yıllara göre taban puan ve başarı sırası şartı.</td><td>Koordinatör girer</td></tr>
+    <tr><td>Öğrenci bilgileri</td><td>Öğrenci no, ad, iletişim, ana dal, kayıt yılı, yarıyıl, GNO, sınıf sırası ve mevcudu, YKS puanı ve başarı sırası, danışman.</td><td><b>Öğrenci girer</b></td></tr>
+    <tr><td>Başvuru</td><td>Başvuru anındaki beyanın ve kural bağlamının anlık görüntüsü, kural sonuçları, yol (başarı sırası / taban puan), doğrulama durumu ve notu, kullanılan kural seti sürümü.</td><td>Sistem üretir</td></tr>
+    <tr><td>Sıralama ve karar</td><td>Sıra, öneri (asil / yedek / ret), gerekçeli değişiklik; kurul karar tarihi ve sayısı, ilan zamanı.</td><td>Sistem, koordinatör</td></tr>
+    <tr><td>Kayıt</td><td>Tür, durum, başlangıç dönemi, GNO düşüş sayacı, ana dal danışmanı, mezuniyet GNO'su.</td><td>Sistem</td></tr>
+    <tr><td>Protokol ve dersleri</td><td>Öğrencinin protokol satırları; her satırın durumu (alınacak / geçti / kaldı / muaf), notu, seçmeli yerin hangi dersle dolduğu.</td><td>Şablondan; notu koordinatör girer</td></tr>
+    <tr><td>Ders kayıt formu, muafiyet</td><td>Dönem ve dersler; özel şart, ana daldaki not ve dönem; durum ve imza turu.</td><td>Öğrenci hazırlar</td></tr>
+    <tr><td>İmzalar</td><td>Her form için imzacı rolü, atanan hesap, karar, zaman, açıklama.</td><td>Sistem</td></tr>
+    <tr><td>Dönem takibi</td><td>Dönem sonu beyanı (ana dal GNO, dondurma), dönem izni, tarama ve bulguları, bulgu kararı ve gerekçesi, ayrılma.</td><td>Öğrenci, koordinatör</td></tr>
+    <tr><td>Kural setleri</td><td>Sürüm, yürürlük tarihi, her kuralın kodu, dayanağı ve parametreleri.</td><td>Yönergeler</td></tr>
+    <tr><td>Kullanıcı, rol, bildirim, denetim kaydı</td><td>Hesaplar ve rol atamaları; sistem içi bildirimler; kim, ne zaman, neyi değiştirdi (değiştirilemez).</td><td>Sistem</td></tr>
+  </tbody>
+</table>
+
+<h3>Belgeler</h3>
+<table>
+  <thead><tr><th style="width:38%">Belge</th><th style="width:16%">Yön</th><th>Kural</th></tr></thead>
+  <tbody>
+    <tr><td>YÖK başarı sıralaması ve puan belgesi (kayıt yılı)</td><td>Öğrenci yükler</td><td>ÇAP başvurusunda her zaman zorunlu.</td></tr>
+    <tr><td>Transkript</td><td>Öğrenci yükler</td><td>ÇAP'ta fakülte dışından gelenlerde, yan dalda her zaman zorunlu.</td></tr>
+    <tr><td>İlk %20 başarı sırası belgesi</td><td>Öğrenci yükler</td><td>ÇAP'ta fakülte dışından gelenlerde zorunlu.</td></tr>
+    <tr><td>Dönem sonu transkripti</td><td>Öğrenci yükler</td><td>Dönem beyanının doğrulanması için.</td></tr>
+    <tr><td>Başvuru dilekçesi</td><td>Sistem üretir</td><td>Çevrim içi başvurudan; beyan edilen değerler ve ekler yazılır.</td></tr>
+    <tr><td>Kabul ve Ders Protokol Formu, Ders Kayıt Formu, Özel Şartlı Derslerin Muafiyeti Formu</td><td>Sistem üretir</td><td>Kâğıt formların düzeninde, imza bilgileriyle yazdırılır.</td></tr>
+    <tr><td>Sonuç listesi</td><td>Sistem üretir</td><td>Öğrenci numarası ve ad maskeli; karar sayısı ve tarihiyle.</td></tr>
+  </tbody>
+</table>
+<p class="src">Belge kuralları: Bilgisayar Mühendisliği Çift Anadal Rehberi (Şubat 2025), "Başvuru"; Yan Dal Uygulama Esasları m.1.</p>
+
+<h2>6. Veritabanı şeması</h2>
+<p>PostgreSQL üzerinde <b><!--COUNT--> tablo</b>. Şema Prisma ile tanımlıdır (<span class="code">apps/api/prisma/schema.prisma</span>) ve tek göç dosyasıyla kurulur. Aşağıda üç bölümde ilişki çizimi, ardından bütün tabloların alan listesi verilmiştir. Çizimlerde çizginin çatallı ucu "çok" tarafıdır; anahtar alanlar <b>PK</b> (birincil) ve <b>FK</b> (yabancı) ile gösterilir.</p>
+
+<h3>6.1 Kullanıcılar, başvuru ve değerlendirme</h3>
+<!--ER-A-->
+<h3>6.2 Kayıt, protokol ve formlar</h3>
+<!--ER-B-->
+<p class="src">Approval (imza) tablosu çok biçimlidir: <span class="code">subjectType</span> + <span class="code">subjectId</span> ile Protocol, CourseRegistration ya da ExemptionRequest satırına bağlanır; her imzacı ve her imza turu için bir satır tutulur.</p>
+<h3>6.3 Dönem takibi, kurallar ve denetim</h3>
+<!--ER-C-->
+
+<h3>6.4 Tablolar ve alanları</h3>
+<!--TABLES-->
+
+<h3>6.5 Veritabanı düzeyindeki kısıtlar</h3>
+<table>
+  <thead><tr><th style="width:36%">Kısıt</th><th>Amaç</th></tr></thead>
+  <tbody>
+    <tr><td>Kısmi benzersiz indeks: <span class="code">Enrollment(studentNo, type)</span>, durum etkin ya da dondurulmuş iken</td><td>Bir öğrencinin aynı anda tek ÇAP ve tek yan dal kaydı olabilir (ÇAP Yön. m.5/1-ğ; Yan Dal Yön. m.6/3).</td></tr>
+    <tr><td><span class="code">Application(studentNo, offeringId)</span> benzersiz</td><td>Aynı teklife iki başvuru yapılamaz.</td></tr>
+    <tr><td><span class="code">Offering(termId, type)</span> benzersiz; <span class="code">quota &gt; 0</span>; <span class="code">closesAt &gt; opensAt</span></td><td>Dönem başına tek ÇAP ve tek yan dal teklifi; geçerli kontenjan ve takvim.</td></tr>
+    <tr><td><span class="code">CourseRegistration(enrollmentId, termId)</span>, <span class="code">TermRecord(enrollmentId, termId)</span>, <span class="code">ExemptionRequest(enrollmentId, conditionId)</span> benzersiz</td><td>Dönem başına tek ders kayıt formu ve tek beyan; özel şart başına tek başvuru.</td></tr>
+    <tr><td><span class="code">StudentProfile</span>: GNO 0–4, öğrenci no 9 hane, sıra ≤ mevcut; <span class="code">TermRecord</span>: GNO 0–4</td><td>Öğrencinin girdiği değerlerin aralık denetimi veritabanında da yapılır.</td></tr>
+    <tr><td><span class="code">Program.isHome</span> için tek satır; kaynak bölümü boş şablon türü başına tek</td><td>Tek "ev sahibi" bölüm; tek yan dal havuzu.</td></tr>
+    <tr><td><span class="code">AuditLog</span> üzerinde UPDATE ve DELETE'i engelleyen tetikleyici</td><td>Denetim kaydı yalnızca eklenir; değiştirilemez ve silinemez.</td></tr>
+  </tbody>
+</table>
+
+<h2>7. Otomatik kontrol edilecek yönetmelik kuralları</h2>
+<p>Kurallar sürümlü <b>kural setinde</b> veri olarak tutulur; her başvuru değerlendirildiği sürümü saklar. Öğrenci her kuralın sonucunu, kendi değerini ve dayanak maddesini görür.</p>
+
+<h3>7.1 Çift ana dal</h3>
+<table>
+  <thead><tr><th style="width:5%">#</th><th>Kural</th><th style="width:24%">Eşik</th><th style="width:24%">Dayanak</th></tr></thead>
+  <tbody>
+    <tr><td colspan="4"><b>Başvuruda</b></td></tr>
+    <tr><td>1</td><td>Başvurulan program ana dal programından farklı olmalı</td><td>—</td><td class="src">ÇAP Yön. m.3</td></tr>
+    <tr><td>2</td><td>Başvuru dönemine kadarki tüm dersler alınmış ve geçilmiş olmalı</td><td>Başarısız / alınmamış ders yok</td><td class="src">ÇAP Yön. m.5/1-d</td></tr>
+    <tr><td>3</td><td>Asgari genel not ortalaması</td><td>GNO ≥ 2,75</td><td class="src">ÇAP Yön. m.5/1-d</td></tr>
+    <tr><td>4</td><td>Sınıfında başarı sırasıyla en üst dilimde olmak <b>veya</b> kayıt yılındaki taban puana sahip olmak</td><td>İlk %20 veya YKS puanı ≥ taban puan (belge doğrulanınca kesinleşir)</td><td class="src">ÇAP Yön. m.5/1-d; YÖK m.17/2</td></tr>
+    <tr><td>5</td><td>Başarı sırası şartı aranan programda kayıt yılındaki şart sağlanmalı</td><td>Mühendislik: ≤ 300.000</td><td class="src">ÇAP Yön. m.5/1-e</td></tr>
+    <tr><td>6</td><td>Başvuru yarıyılı</td><td>3.–5. yarıyılın başı (4 yıllık)</td><td class="src">ÇAP Yön. m.5/1-f</td></tr>
+    <tr><td>7</td><td>Aynı anda tek çift ana dal; aynı programda yan dal kaydı olmamalı</td><td>Etkin ÇAP ≤ 1</td><td class="src">ÇAP Yön. m.5/1-ğ</td></tr>
+    <tr><td>8</td><td>Öğrencinin bölümü, teklifin kabul ettiği bölümler arasında olmalı</td><td>2026-27 güz: Elektrik-Elektronik Müh.</td><td class="src">Kontenjan ilanı, dipnot</td></tr>
+    <tr><td colspan="4"><b>Protokolde</b></td></tr>
+    <tr><td>9</td><td>Protokol dersleri ile ana dalda alınan ortak derslerin AKTS toplamı</td><td>≥ 240 AKTS (EEM 135 + 105; Makine 171 + 69)</td><td class="src">ÇAP Yön. m.7/2</td></tr>
+    <tr><td colspan="4"><b>Dönem sonunda</b> (aday listesi üretir)</td></tr>
+    <tr><td>10</td><td>İzinsiz üst üste ders almama</td><td>2 dönem → kayıt silme adayı; 1 dönem → uyarı</td><td class="src">ÇAP Yön. m.9/1-d</td></tr>
+    <tr><td>11</td><td>Ana dal GNO düşüşü</td><td>2,50 ≤ GNO &lt; 2,72: bir defa izin (uyarı); ikinci kez &lt; 2,72 ya da &lt; 2,50: kayıt silme adayı</td><td class="src">ÇAP Yön. m.9/1-e; YÖK m.17/4</td></tr>
+    <tr><td>12</td><td>Ana dalda kayıt dondurulmuşsa ÇAP kaydı da dondurulur</td><td>—</td><td class="src">ÇAP Yön. m.9/1-ç</td></tr>
+    <tr><td colspan="4"><b>Mezuniyette</b></td></tr>
+    <tr><td>13</td><td>Çift ana dal diploması</td><td>Ana daldan mezuniyet; ana dal GNO ≥ 2,72; protokoldeki tüm dersler geçilmiş ya da muaf</td><td class="src">ÇAP Yön. m.7/2, m.8/1-c,ç</td></tr>
+    <tr><td>14</td><td>ÇAP'tan ayrılan öğrencinin yan dal sertifikası hakkı</td><td>Geçilen dersler yan dal planını karşılıyorsa</td><td class="src">ÇAP Yön. m.8/1-g</td></tr>
+  </tbody>
+</table>
+
+<h3>7.2 Yan dal</h3>
+<table>
+  <thead><tr><th style="width:5%">#</th><th>Kural</th><th style="width:24%">Eşik</th><th style="width:24%">Dayanak</th></tr></thead>
+  <tbody>
+    <tr><td>15</td><td>Başka bir program; tüm dersler alınmış ve geçilmiş</td><td>—</td><td class="src">Yan Dal Yön. m.3/1-e, m.5/1-d</td></tr>
+    <tr><td>16</td><td>Asgari genel not ortalaması</td><td>GNO ≥ 2,50</td><td class="src">Yan Dal Yön. m.5/1-d</td></tr>
+    <tr><td>17</td><td>Başvuru yarıyılı</td><td>3.–6. yarıyılın başı</td><td class="src">Yan Dal Yön. m.5/1-ç</td></tr>
+    <tr><td>18</td><td>Aynı anda tek yan dal; aynı programda ÇAP kaydı olmamalı; daha önce bu yan daldan kaydı silinmemiş olmalı</td><td>—</td><td class="src">Yan Dal Yön. m.6/3, m.7/11</td></tr>
+    <tr><td>19</td><td>Ders havuzu ve öğrencinin planı</td><td>Havuz ≥ 60 AKTS; plan ≥ 30 AKTS ve ≥ 6 ders</td><td class="src">Yan Dal Yön. m.5/1-g</td></tr>
+    <tr><td>20</td><td>Ana dal GNO'su alt sınırın altına düşerse kayıt silme adayı</td><td>GNO &lt; 2,30; 2,45 altında uyarı</td><td class="src">Yan Dal Yön. m.7/5</td></tr>
+    <tr><td>21</td><td>Yan dal ortalaması üst üste düşük kalırsa kayıt silme adayı</td><td>2 dönem &lt; 2,00</td><td class="src">Yan Dal Yön. m.7/6</td></tr>
+    <tr><td>22</td><td>İzinsiz üst üste ders almama; ana dalla birlikte izin</td><td>2 dönem</td><td class="src">Yan Dal Yön. m.7/2, m.7/4</td></tr>
+    <tr><td>23</td><td>Yan dal sertifikası</td><td>Ana daldan mezuniyet; plan tamam; ortalama ≥ 2,00</td><td class="src">Yan Dal Yön. m.7/8</td></tr>
+  </tbody>
+</table>
+
+<h3>7.3 Sistemin kendi denetimleri</h3>
+<table>
+  <thead><tr><th style="width:5%">#</th><th>Denetim</th><th style="width:38%">Neden</th></tr></thead>
+  <tbody>
+    <tr><td>24</td><td>Zorunlu belge yüklenmeden başvuru alınmaz.</td><td class="src">Rehber, "Başvuru"</td></tr>
+    <tr><td>25</td><td>Başvuru dönemi dışında başvuru alınmaz; kontenjandan fazla asil önerilemez.</td><td class="src">ÇAP Yön. m.4/b; kontenjan ilanı</td></tr>
+    <tr><td>26</td><td>Beyanı doğrulanmamış başvuru varken sıralama kilitlenemez; uyuşmayan başvuru değerlendirilmez.</td><td class="src">Veri öğrencinin beyanı olduğu için</td></tr>
+    <tr><td>27</td><td>Sonuç ilan edilmeden öğrenci sonucu göremez ve kesin kayıt yapamaz.</td><td class="src">Karar yönetim kurulunundur</td></tr>
+    <tr><td>28</td><td>Protokolün beş imzası tamamlanmadan ders kayıt formu ve muafiyet başvurusu açılmaz.</td><td class="src">Rehber, "Asil öğrenci kayıtları"</td></tr>
+    <tr><td>29</td><td>Ders kayıt formuna yalnız protokolde geçilmemiş dersler yazılır; seçmeli yere yalnız o yarıyılın teknik seçmelisi seçilir; Erasmus / Farabi döneminde form açılmaz.</td><td class="src">Protokol; ÇAP Yön. m.9/1-ç</td></tr>
+    <tr><td>30</td><td>Muafiyet için ana daldaki ders başarılı olmalı; şartın protokolde karşılığı (ders ya da boş seçmeli yer) bulunmalı.</td><td class="src">Protokoldeki özel şartlar; Rehber</td></tr>
+    <tr><td>31</td><td>Not yalnız imzaları tamamlanmış formdaki derse girilir.</td><td class="src">Veri bütünlüğü</td></tr>
+    <tr><td>32</td><td>Doğrulanmamış GNO beyanına dayanan tarama bulgusu onaylanamaz; beyan yoksa "veri eksik" bulgusu yazılır.</td><td class="src">Veri öğrencinin beyanı olduğu için</td></tr>
+  </tbody>
+</table>
+<div class="info">Kayıt silme kuralları (10, 11, 20–22) dönem sonu taramasında <b>aday listesi</b> üretir. Sistem kayıt silmez; kararı komisyon, fakülte yönetim kurulu kararının sayısını gerekçe yazarak işler.</div>
+
+<h2>8. Netleştirilmesi gereken konular</h2>
+<table>
+  <thead><tr><th style="width:5%">#</th><th>Soru</th><th style="width:42%">Neden soruluyor</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ana dal danışmanı ve ana dal bölüm başkanı (başka bölümden) sisteme hesapla mı girecek?</td><td>Şu an ikisi de destekleniyor: hesabı varsa çevrim içi imzalar, yoksa ıslak imzayı koordinatör işler.</td></tr>
+    <tr><td>2</td><td>Bölümün yan dal programı ve yayımlanmış ders havuzu var mı?</td><td>Sitede yalnız ÇAP belgeleri bulundu; yan dal havuzu örnek olarak kuruldu.</td></tr>
+    <tr><td>3</td><td>Gerçek kontenjan ve taban puanlar hangi kaynaktan alınmalı?</td><td>İlan tablosu ve YÖK Atlas'tan sağlıklı okunamadı; değerler temsilî, koordinatör düzenleyebiliyor.</td></tr>
+    <tr><td>4</td><td>Fakülte içi öğrenciden transkript istenmediğinde GNO ve sıra nasıl teyit edilecek?</td><td>Rehber fakülte içinde bu belgeleri istemiyor; sistemde koordinatör teyit notu yazıyor.</td></tr>
+    <tr><td>5</td><td>Notları koordinatörün girmesi uygun mu, yoksa öğrenci transkript yükleyip beyan mı etsin?</td><td>OBİS olmadığı için iki seçenek de mümkün; şu an koordinatör giriyor.</td></tr>
+    <tr><td>6</td><td>Kontenjandan fazla başvuruda eşit GNO'da neye bakılır?</td><td>Yönerge ölçüt belirtmiyor; şu an sınıf yüzdeliği, sonra başvuru zamanı.</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  İncelenen kaynaklar: Bilgisayar Mühendisliği Bölümü "Çift Anadal" sayfası (Yönetmelik, Yönerge, Rehber Şubat 2025, FORM01 Ders Kayıt Formu, Elektrik-Elektronikten Bilgisayara ve Makineden Bilgisayara protokolleri) · Bologna ders paketi (Bilgisayar Mühendisliği lisans müfredatı) · YÖK Geçiş, Çift Anadal, Yan Dal Yönetmeliği (m.16–20) · Selçuk Üniversitesi Çift Ana Dal Yönergesi (Senato 20/5/2026, 2026-20) · Yan Dal Yönergesi (26/10/2023, 2023-131) · Yan Dal formları · Ön Lisans ve Lisans Eğitim-Öğretim ve Sınav Yönetmeliği · 2026-2027 güz ÇAP kontenjan ilanı.
+</footer>
+
+</body>
+</html>

@@ -47,3 +47,7 @@ Her aşama bir sonraki başlamadan önce kendi "bitti" ölçütünü sağlar.
 - **Bildirimler:** E-posta Mailpit'e gider, gerçek gönderim yok.
 - **OBİS kesin kayıt doğrulaması:** Sahte OBİS'te "kayıt yaptırdı" bayrağı ile yapılır.
 - **Dışa aktarma:** CSV ve XLSX var. PDF dışa aktarma yerine yazdırılabilir HTML sayfası var (FR-18 isteğe bağlıydı).
+
+## 4. Kapsam değişikliği (2026-10-08)
+
+Danışman kararıyla proje yalnız Bilgisayar Mühendisliği Bölümünü kapsayacak, öğrenci girişi içerecek ve OBİS'siz çalışacak biçimde yeniden düzenlendi. Yukarıdaki aşamalar ilk kapsamın kaydıdır; güncel kapsam için [KARARLAR.md](KARARLAR.md) K-12 – K-17 ve [TEKNIK-DOKUMAN.md](TEKNIK-DOKUMAN.md) bölüm 18'e bakın. Arayüz teması (bölüm 1) aynen geçerlidir.

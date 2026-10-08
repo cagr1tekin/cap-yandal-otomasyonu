@@ -23,3 +23,7 @@ Selçuk Üniversitesi resmî sitesinden 2026-10-07'de indirildi. `pdf/` asıl be
 - Bazı bölüm sayfaları ÇAP başvurusu için GNO 3.00 yazıyor; yürürlükteki yönerge 2.75 diyor.
 - ÇAP Yönergesi m.9/e: "bir defaya mahsus 2.50'nin altına düşebilir, ikinci kez 2.72'nin altına düşerse kaydı silinir" — uygulaması Öğrenci İşleri'ne sorulmalı.
 - Genel akademik takvimde ÇAP/yandal başvuru tarihi yok; birim duyurularıyla belirleniyor.
+
+## Bölüm sitesi ve müfredat (2026-10-08)
+
+Bilgisayar Mühendisliği Bölümünün "Çift Anadal" sayfasındaki rehber ve iki protokol `bolum-sitesi/` altındadır; ayrıntı [bolum-sitesi/README.md](bolum-sitesi/README.md). Hocanın verdiği dosyalar `hoca-materyalleri/` altındadır. Müfredat Bologna ders paketinden alınmıştır.
