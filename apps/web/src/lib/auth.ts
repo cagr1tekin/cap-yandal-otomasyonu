@@ -2,18 +2,8 @@ import type { NextAuthOptions } from 'next-auth';
 import { decode, type JWT } from 'next-auth/jwt';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import { cookies } from 'next/headers';
-import type { Role } from '@cap/contracts';
 
 const issuer = process.env.KEYCLOAK_ISSUER!;
-
-function rolesOf(accessToken: string): Role[] {
-  try {
-    const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64url').toString());
-    return (payload.realm_access?.roles ?? []) as Role[];
-  } catch {
-    return [];
-  }
-}
 
 async function refresh(token: JWT): Promise<JWT> {
   try {
@@ -35,7 +25,6 @@ async function refresh(token: JWT): Promise<JWT> {
       refreshToken: t.refresh_token ?? token.refreshToken,
       idToken: t.id_token ?? token.idToken,
       expiresAt: Math.floor(Date.now() / 1000) + t.expires_in,
-      roles: rolesOf(t.access_token),
     };
   } catch {
     return { ...token, error: 'RefreshFailed' };
@@ -62,17 +51,16 @@ export const authOptions: NextAuthOptions = {
           idToken: account.id_token,
           expiresAt: account.expires_at,
           username: (profile as { preferred_username?: string })?.preferred_username,
-          roles: rolesOf(account.access_token!),
         };
       }
       if (typeof token.expiresAt === 'number' && Date.now() / 1000 < token.expiresAt - 30) return token;
       return refresh(token);
     },
-    // Erişim belirteci istemciye gönderilmez; yalnızca kimlik ve roller.
+    // Erişim belirteci istemciye gönderilmez; rol veritabanındadır (API /me).
     async session({ session, token }) {
       return {
         ...session,
-        user: { ...session.user, username: token.username as string, roles: (token.roles as Role[]) ?? [] },
+        user: { ...session.user, username: token.username as string },
         error: token.error,
       };
     },
@@ -104,7 +92,6 @@ export async function readToken(): Promise<JWT | null> {
 export interface SessionUser {
   username: string;
   name: string;
-  roles: Role[];
   accessToken: string;
 }
 
@@ -115,7 +102,6 @@ export async function currentUser(): Promise<SessionUser | null> {
   return {
     username: t.username as string,
     name: (t.name as string) ?? (t.username as string),
-    roles: (t.roles as Role[]) ?? [],
     accessToken: t.accessToken as string,
   };
 }

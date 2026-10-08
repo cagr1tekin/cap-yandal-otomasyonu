@@ -2,7 +2,7 @@ import { getToken } from 'next-auth/jwt';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /** Oturum gerektiren yollar. Rol yetkisi API'dedir (rol atamaları veritabanında olduğu için belirteçte değil). */
-const PROTECTED = ['/panel', '/onaylar', '/bildirimler', '/belgeler', '/ogrenci', '/kayitlar', '/koordinator', '/ana-dal', '/yonetim', '/raporlar', '/yazdir'];
+const PROTECTED = ['/panel', '/ogrenciler', '/onaylar', '/mesajlar', '/kontrol', '/katalog', '/sablonlar', '/kurallar', '/ayarlar', '/iceri-aktar', '/kullanicilar', '/denetim', '/bildirimler', '/belgeler', '/yazdir'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

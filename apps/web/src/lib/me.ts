@@ -5,20 +5,22 @@ import { currentUser } from './auth';
 import type { Me } from './types';
 
 /**
- * Oturumdaki personelin rolleri ve kapsamı. Yetkinin kaynağı veritabanındaki rol atamaları olduğu için
- * (KARARLAR K-1) belirteçteki rollere değil API'nin /me yanıtına bakılır. İstek başına bir kez çağrılır.
+ * Oturumdaki kullanıcının rolü. Yetkinin kaynağı veritabanı olduğu için belirtece değil API'nin /me
+ * yanıtına bakılır. Kimliği doğrulanmış ama sistemde hesabı olmayan kullanıcı için "tanımsız" döner.
  */
-export const getMe = cache(async (): Promise<(Me & { accessToken: string }) | null> => {
+export const getSession = cache(async (): Promise<{ me: (Me & { accessToken: string }) | null; unknown: boolean }> => {
   const user = await currentUser();
-  if (!user) return null;
+  if (!user) return { me: null, unknown: false };
   try {
     const res = await fetch(`${process.env.API_URL}/me`, { headers: { authorization: `Bearer ${user.accessToken}` }, cache: 'no-store' });
-    if (!res.ok) return null;
-    const me = (await res.json()) as Me;
-    return { ...me, accessToken: user.accessToken };
+    if (res.status === 403) return { me: null, unknown: true };
+    if (!res.ok) return { me: null, unknown: false };
+    return { me: { ...((await res.json()) as Me), accessToken: user.accessToken }, unknown: false };
   } catch {
-    return null;
+    return { me: null, unknown: false };
   }
 });
 
-export const hasRole = (me: { roles: Role[] } | null, ...roles: Role[]) => !!me && roles.some((r) => me.roles.includes(r));
+export const getMe = async () => (await getSession()).me;
+
+export const hasRole = (me: { role: Role } | null, ...roles: Role[]) => !!me && roles.includes(me.role);

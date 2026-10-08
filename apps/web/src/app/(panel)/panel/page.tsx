@@ -7,31 +7,30 @@ import { termLabel } from '@/lib/format';
 import { getMe } from '@/lib/me';
 import type { Task, Term } from '@/lib/types';
 
-export const metadata = { title: 'Görevlerim' };
-
-const roleTitle: Record<Task['role'], string> = { ...LABELS.role, IMZA: 'İmzalar' };
+export const metadata = { title: 'Pano' };
 
 /** Rol bazlı pano: kullanıcının o an yapması gereken işler, sayılarıyla. */
 export default async function Dashboard() {
   const [me, data] = await Promise.all([getMe(), api<{ tasks: Task[]; term: Term | null }>('/me/tasks')]);
-  const groups = [...new Set(data.tasks.map((t) => t.role))];
-
+  const student = me?.role === 'OGRENCI';
   return (
     <>
       <PageHero
         title={`Merhaba, ${me?.displayName ?? ''}`}
-        crumbs={['Görevlerim', data.term ? termLabel(data.term) : '']}
+        crumbs={[student ? 'Yapılacaklar' : 'Pano', data.term ? termLabel(data.term) : '']}
         subtitle={
           <>
-            {me?.assignments.length ? 'Rolleriniz: ' : 'Öğrenci hesabı'}
-            {me?.assignments.map((a, i) => (
-              <span key={i} className="mr-1 inline-block rounded-pill bg-white/15 px-2 py-0.5 text-xs">
-                {LABELS.role[a.role]}
-                {a.programId ? ` · ${me.programs.find((p) => p.id === a.programId)?.name ?? a.programId}` : ''}
-              </span>
-            ))}
-            {me?.studentNo && <span className="ml-1 inline-block rounded-pill bg-white/15 px-2 py-0.5 text-xs">{me.studentNo}</span>}
+            {me ? LABELS.role[me.role] : ''}
+            {me?.studentNo && ` · ${me.studentNo}`}
+            {me?.role === 'BOLUM_BASKANI' && ' · yalnızca izleme yetkisi'}
           </>
+        }
+        actions={
+          student ? (
+            <Link href={`/ogrenciler/${me!.studentNo}`} className="rounded-pill bg-su-accent px-4 py-2 text-sm font-medium text-su-primary-dark no-underline">
+              Durumum
+            </Link>
+          ) : undefined
         }
       />
       <Page>
@@ -44,33 +43,24 @@ export default async function Dashboard() {
             </div>
           </Card>
         ) : (
-          groups.map((g) => (
-            <section key={g} aria-labelledby={`g-${g}`} className="space-y-3">
-              <h2 id={`g-${g}`} className="text-sm font-semibold uppercase tracking-[0.14em] text-su-muted">
-                {roleTitle[g]}
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {data.tasks
-                  .filter((t) => t.role === g)
-                  .map((t) => (
-                    <Link key={t.key} href={t.link} className="group no-underline">
-                      <Card className="flex h-full items-start justify-between gap-3 p-5 transition-colors group-hover:border-su-primary">
-                        <div>
-                          <p className="font-semibold text-su-heading">{t.title}</p>
-                          <p className="mt-1 text-sm text-su-muted">{t.detail}</p>
-                          <p className="mt-3 inline-flex items-center gap-1 text-sm text-su-primary">
-                            Git <ArrowRight aria-hidden className="size-4" />
-                          </p>
-                        </div>
-                        <Badge tone="accent" className="text-base">
-                          {t.count}
-                        </Badge>
-                      </Card>
-                    </Link>
-                  ))}
-              </div>
-            </section>
-          ))
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {data.tasks.map((t) => (
+              <Link key={t.key} href={t.link} className="group no-underline">
+                <Card className="flex h-full items-start justify-between gap-3 p-5 transition-colors group-hover:border-su-primary">
+                  <div>
+                    <p className="font-semibold text-su-heading">{t.title}</p>
+                    <p className="mt-1 text-sm text-su-muted">{t.detail}</p>
+                    <p className="mt-3 inline-flex items-center gap-1 text-sm text-su-primary">
+                      Git <ArrowRight aria-hidden className="size-4" />
+                    </p>
+                  </div>
+                  <Badge tone="accent" className="text-base">
+                    {t.count}
+                  </Badge>
+                </Card>
+              </Link>
+            ))}
+          </div>
         )}
       </Page>
     </>

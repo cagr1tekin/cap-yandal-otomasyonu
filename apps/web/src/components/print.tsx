@@ -1,8 +1,5 @@
 import type { ReactNode } from 'react';
-import { LABELS, type ApprovalRole } from '@cap/contracts';
 import { PrintButton } from '@/components/print-button';
-import { fmtDate } from '@/lib/format';
-import type { Approval } from '@/lib/types';
 
 /** Kâğıt formun karşılığı: üniversite başlığı, form adı ve yazdır düğmesi. */
 export function PrintShell({ title, children, note }: { title: string; children: ReactNode; note?: ReactNode }) {
@@ -16,7 +13,7 @@ export function PrintShell({ title, children, note }: { title: string; children:
       {children}
       {note && <div className="mt-6 text-xs">{note}</div>}
       <p className="mt-6 border-t border-slate-300 pt-2 text-[10px] text-slate-500">
-        Bu form Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonunda (bitirme projesi) çevrim içi imzalanmıştır; imza bilgileri sistemin değiştirilemez denetim kaydındadır.
+        Sistemdeki onaylı kayıtlarla doldurulmuştur. İmzalar öğrencinin ana dalında ıslak imzayla alınır; imzalı form taranıp sisteme yüklenir.
       </p>
     </div>
   );
@@ -47,32 +44,17 @@ export function Parties({ left, right }: { left: [string, string][]; right: [str
   );
 }
 
-/** İmza kutuları: son imza turundaki her imzacı için ad, durum ve tarih. */
-export function Signatures({ approvals, roles, labels }: { approvals: Approval[]; roles: ApprovalRole[]; labels?: Partial<Record<ApprovalRole, string>> }) {
-  const round = approvals.length ? Math.max(...approvals.map((a) => a.round)) : 0;
-  const of = (role: ApprovalRole) => approvals.find((a) => a.round === round && a.role === role);
+/** Boş imza kutuları (kâğıtta doldurulur). */
+export function Signatures({ labels }: { labels: string[] }) {
   return (
     <div className="mt-8 grid grid-cols-3 gap-x-4 gap-y-6 text-center">
-      {roles.map((role) => {
-        const a = of(role);
-        return (
-          <div key={role}>
-            <p className="font-semibold">{labels?.[role] ?? LABELS.approvalRole[role]}</p>
-            <div className="mt-1 min-h-14 border border-dashed border-slate-400 px-1 py-1.5 text-[11px]">
-              {a?.decision === 'APPROVED' ? (
-                <>
-                  <p>{a.comment?.startsWith('Islak imza') ? 'Islak imza (koordinatör işledi)' : `e-imza: ${a.decidedBy}`}</p>
-                  <p>{fmtDate(a.decidedAt)}</p>
-                </>
-              ) : a?.decision === 'REJECTED' ? (
-                <p>Reddedildi</p>
-              ) : (
-                <p className="text-slate-400">İmza bekleniyor</p>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {labels.map((l) => (
+        <div key={l}>
+          <p className="font-semibold">{l}</p>
+          <div className="mt-1 h-14 border border-dashed border-slate-400" />
+          <p className="text-[11px]">İmza</p>
+        </div>
+      ))}
     </div>
   );
 }

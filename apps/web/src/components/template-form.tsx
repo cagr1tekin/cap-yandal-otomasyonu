@@ -52,7 +52,7 @@ export function TemplateForm({ template, type, courses, programs, usedProgramIds
           <input type="hidden" name="sourceProgramId" value="" />
         )}
         <Field label="Başlık">
-          <Input name="title" required defaultValue={template?.title ?? (type === 'YANDAL' ? 'Bilgisayar Mühendisliği Yan Dal Ders Havuzu' : '')} placeholder="… Mühendisliğinden Bilgisayar Mühendisliğine" />
+          <Input name="title" required defaultValue={template?.title ?? (type === 'YANDAL' ? 'Bilgisayar Mühendisliği Yan Dal Ders Listesi' : '')} placeholder="… Mühendisliğinden Bilgisayar Mühendisliğine" />
         </Field>
         {type === 'CAP' ? (
           <Field label="Ortak AKTS" hint="Ana dalda alınan, iki programda ortak sayılan dersler (ÇAP Yön. m.7/2)">
@@ -64,7 +64,7 @@ export function TemplateForm({ template, type, courses, programs, usedProgramIds
       </div>
 
       <fieldset>
-        <legend className="text-sm font-semibold uppercase tracking-wide text-su-muted">{type === 'CAP' ? 'Protokoldeki dersler' : `${LABELS.track[type]} ders havuzu`}</legend>
+        <legend className="text-sm font-semibold uppercase tracking-wide text-su-muted">{type === 'CAP' ? 'Protokoldeki dersler' : `${LABELS.track[type]} ders listesi`}</legend>
         <p className="mb-2 text-xs text-su-muted">Bilgisayar Mühendisliği müfredatından (Bologna ders paketi) seçilir. Ana dalda ortak olan dersler protokole yazılmaz.</p>
         <div className="grid gap-4 lg:grid-cols-2">
           {semesters.map((sem) => (
@@ -94,7 +94,7 @@ export function TemplateForm({ template, type, courses, programs, usedProgramIds
       {type === 'CAP' && (
         <fieldset>
           <legend className="text-sm font-semibold uppercase tracking-wide text-su-muted">Özel şartlar</legend>
-          <p className="mb-2 text-xs text-su-muted">“Öğrenci ana dal bölümünden … kodlu dersi alırsa … kodlu dersten muaf sayılacaktır.” Boş bırakılan satır kaydedilmez.</p>
+          <p className="mb-2 text-xs text-su-muted">“Öğrenci ana dal bölümünden … kodlu dersi alırsa … kodlu dersten muaf sayılacaktır.” Boş satır kaydedilmez; kayıtlı şart silinmez, güncellenir.</p>
           <div className="space-y-2">
             {conditions.map((c, i) => (
               <div key={c.id} className="grid gap-2 rounded-lg bg-su-bg p-2 sm:grid-cols-[4rem_8rem_1fr_8rem_1fr]">

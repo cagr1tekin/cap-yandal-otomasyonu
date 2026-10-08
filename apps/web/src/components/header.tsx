@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Bell, LogOut } from 'lucide-react';
 import { LABELS, type Role } from '@cap/contracts';
-import type { SessionUser } from '@/lib/auth';
 import type { Me } from '@/lib/types';
 import { buttonVariants } from '@/components/ui';
 
@@ -15,67 +14,55 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-/**
- * Rol bazlı menü (KARARLAR K-12). Her öğe yalnızca o işi yapan role görünür.
- * Öğrenci, komisyon (koordinatör), Bilgisayar Müh. bölüm başkanı ve ana dal imzacıları ayrı menü görür.
- */
-export function navFor(me: Pick<Me, 'roles' | 'homeHead' | 'mainDepartmentSigner'>): NavGroup[] {
-  const has = (...r: Role[]) => r.some((x) => me.roles.includes(x));
-  const groups: NavGroup[] = [];
-  groups.push({
-    title: 'Genel',
-    items: [
-      { href: '/panel', label: 'Görevlerim' },
-      { href: '/onaylar', label: 'İmzalarım' },
-      { href: '/bildirimler', label: 'Bildirimler' },
-      { href: '/belgeler', label: 'Yönerge ve formlar' },
-    ],
-  });
-
-  if (has('OGRENCI')) {
-    groups.push({
-      title: 'Öğrenci',
-      items: [
-        { href: '/ogrenci/bilgilerim', label: 'Bilgilerim ve belgelerim' },
-        { href: '/ogrenci/basvuru', label: 'Başvuru' },
-        { href: '/ogrenci/kayitlarim', label: 'ÇAP / yan dal kayıtlarım' },
-      ],
-    });
+/** Rol bazlı menü: üç giriş türü (koordinatör, öğrenci, bölüm başkanı). */
+export function navFor(me: Pick<Me, 'role' | 'studentNo'>): NavGroup[] {
+  if (me.role === 'OGRENCI') {
+    const card = `/ogrenciler/${me.studentNo}`;
+    return [
+      { title: 'Genel', items: [{ href: '/panel', label: 'Yapılacaklar' }, { href: '/bildirimler', label: 'Bildirimler' }] },
+      {
+        title: 'Kartım',
+        items: [
+          { href: card, label: 'Durumum' },
+          { href: `${card}?sekme=dersler`, label: 'Derslerim' },
+          { href: `${card}?sekme=notlar`, label: 'Dönem sonu notları' },
+          { href: `${card}?sekme=belgeler`, label: 'Belgelerim' },
+          { href: `${card}?sekme=mesajlar`, label: 'Mesajlar' },
+        ],
+      },
+      { title: 'Bilgi', items: [{ href: '/katalog', label: 'Ders kataloğu' }, { href: '/belgeler', label: 'Yönerge ve formlar' }] },
+    ];
   }
-
-  const dept = has('KOORDINATOR') || me.homeHead;
-  if (dept) {
-    groups.push({
-      title: 'Başvuru süreci',
+  const coord = me.role === 'KOORDINATOR';
+  return [
+    { title: 'Genel', items: [{ href: '/panel', label: 'Pano' }, { href: '/bildirimler', label: 'Bildirimler' }] },
+    {
+      title: 'Öğrenci takibi',
       items: [
-        { href: '/koordinator/donem', label: 'Kontenjan ve takvim' },
-        { href: '/koordinator/basvurular', label: 'Başvurular' },
-        { href: '/koordinator/degerlendirme', label: 'Sıralama ve karar' },
+        { href: '/ogrenciler', label: 'Öğrenciler' },
+        { href: '/onaylar', label: 'Onay bekleyenler' },
+        { href: '/mesajlar', label: 'Mesajlar' },
+        { href: '/kontrol', label: 'Kural kontrolü ve kararlar' },
       ],
-    });
-    groups.push({
-      title: 'Kayıtlı öğrenciler',
+    },
+    {
+      title: 'Tanımlar',
       items: [
-        { href: '/koordinator/ogrenciler', label: 'Öğrenciler' },
-        { href: '/koordinator/protokoller', label: 'Protokol şablonları' },
-        { href: '/koordinator/taramalar', label: 'Dönem sonu taramaları' },
+        { href: '/katalog', label: 'Ders kataloğu' },
+        { href: '/sablonlar', label: 'Ders listesi şablonları' },
+        { href: '/kurallar', label: 'Yönerge kuralları' },
+        ...(coord ? [{ href: '/ayarlar', label: 'Dönemler ve ayarlar' }, { href: '/iceri-aktar', label: 'İçeri aktar (CSV)' }] : []),
       ],
-    });
-  }
-  if (me.mainDepartmentSigner) groups.push({ title: 'Ana dal bölümü', items: [{ href: '/ana-dal', label: 'Bölümümün öğrencileri' }] });
-
-  if (dept) {
-    groups.push({
+    },
+    {
       title: 'Yönetim',
       items: [
-        { href: '/raporlar', label: 'Raporlar' },
-        { href: '/koordinator/kurallar', label: 'Kural setleri' },
-        { href: '/yonetim/kullanicilar', label: 'Kullanıcılar ve roller' },
-        { href: '/yonetim/denetim', label: 'Denetim kaydı' },
+        { href: '/kullanicilar', label: 'Hesaplar' },
+        { href: '/denetim', label: 'İşlem kaydı' },
+        { href: '/belgeler', label: 'Yönerge ve formlar' },
       ],
-    });
-  }
-  return groups;
+    },
+  ];
 }
 
 /** Wordmark: resmî logo kullanılmaz (bkz. docs/GELISTIRME-PLANI.md bölüm 1). */
@@ -87,13 +74,13 @@ function Brand() {
       </span>
       <span className="leading-tight">
         <span className="block text-[13px] font-semibold uppercase tracking-[0.12em]">Selçuk Üniversitesi</span>
-        <span className="block text-[11px] uppercase tracking-[0.18em] text-white/70">Bilgisayar Müh. · ÇAP ve Yan Dal</span>
+        <span className="block text-[11px] uppercase tracking-[0.18em] text-white/70">Bilgisayar Müh. · ÇAP ve YDP Takibi</span>
       </span>
     </Link>
   );
 }
 
-export function Header({ user, unread }: { user: SessionUser | null; unread: number }) {
+export function Header({ user, unread }: { user: { username: string; name: string; role: Role } | null; unread: number }) {
   return (
     <header className="sticky top-0 z-40 bg-su-primary shadow-[0_2px_10px_rgba(13,45,94,0.25)]">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
@@ -108,7 +95,7 @@ export function Header({ user, unread }: { user: SessionUser | null; unread: num
               </Link>
               <div className="hidden text-right text-white md:block">
                 <p className="max-w-56 truncate text-[13px] font-medium">{user.name}</p>
-                <p className="max-w-56 truncate text-[11px] text-white/65">{user.roles.map((r) => LABELS.role[r]).join(', ')}</p>
+                <p className="max-w-56 truncate text-[11px] text-white/65">{LABELS.role[user.role]}</p>
               </div>
               <a href="/api/cikis" className="grid size-8 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20" aria-label="Çıkış yap" title="Çıkış yap">
                 <LogOut aria-hidden className="size-4" />
@@ -132,7 +119,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-[1400px] gap-6 px-4 py-6 text-sm sm:grid-cols-3 sm:px-6">
         <div>
           <p className="font-semibold uppercase tracking-wider text-white">Selçuk Üniversitesi</p>
-          <p className="mt-1">Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümü · Çift Ana Dal ve Yan Dal Otomasyonu</p>
+          <p className="mt-1">Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümü · ÇAP ve YDP Öğrenci Takip Sistemi</p>
         </div>
         <div>
           <p className="font-medium text-white">Dayanak</p>

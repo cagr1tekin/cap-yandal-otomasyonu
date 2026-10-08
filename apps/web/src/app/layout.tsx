@@ -7,8 +7,8 @@ import './globals.css';
 const montserrat = Montserrat({ subsets: ['latin', 'latin-ext'], variable: '--font-montserrat', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'Bilgisayar Mühendisliği ÇAP / Yan Dal Otomasyonu — Selçuk Üniversitesi', template: '%s · Bilgisayar Müh. ÇAP / Yan Dal' },
-  description: 'Teknoloji Fakültesi Bilgisayar Mühendisliği Bölümü çift ana dal ve yan dal başvuru ve takip otomasyonu (bitirme projesi).',
+  title: { default: 'Bilgisayar Mühendisliği ÇAP / YDP Takip Sistemi — Selçuk Üniversitesi', template: '%s · Bilgisayar Müh. ÇAP / YDP' },
+  description: 'Bilgisayar Mühendisliği Bölümüne gelen çift ana dal ve yan dal öğrencilerinin dijital takibi (bitirme projesi).',
   robots: { index: false, follow: false },
 };
 
@@ -27,7 +27,7 @@ async function unreadCount(token: string): Promise<number> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const me = await getMe();
   const unread = me ? await unreadCount(me.accessToken) : 0;
-  const user = me ? { username: me.username, name: me.displayName, roles: me.roles, accessToken: me.accessToken } : null;
+  const user = me ? { username: me.username, name: me.displayName, role: me.role } : null;
   return (
     <html lang="tr" className={montserrat.variable}>
       <body className="flex min-h-dvh flex-col">
