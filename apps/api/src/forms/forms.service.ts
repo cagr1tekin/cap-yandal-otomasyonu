@@ -204,6 +204,36 @@ export class FormsService {
     return { ok: true };
   }
 
+  /** Birim / koordinatör: protokol listesi (dosyalanacaklar, onaydakiler). */
+  async listProtocols(user: AuthUser, status?: FormStatus) {
+    const rows = await this.prisma.protocol.findMany({
+      where: { ...(status ? { status } : {}), enrollment: { offering: this.access.offeringWhere(user) } },
+      include: { courses: true, enrollment: { include: { offering: { include: { program: { include: { unit: true } } } } } } },
+      orderBy: { updatedAt: 'desc' },
+      take: 300,
+    });
+    const out = [];
+    for (const p of rows) {
+      const s = await this.obis.getStudent(p.enrollment.studentNo).catch(() => null);
+      out.push({
+        id: p.id,
+        status: p.status,
+        round: p.round,
+        updatedAt: p.updatedAt,
+        approvedAt: p.approvedAt,
+        filedAt: p.filedAt,
+        ects: p.courses.reduce((t, c) => t + c.ects, 0) + p.commonEcts,
+        enrollmentId: p.enrollmentId,
+        studentNo: p.enrollment.studentNo,
+        fullName: s?.fullName ?? p.enrollment.studentNo,
+        type: p.enrollment.type,
+        programName: p.enrollment.offering.program.name,
+        unitName: p.enrollment.offering.program.unit.name,
+      });
+    }
+    return out;
+  }
+
   // ---------------- Dönemlik ders kayıt formu ----------------
 
   async saveCourseRegistration(user: AuthUser, enrollmentId: string, termId: string, codes: string[]) {

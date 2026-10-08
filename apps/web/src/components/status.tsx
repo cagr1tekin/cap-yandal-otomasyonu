@@ -1,4 +1,6 @@
-import { LABELS, type ApplicationStatus, type EnrollmentStatus } from '@cap/contracts';
+import { LABELS, type ApplicationStatus, type EnrollmentStatus, type FormStatus } from '@cap/contracts';
+import type { Approval } from '@/lib/types';
+import { fmtDateTime } from '@/lib/format';
 import type { RuleResult, Verdict } from '@cap/rules';
 import { CheckCircle2, CircleDashed, CircleHelp, MinusCircle, TriangleAlert, XCircle } from 'lucide-react';
 import { Badge, type Tone } from '@/components/ui';
@@ -21,6 +23,7 @@ export function VerdictBadge({ value }: { value: Verdict }) {
 
 const appTone: Record<ApplicationStatus, Tone> = {
   SUBMITTED: 'neutral',
+  INELIGIBLE: 'bad',
   WITHDRAWN: 'muted',
   UNDER_REVIEW: 'neutral',
   PROPOSED: 'neutral',
@@ -87,5 +90,57 @@ export function RuleList({ results, hideNa = false }: { results: RuleResult[]; h
         );
       })}
     </ul>
+  );
+}
+
+const formTone: Record<FormStatus, Tone> = {
+  DRAFT: 'muted',
+  IN_APPROVAL: 'warn',
+  APPROVED: 'ok',
+  REJECTED: 'bad',
+  SUBMITTED: 'neutral',
+  ENTERED: 'ok',
+  FILED: 'ok',
+};
+
+export function FormBadge({ value }: { value: FormStatus | null }) {
+  if (!value) return <Badge tone="muted">Yok</Badge>;
+  return <Badge tone={formTone[value]}>{LABELS.form[value]}</Badge>;
+}
+
+/** Kâğıt formdaki imza kutularının karşılığı: son turun imzacıları ve durumları. */
+export function ApprovalTable({ approvals }: { approvals: Approval[] }) {
+  if (!approvals.length) return null;
+  const round = Math.max(...approvals.map((a) => a.round));
+  const list = approvals.filter((a) => a.round === round);
+  return (
+    <div className="overflow-x-auto rounded-xl border border-su-border/70">
+      <table className="w-full min-w-[560px] text-sm">
+        <caption className="bg-su-bg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-su-muted">
+          İmzalar · {round}. tur
+        </caption>
+        <tbody>
+          {list.map((a) => (
+            <tr key={a.id} className="border-t border-su-border/60">
+              <td className="px-3 py-2 font-medium">{LABELS.approvalRole[a.role]}</td>
+              <td className="px-3 py-2 text-su-muted">{a.assigneeUsername ?? '— atanmamış —'}</td>
+              <td className="px-3 py-2">
+                {a.decision === 'APPROVED' ? (
+                  <Badge tone="ok">Onayladı</Badge>
+                ) : a.decision === 'REJECTED' ? (
+                  <Badge tone="bad">Reddetti</Badge>
+                ) : (
+                  <Badge tone="warn">Bekliyor</Badge>
+                )}
+              </td>
+              <td className="px-3 py-2 text-xs text-su-muted">
+                {a.decidedAt ? `${a.decidedBy ?? ''} · ${fmtDateTime(a.decidedAt)}` : ''}
+                {a.comment && <span className="block italic">“{a.comment}”</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

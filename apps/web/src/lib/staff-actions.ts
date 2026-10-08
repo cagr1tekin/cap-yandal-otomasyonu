@@ -24,12 +24,6 @@ export async function lockAction(_: ActionState, f: FormData): Promise<ActionSta
   return r;
 }
 
-export async function approvePlanAction(_: ActionState, f: FormData): Promise<ActionState> {
-  const r = await act(() => api(`/enrollments/${s(f, 'enrollmentId')}/minor-plan/approve`, { method: 'POST' }), 'Plan onaylandı.');
-  revalidatePath('/koordinator');
-  return r;
-}
-
 // ---- Birim: teklifler ve takvim ----
 
 export async function updateOfferingAction(_: ActionState, f: FormData): Promise<ActionState> {
@@ -92,6 +86,9 @@ export async function windowAction(_: ActionState, f: FormData): Promise<ActionS
           opensAt: fromLocalInput(s(f, 'opensAt')),
           closesAt: fromLocalInput(s(f, 'closesAt')),
           announceAt: s(f, 'announceAt') ? fromLocalInput(s(f, 'announceAt')) : undefined,
+          registrationDeadline: s(f, 'registrationDeadline') ? fromLocalInput(s(f, 'registrationDeadline')) : undefined,
+          waitlistDeadline: s(f, 'waitlistDeadline') ? fromLocalInput(s(f, 'waitlistDeadline')) : undefined,
+          courseRegistrationDeadline: s(f, 'courseRegistrationDeadline') ? fromLocalInput(s(f, 'courseRegistrationDeadline')) : undefined,
         },
       }),
     'Takvim kaydedildi.',
@@ -124,22 +121,6 @@ export async function publishAction(_: ActionState, f: FormData): Promise<Action
   const r = await act(() => api(`/offerings/${s(f, 'offeringId')}/publish`, { method: 'POST' }), 'Sonuçlar yayımlandı; öğrencilere bildirim gönderildi.');
   revalidatePath('/birim/kararlar');
   return r;
-}
-
-export async function syncAction(_: ActionState, f: FormData): Promise<ActionState> {
-  try {
-    const res = await api<{ enrolled: string[]; waiting: string[]; conflicts: string[] }>(`/offerings/${s(f, 'offeringId')}/sync-registrations`, {
-      method: 'POST',
-    });
-    revalidatePath('/birim/kararlar');
-    return {
-      ok: true,
-      message: `OBİS'ten eşitlendi: ${res.enrolled.length} yeni kayıt, ${res.waiting.length} öğrenci henüz kayıt yaptırmadı${res.conflicts.length ? `, ${res.conflicts.length} çakışma` : ''}.`,
-    };
-  } catch (e) {
-    if (e instanceof ApiError) return { ok: false, message: e.problem.detail ?? e.problem.title, problem: e.problem };
-    throw e;
-  }
 }
 
 export async function closeRegistrationAction(_: ActionState, f: FormData): Promise<ActionState> {

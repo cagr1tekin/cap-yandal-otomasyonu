@@ -2,34 +2,63 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Menu } from 'lucide-react';
 import { cn } from '@/lib/format';
-import type { NavItem } from './header';
+import type { NavGroup } from './header';
 
-/** Selçuk sitesindeki menü: büyük harf, 13px / 500, hap biçimi; öğeler arasında ince ayraç. */
-export function NavLinks({ items }: { items: NavItem[] }) {
+function isActive(path: string, href: string) {
+  return path === href || (href !== '/panel' && path.startsWith(`${href}/`));
+}
+
+function Groups({ groups, path }: { groups: NavGroup[]; path: string }) {
+  return (
+    <>
+      {groups.map((g) => (
+        <div key={g.title} className="mb-5">
+          <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-su-subtle">{g.title}</p>
+          <ul className="space-y-0.5">
+            {g.items.map((item) => {
+              const active = isActive(path, item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'block rounded-pill px-3 py-2 text-[13px] font-medium no-underline transition-colors',
+                      active ? 'bg-su-primary text-white shadow-[inset_3px_0_0_var(--color-su-accent)]' : 'text-su-heading hover:bg-su-primary-soft',
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** Panel sol menüsü; küçük ekranda açılır menü. */
+export function Sidebar({ groups }: { groups: NavGroup[] }) {
   const path = usePathname();
   return (
-    <nav aria-label="Ana menü">
-      <ul className="flex items-center whitespace-nowrap">
-        {items.map((item, i) => {
-          const active = path === item.href || path.startsWith(`${item.href}/`);
-          return (
-            <li key={item.href} className="flex items-center">
-              {i > 0 && <span aria-hidden className="mx-0.5 h-3 w-px bg-white/25" />}
-              <Link
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'rounded-pill px-[7.2px] py-[6px] text-[13px] font-medium uppercase tracking-[0.2px] text-white no-underline transition-colors hover:bg-white/10',
-                  active && 'bg-white/15 shadow-[inset_0_-2px_0_var(--color-su-accent)]',
-                )}
-              >
-                {item.label.toLocaleUpperCase('tr-TR')}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <>
+      <nav aria-label="Panel menüsü" className="hidden w-60 shrink-0 lg:block">
+        <div className="sticky top-24 rounded-2xl border border-su-border/70 bg-white p-3">
+          <Groups groups={groups} path={path} />
+        </div>
+      </nav>
+      <details className="rounded-2xl border border-su-border/70 bg-white lg:hidden">
+        <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-su-primary">
+          <Menu aria-hidden className="size-4" /> Menü
+        </summary>
+        <nav aria-label="Panel menüsü (mobil)" className="px-2 pb-2">
+          <Groups groups={groups} path={path} />
+        </nav>
+      </details>
+    </>
   );
 }

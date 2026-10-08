@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from 'next';
 import { Montserrat } from 'next/font/google';
 import { Footer, Header } from '@/components/header';
-import { currentUser } from '@/lib/auth';
+import { getMe } from '@/lib/me';
 import './globals.css';
 
 const montserrat = Montserrat({ subsets: ['latin', 'latin-ext'], variable: '--font-montserrat', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'ÇAP / Yan Dal — Selçuk Üniversitesi', template: '%s · ÇAP / Yan Dal' },
-  description: 'Çift ana dal ve yan dal başvuru ve takip sistemi (bitirme projesi).',
+  title: { default: 'ÇAP / Yan Dal Yönetim Paneli — Selçuk Üniversitesi', template: '%s · ÇAP / Yan Dal Paneli' },
+  description: 'Çift ana dal ve yan dal süreçleri için rol bazlı personel paneli (bitirme projesi).',
   robots: { index: false, follow: false },
 };
 
@@ -25,8 +25,9 @@ async function unreadCount(token: string): Promise<number> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const user = await currentUser();
-  const unread = user ? await unreadCount(user.accessToken) : 0;
+  const me = await getMe();
+  const unread = me ? await unreadCount(me.accessToken) : 0;
+  const user = me ? { username: me.username, name: me.displayName, roles: me.roles, accessToken: me.accessToken } : null;
   return (
     <html lang="tr" className={montserrat.variable}>
       <body className="flex min-h-dvh flex-col">

@@ -495,3 +495,34 @@ Uygulama sırasında tasarımdan şu noktalarda ayrılındı:
 - `packages/rules`: 116 test, %100 satır ve dal kapsamı.
 - `apps/api`: 12 entegrasyon testi (tam akış, yetki ve kısıtlar).
 - `e2e`: 18 Playwright testi (11 adımlı arayüz akışı, ekran görüntüleri, 4 mobil kontrol).
+
+## 17. Pivot: rol bazlı personel paneli (v0.3, 2026-10-08)
+
+Kapsam kararı ve kaynakları: [KARARLAR.md](KARARLAR.md) (K-1 … K-11).
+
+**Kaldırılanlar**
+- Öğrenci rolü, öğrenci ekranları ve uçları (`/me/eligibility`, `/me/applications`, `/me/enrollments`, yan dal planı uçları).
+- `MinorPlanItem` tablosu (yerini protokol aldı).
+- OBİS kesin kayıt eşitlemesi (`sync-registrations`), `ObisPort.isRegistered`, sahte OBİS kayıt ekranı.
+
+**Eklenenler**
+
+| Alan | Uygulama |
+|---|---|
+| Yetki | Roller yalnızca `RoleAssignment` tablosundan okunur; Keycloak yalnızca kimlik doğrular. ÖİDB `/users`, `/users/:u/assignments`, `/assignments/:id` ile yönetir. Rolsüz kullanıcı ilk girişte kaydolur ama işlem yapamaz. |
+| Başvuru girişi | `GET /intake/candidates?studentNo&type` (birimin teklifleri, uygunluk, yola göre zorunlu belgeler) ve `POST /applications` (evrak no/tarih, belge listesi, ÖSYM). Koşulu sağlamayan başvuru `INELIGIBLE` olarak kayda geçer, öğrenciye gerekçeli e-posta gider. |
+| Kesin kayıt | `POST /applications/:id/register` (belge listesi, İİBF 2023-24). Kayıtta program danışmanı varsayılan olarak koordinatördür. |
+| Protokol | `Protocol`, `ProtocolCourse`; `PUT /enrollments/:id/protocol`, `/submit`, `/file`. Kurallar: KR-ÇAP-18 (AKTS toplamı, ortak dersler dahil), KR-ÇAP-19 / KR-YD-13 (ana dal dersi yazılamaz), KR-YD-05. Onaylanmış protokolde değişiklik gerekçe ister ve yeni imza turu açar. |
+| Onaylar | Genel `Approval` tablosu (konu, tur, rol, atanan kişi). İmzacılar formlardan alınmıştır: protokolde 5; ÇAP ders kaydında 5; yan dal ders kaydında 3. Ret, turun bekleyen imzalarını düşürür. Öğrencinin ıslak imzasını koordinatör ya da birim işler. |
+| Ders kaydı | `CourseRegistration`, `CourseRegistrationItem`; kaydet → imzalar → koordinatör toplu teslim → birim OBİS listesi (CSV) → "girildi". Erasmus/Farabi izni olan dönemde ders kaydı yapılamaz. |
+| Dönem izni | `TermLeave`; taramada izinli dönem "ders almama" sayılmaz (`history.onLeave`). |
+| Görevlerim | `GET /me/tasks`: role göre bekleyen işler ve sayıları. |
+| Denetim | `GET /audit` (ÖİDB); kayıt kimliği metin olarak döner (BigInt). |
+| Müfredat | `ProgramCourse` (temsilî müfredatlar; ortak genel kültür dersleri işaretli). |
+| Takvim | Pencereye asil kayıt, yedek kayıt ve ders kaydı son tarihleri eklendi. |
+| Web | `(panel)` grubu: sol menü, Görevlerim, Onaylarım, Başvurular, Kayıt ayrıntısı, Protokoller, Ders kayıt formları, Toplu teslim, Kullanıcılar ve roller, Denetim; yazdırılabilir kontenjan ilanı, protokol formu ve sonuç listesi. Menü rolleri API'nin `/me` yanıtından alır. |
+
+**Test sonuçları (v0.3)**
+- `packages/rules`: 126 test, %100 kapsam.
+- `apps/api`: 17 entegrasyon testi.
+- `e2e`: 13 Playwright testi. 7 adımlı personel akışı; protokolün 5 imzası ve ders kaydının imzaları 4 farklı hesapla Keycloak girişi yapılarak atılıyor. Ayrıca ekran görüntüleri ve 4 mobil kontrol.

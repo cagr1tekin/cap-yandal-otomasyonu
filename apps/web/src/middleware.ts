@@ -3,16 +3,20 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { Role } from '@cap/contracts';
 
 /** Yol → izin verilen roller. Son yetki denetimi her zaman API'dedir; bu yalnızca yönlendirmedir. */
+const ALL: Role[] = ['KOORDINATOR', 'DANISMAN', 'BOLUM_BASKANI', 'BIRIM', 'OIDB'];
+
+/** Yalnızca giriş denetimi; rol yetkisi API'de (rol atamaları veritabanında olduğu için belirteçte değil). */
 const RULES: [string, Role[]][] = [
-  ['/ogrenci', ['OGRENCI']],
-  ['/koordinator', ['KOORDINATOR', 'OIDB']],
-  ['/danisman', ['DANISMAN']],
-  ['/birim/teklifler', ['BOLUM_BASKANI', 'BIRIM', 'OIDB']],
-  ['/birim', ['BIRIM', 'OIDB']],
-  ['/oidb', ['OIDB']],
-  ['/raporlar', ['BIRIM', 'OIDB', 'BOLUM_BASKANI', 'KOORDINATOR']],
-  ['/yazdir', ['BIRIM', 'OIDB', 'KOORDINATOR']],
-  ['/bildirimler', ['OGRENCI', 'KOORDINATOR', 'DANISMAN', 'BOLUM_BASKANI', 'BIRIM', 'OIDB']],
+  ['/panel', ALL],
+  ['/onaylar', ALL],
+  ['/kayitlar', ALL],
+  ['/koordinator', ALL],
+  ['/danisman', ALL],
+  ['/birim', ALL],
+  ['/oidb', ALL],
+  ['/raporlar', ALL],
+  ['/yazdir', ALL],
+  ['/bildirimler', ALL],
 ];
 
 export async function middleware(req: NextRequest) {
@@ -27,8 +31,6 @@ export async function middleware(req: NextRequest) {
     url.searchParams.set('donus', pathname);
     return NextResponse.redirect(url);
   }
-  const roles = (token.roles as Role[]) ?? [];
-  if (!rule[1].some((r) => roles.includes(r))) return NextResponse.redirect(new URL('/', req.url));
   return NextResponse.next();
 }
 

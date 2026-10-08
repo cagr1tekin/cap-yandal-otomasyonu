@@ -89,6 +89,13 @@ export class EnrollmentsController {
     return this.forms.fileProtocol(user, id);
   }
 
+  @Get('protocols')
+  @Roles('KOORDINATOR', 'BIRIM', 'OIDB')
+  listProtocols(@CurrentUser() user: AuthUser, @Query('status') status?: string) {
+    const st = status ? (z.enum(FORM_STATUSES).parse(status) as FormStatus) : undefined;
+    return this.forms.listProtocols(user, st);
+  }
+
   // ---- Dönemlik ders kayıt formu ----
 
   @Put('enrollments/:id/course-registration')

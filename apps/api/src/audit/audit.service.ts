@@ -35,8 +35,10 @@ export class AuditService {
     });
   }
 
-  list(entity: string, entityId: string) {
-    return this.prisma.auditLog.findMany({ where: { entity, entityId }, orderBy: { at: 'desc' } });
+  /** BigInt kimlik JSON'a çevrilemediği için metin olarak döner. */
+  async list(entity: string, entityId: string) {
+    const rows = await this.prisma.auditLog.findMany({ where: { entity, entityId }, orderBy: { at: 'desc' } });
+    return rows.map((r) => ({ ...r, id: r.id.toString() }));
   }
 }
 
