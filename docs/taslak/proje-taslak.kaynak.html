@@ -4,270 +4,560 @@
 <meta charset="utf-8">
 <title>Bilgisayar Mühendisliği ÇAP ve YDP Öğrenci Takip Sistemi — Proje Taslak Dosyası</title>
 <style>
-  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  @page { size: A4; margin: 16mm 14mm 16mm 14mm; }
   * { box-sizing: border-box; }
-  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #212529; margin: 0; }
-  .cover { border-bottom: 3px solid #1c458b; padding-bottom: 10px; margin-bottom: 14px; }
-  .cover .uni { font-size: 9.5pt; letter-spacing: 2px; text-transform: uppercase; color: #1c458b; font-weight: 600; }
-  h1 { font-size: 19pt; margin: 4px 0 6px; color: #0d2d5e; font-weight: 600; }
-  .meta { font-size: 9.5pt; color: #475569; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #212529; margin: 0; }
+  .cover { border-bottom: 3px solid #1c458b; padding-bottom: 8px; margin-bottom: 10px; }
+  .cover .uni { font-size: 9pt; letter-spacing: 2px; text-transform: uppercase; color: #1c458b; font-weight: 600; }
+  h1 { font-size: 18pt; margin: 4px 0 6px; color: #0d2d5e; font-weight: 600; }
+  .meta { font-size: 9pt; color: #475569; }
   .meta span { display: inline-block; margin-right: 18px; }
-  h2 { font-size: 13pt; color: #1c458b; margin: 18px 0 6px; padding-bottom: 3px; border-bottom: 1px solid #cbd5e1; page-break-after: avoid; }
-  h3 { font-size: 11pt; color: #0d2d5e; margin: 12px 0 4px; page-break-after: avoid; }
-  p { margin: 5px 0; }
-  ul { margin: 4px 0 6px 18px; padding: 0; }
-  li { margin: 2px 0; }
-  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 9.3pt; }
-  th { background: #1c458b; color: #fff; text-align: left; padding: 5px 6px; font-weight: 600; }
-  td { border: 1px solid #cbd5e1; padding: 4px 6px; vertical-align: top; }
+  h2 { font-size: 12.5pt; color: #1c458b; margin: 14px 0 4px; padding-bottom: 3px; border-bottom: 1px solid #cbd5e1; page-break-after: avoid; }
+  h3 { font-size: 10.5pt; color: #0d2d5e; margin: 10px 0 2px; page-break-after: avoid; }
+  p { margin: 4px 0; }
+  .lead { font-size: 9.5pt; color: #334155; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 8px; font-size: 8.8pt; }
+  th { background: #1c458b; color: #fff; text-align: left; padding: 4px 6px; font-weight: 600; }
+  td { border: 1px solid #cbd5e1; padding: 3px 6px; vertical-align: top; }
   tr { page-break-inside: avoid; }
   tbody tr:nth-child(even) td { background: #f6f8fc; }
-  .src { color: #475569; font-size: 8.6pt; }
-  .code { font-family: Consolas, monospace; font-size: 8.8pt; white-space: nowrap; }
-  .note { background: #fdf6e3; border-left: 4px solid #ffc90d; padding: 6px 10px; margin: 8px 0; font-size: 9.5pt; }
-  .info { background: #eef2f9; border-left: 4px solid #1c458b; padding: 6px 10px; margin: 8px 0; font-size: 9.5pt; }
-  .flow { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; font-size: 8.8pt; }
-  .flow div { border: 1px solid #1c458b; border-radius: 12px; padding: 3px 9px; background: #fff; }
-  .flow div b { color: #1c458b; }
-  .flow span { align-self: center; color: #1c458b; }
+  .src { color: #475569; font-size: 8.4pt; }
+  .code { font-family: Consolas, monospace; font-size: 8.4pt; white-space: nowrap; }
   .c { text-align: center; }
-  footer { margin-top: 14px; font-size: 8.5pt; color: #475569; border-top: 1px solid #cbd5e1; padding-top: 6px; }
-  table.schema td { font-size: 8.3pt; line-height: 1.5; }
+  .fig { page-break-inside: avoid; break-inside: avoid; margin: 6px 0 10px; }
+  .fig .mermaid { text-align: center; margin: 0; background: none; border: 0; padding: 0; font-size: inherit; white-space: normal; }
+  .fig .mermaid svg { display: block; margin: 0 auto; }
+  .cap { font-size: 8.4pt; color: #475569; text-align: center; margin: 2px 0 0; }
+  .cap b { color: #1c458b; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+  .shot { page-break-inside: avoid; break-inside: avoid; }
+  .shot img { width: 100%; height: 205px; object-fit: cover; object-position: top; border: 1px solid #cbd5e1; border-radius: 4px; display: block; }
+  .break { page-break-before: always; }
+  footer { margin-top: 10px; font-size: 8pt; color: #475569; border-top: 1px solid #cbd5e1; padding-top: 5px; }
+  table.schema td { font-size: 7.9pt; line-height: 1.45; }
   table.schema .col { white-space: nowrap; }
-  .pk { color: #a16207; font-size: 7.4pt; }
-  .fk { color: #1c458b; font-size: 7.4pt; }
-  i { color: #64748b; font-size: 7.6pt; }
+  .pk { color: #a16207; font-size: 7.2pt; }
+  .fk { color: #1c458b; font-size: 7.2pt; }
+  i { color: #64748b; font-size: 7.4pt; }
   svg { page-break-inside: avoid; }
 </style>
 </head>
-<body>
 <body>
 
 <div class="cover">
   <div class="uni">Selçuk Üniversitesi · Teknoloji Fakültesi · Bilgisayar Mühendisliği · Bitirme Projesi</div>
   <h1>Bilgisayar Mühendisliği ÇAP ve YDP Öğrenci Takip Sistemi<br>Proje Taslak Dosyası</h1>
   <div class="meta">
-    <span>Tarih: 9 Ekim 2026 (3. sürüm)</span>
+    <span>Tarih: 12 Ekim 2026 (4. sürüm)</span>
     <span>Hazırlayan: ..............................................</span>
     <span>Öğrenci No: ........................</span>
   </div>
 </div>
 
-<div class="note"><b>Bu sürümde değişenler</b> (danışmanın çerçeve e-postası, tek esas kaynak): sistem başvuru değil <b>takip</b> sistemidir; başvuru değerlendirme ve seçim dekanlıkta kalır · üç giriş: koordinatör, öğrenci, bölüm başkanı (salt okunur) · hesapları koordinatör açar · öğrencinin girdiği her kayıt onay bekler, onaylanınca kilitlenir · ders takibi sistemin merkezidir · hiçbir kayıt silinmez · kural değerleri sürümlüdür · sızma testleri ve güvenlik önlemleri eklendi (bölüm 8) · veritabanı şeması yeni modele göre yeniden üretildi (bölüm 6).</div>
+<p class="lead"><b>Amaç:</b> Bölüme gelen çift ana dal (ÇAP) ve yan dal (YDP) öğrencilerinin kâğıtla yapılan takibini tek web uygulamasına taşımak: alınacak dersler, her dersin hangi dönem alınıp geçildiği, belgeler, yazışma, yönerge kurallarına uyum ve mezuniyete / sertifikaya kalan yol. <b>Kapsam dışı:</b> başvuru ve seçim (dekanlık), ana dal dersleri, OBİS bağlantısı. <b>Esas kaynak:</b> danışmanın çerçeve e-postası; çelişkide yönerge (bölüm 11).</p>
 
-<h2>1. Amaç ve kapsam</h2>
-<p><b>Mevcut durum.</b> Bölüme gelen çift ana dal (ÇAP) ve yan dal (YDP) öğrencileri form ve kâğıt üzerinden elle takip ediliyor. Hangi dersin hangi dönem alınıp geçildiği, öğrencinin belgeleri, yazışmalar ve yönerge kurallarına uygunluk tek yerde görülemiyor.</p>
-<p><b>Önerilen sistem.</b> Bölüme gelen her ÇAP ve YDP öğrencisi için alacağı dersleri işleyen; her dersin hangi akademik yıl ve dönemde alındığını, notunu ve ne zaman geçildiğini gösteren; belgeleri tek yerde tutan; öğrenciyle yazışmayı sağlayan; yönerge kurallarına uyumu izleyip uyaran ve mezuniyete ya da sertifikaya ne kadar kaldığını gösteren web uygulaması.</p>
-<p><b>Kapsam dışı.</b> Başvuru değerlendirme ve öğrenci seçimi (dekanlık yapar, koordinatör kabul edilen öğrenciyi ekler) · öğrencinin ana dalındaki dersler ve süreçler · OBİS bağlantısı (veri elle ya da CSV ile girilir; tasarım ileride OBİS'ten veri alınabilecek biçimdedir).</p>
-
-<div class="flow">
-  <div><b>1</b> Koordinatör öğrenciyi ekler</div><span>→</span>
-  <div><b>2</b> Öğrenci formlarını yükler</div><span>→</span>
-  <div><b>3</b> Koordinatör onaylar</div><span>→</span>
-  <div><b>4</b> Öğrenci ders listesini girer; onay</div><span>→</span>
-  <div><b>5</b> Her dönem aldığı dersler; onay</div><span>→</span>
-  <div><b>6</b> Dönem sonu notları + not belgesi</div><span>→</span>
-  <div><b>7</b> Koordinatör karşılaştırıp onaylar</div><span>→</span>
-  <div><b>8</b> Sistem kurala göre uyarır</div><span>→</span>
-  <div><b>9</b> Düzeltme / iptal</div><span>→</span>
-  <div><b>10</b> Mezuniyet / sertifika kararı</div>
+<h2>1. Sistem bağlamı</h2>
+<div class="fig">
+<pre class="mermaid">
+flowchart TB
+  DEK["Dekanlık<br/>başvuru ve seçim"]:::ext -->|kabul edilen öğrenci| K(["Koordinatör"]):::actor
+  Y["Yönergeler<br/>ÇAP 2026 · Yan Dal 2023"]:::ext -.->|kural değerleri| K
+  K <-->|yönetir, onaylar,<br/>karar verir| S["ÇAP / YDP Takip Sistemi"]:::sys
+  O(["Öğrenci"]):::actor <-->|ders, not,<br/>belge, mesaj| S
+  B(["Bölüm başkanı"]):::actor -->|yalnız izler| S
+  OB["OBİS · ileride"]:::future -.->|aktarım| S
+  S -->|davet, bildirim| M["Okul e-postası"]:::ext
+  classDef sys fill:#1c458b,color:#fff,stroke:#0d2d5e,font-weight:bold
+  classDef actor fill:#fff6d6,stroke:#c99a00,color:#212529
+  classDef ext fill:#eef2f9,stroke:#1c458b,color:#212529
+  classDef future fill:#fff,stroke:#94a3b8,stroke-dasharray:4 3,color:#64748b
+</pre>
+<p class="cap"><b>Şekil 1.</b> Sistemin çevresi. Kesikli: veri kaynağı ya da ileride eklenecek bağlantı.</p>
 </div>
 
-<h2>2. Kullanılacak teknolojiler</h2>
+<h2>2. Mimari ve teknolojiler</h2>
+<div class="fig">
+<pre class="mermaid">
+flowchart TB
+  T["Tarayıcı · masaüstü ve telefon"]:::client
+  T -->|HTTPS| W["Next.js 15 · React · Tailwind<br/>sayfalar, sunucu eylemleri"]:::app
+  T <-->|giriş, şifre| KC["Keycloak<br/>OpenID Connect"]:::ext
+  W -->|JWT| A["NestJS 11 · REST API<br/>kimlik, rol, kapsam, onay, işlem kaydı"]:::app
+  A --> R["Kural motoru<br/>sürümlü kural setleri"]:::app
+  A --> P[("PostgreSQL · Prisma<br/>27 tablo, tetikleyiciler")]
+  A --> F[("Belge deposu<br/>rastgele adlı dosyalar")]
+  A --> Q["BullMQ + Redis<br/>e-posta kuyruğu"]:::app
+  A -->|hesap aç, davet| KC
+  Q --> ML["SMTP<br/>geliştirmede Mailpit"]:::ext
+  KC --> ML
+  classDef client fill:#fff6d6,stroke:#c99a00
+  classDef app fill:#1c458b,color:#fff,stroke:#0d2d5e
+  classDef ext fill:#eef2f9,stroke:#1c458b
+</pre>
+<p class="cap"><b>Şekil 2.</b> Bileşenler. Test: Vitest (kural motoru), Jest (API), Playwright (uçtan uca). Çalıştırma: Docker Compose.</p>
+</div>
+
+<h2>3. Roller ve yetkiler</h2>
 <table>
-  <thead><tr><th style="width:19%">Katman</th><th style="width:27%">Teknoloji</th><th>Neden</th></tr></thead>
+  <thead><tr><th>İşlem</th><th class="c" style="width:15%">Koordinatör</th><th class="c" style="width:17%">Öğrenci</th><th class="c" style="width:17%">Bölüm başkanı</th></tr></thead>
   <tbody>
-    <tr><td>Arayüz</td><td>Next.js (React, TypeScript), Tailwind CSS</td><td>Sunucuda işlenen sayfalar, role göre menü, telefonda da kullanılabilir. Görsel kimlik selcuk.edu.tr ile uyumlu (lacivert #1C458B, sarı #FFC90D, Montserrat).</td></tr>
-    <tr><td>Uygulama sunucusu</td><td>NestJS (Node.js, TypeScript), REST API</td><td>Modüler yapı; kimlik, rol ve kapsam denetimi her istekte sunucuda yapılır. OpenAPI belgesi otomatik üretilir.</td></tr>
-    <tr><td>Veritabanı</td><td>PostgreSQL, Prisma ORM</td><td>İlişkisel veri, sürümlü şema göçü. Silmezlik, değiştirilemez işlem kaydı ve tekillik veritabanı kısıtlarıyla da korunur (bölüm 6.5).</td></tr>
-    <tr><td>Kural motoru</td><td>Ayrı TypeScript paketi</td><td>Yönerge sayıları koda gömülmez; sürümlü kural setinde veri olarak tutulur.</td></tr>
-    <tr><td>Kimlik doğrulama</td><td>OpenID Connect (Keycloak)</td><td>Sistem şifre görmez ve saklamaz. Hesabı koordinatör açar; kullanıcı şifresini e-postadaki bağlantıyla kendisi belirler. Kendi kendine kayıt kapalı.</td></tr>
-    <tr><td>Belge deposu</td><td>Sunucu diski + veritabanında üst veri</td><td>Tür içerikten denetlenir; zararlı ve bozuk dosya reddedilir; SHA-256 özeti saklanır (bölüm 8).</td></tr>
-    <tr><td>Bildirim</td><td>Redis + BullMQ, SMTP</td><td>Yeni mesaj, ret, belge isteği ve kural uyarısı sistem içinde ve e-postayla bildirilir.</td></tr>
-    <tr><td>Test</td><td>Vitest, Jest, Playwright</td><td>Kural motoru 135 test (%100 kapsam); API 35 test (17 akış, 18 sızma testi); arayüzden 18 uçtan uca test.</td></tr>
-    <tr><td>Çalıştırma</td><td>Docker Compose</td><td>Veritabanı, Redis, kimlik servisi ve e-posta test sunucusu tek komutla kalkar.</td></tr>
+    <tr><td>Öğrenci ve hesap ekleme, hesabı pasife alma</td><td class="c">✔</td><td class="c">—</td><td class="c">—</td></tr>
+    <tr><td>Ders listesi, dönem dersi, dönem sonu notu girme</td><td class="c">✔ onaylı</td><td class="c">✔ onaya düşer</td><td class="c">—</td></tr>
+    <tr><td>Belge yükleme</td><td class="c">✔ her tür</td><td class="c">✔ kendi kartı</td><td class="c">—</td></tr>
+    <tr><td>Onay / gerekçeli ret, düzeltme, iptal</td><td class="c">✔</td><td class="c">bekleyeni geri çeker</td><td class="c">—</td></tr>
+    <tr><td>Ek belge isteme, gizli not</td><td class="c">✔</td><td class="c">—</td><td class="c">notu görür</td></tr>
+    <tr><td>GANO girişi (kaynağıyla), dönem izni, karar</td><td class="c">✔</td><td class="c">—</td><td class="c">—</td></tr>
+    <tr><td>Katalog, şablon, kural sürümü, ayarlar, CSV aktarım</td><td class="c">✔</td><td class="c">kataloğu görür</td><td class="c">görür (ayar, aktarım hariç)</td></tr>
+    <tr><td>Mesajlaşma</td><td class="c">✔</td><td class="c">✔ kendi yazışması</td><td class="c">görür</td></tr>
+    <tr><td>Öğrenci kartları ve işlem kaydı</td><td class="c">✔</td><td class="c">yalnız kendisi</td><td class="c">✔ salt okunur</td></tr>
   </tbody>
 </table>
+<p class="src">Hesapları koordinatör açar; kendi kendine kayıt kapalıdır. Hiçbir rol kayıt silemez; yanlış kayıt gerekçeyle "iptal" edilir.</p>
 
-<h2>3. Kullanıcı rolleri ve yetkileri</h2>
-<p>Üç giriş vardır, başka rol yoktur. Rol ve hesabın etkinliği uygulamanın veritabanında tutulur; kimlik servisi yalnızca kimliği doğrular.</p>
-<table>
-  <thead><tr><th style="width:17%">Rol</th><th>Yapabildiği</th><th style="width:30%">Yapamadığı</th></tr></thead>
-  <tbody>
-    <tr><td><b>Koordinatör</b><br><span class="src">sistemin yöneticisi</span></td><td>Kabul edilen öğrenciyi ekler (öğrenci no, ad soyad, okul e-postası, ÇAP/YDP, kabul dönemi) ve hesabını açar; bölüm başkanı hesabı açar, hesapları pasife alır. Öğrencinin kayıtlarını ve belgelerini onaylar ya da gerekçeyle reddeder; ek belge ya da bilgi ister; öğrencinin göremediği not yazar. Ders kataloğu, ders listesi şablonları, dönemler, ayarlar ve kural sürümleri. GANO'yu kaynağıyla girer. Kaydı gerekçeyle düzeltir ya da iptal eder. Mevcut öğrencilerin geçmişini geriye dönük girer, CSV aktarır. Mezuniyet, sertifika, kayıt silme kararını dayanağıyla kaydeder.</td><td>Kayıt silemez; işlem kaydını değiştiremez; son etkin koordinatörü pasife alamaz.</td></tr>
-    <tr><td><b>Öğrenci</b></td><td>Yalnız kendi kartı: imzalı formlarını yükler; alacağı dersleri katalogdan seçer (katalogda olmayan ders için talep gönderir); her dönem aldığı dersleri girer; dönem sonunda notlarını girer ve ÇAP/YDP not belgesini yükler; koordinatörle mesajlaşır; durumunu görür (geçtiği ve kalan dersler, onay bekleyenler, uyarılar).</td><td>Başkasının kaydını göremez; onaylanmış kaydı değiştiremez; belge silemez; GANO giremez; koordinatör notlarını göremez.</td></tr>
-    <tr><td><b>Bölüm başkanı</b></td><td>Bütün öğrenci kartlarını, belgeleri, kural kontrollerini ve işlem kaydını izler.</td><td>Hiçbir şeyi değiştiremez (sunucu okuma dışındaki her isteği reddeder).</td></tr>
-  </tbody>
-</table>
+<h2>4. Site haritası</h2>
+<div class="fig">
+<pre class="mermaid">
+flowchart TB
+  G["Giriş"] --> P["Pano<br/>yapılacaklar, sayılar"]:::top
+  P --> BL["Bildirimler"]
+  P --> T1 & T2 & T3
+  subgraph T1["Öğrenci takibi"]
+    direction TB
+    OG["Öğrenciler<br/>+ kabul edilen öğrenciyi ekle"] --> KART["Öğrenci kartı<br/>─────────<br/>Durum · Dersler<br/>Dönem sonu notları<br/>Belgeler · Mesajlar<br/>Koordinatör notları<br/>İşlem geçmişi"]:::card
+    KART --> PR["Yazdır: ders listesi,<br/>ders kayıt formu"]
+    PR ~~~ ON["Onay bekleyenler"] ~~~ MS["Mesajlar"] ~~~ KK["Kural kontrolü<br/>ve kararlar"]
+  end
+  subgraph T2["Tanımlar"]
+    direction TB
+    KT["Ders kataloğu"] --> KT2["Ders talepleri"]
+    KT2 ~~~ SB["Ders listesi şablonları"] --> SB2["Şablon ayrıntısı"]
+    SB2 ~~~ KR["Yönerge kuralları<br/>sürüm, dene, yürürlük"] ~~~ AY["Dönemler ve ayarlar *"]:::only ~~~ IA["İçeri aktar CSV *"]:::only
+  end
+  subgraph T3["Yönetim"]
+    direction TB
+    HS["Hesaplar"] ~~~ DN["İşlem kaydı"] ~~~ BG["Yönerge ve formlar"]
+  end
+  classDef only fill:#fff6d6,stroke:#c99a00
+  classDef top fill:#1c458b,color:#fff,stroke:#0d2d5e
+  classDef card fill:#fff,stroke:#1c458b,stroke-width:2px
+</pre>
+<p class="cap"><b>Şekil 3.</b> Koordinatör ve bölüm başkanı ekranları. * yalnız koordinatör. Bölüm başkanı aynı ekranları salt okunur görür.</p>
+</div>
 
-<h3>Onay mantığı</h3>
-<ul>
-  <li>Öğrencinin girdiği ders listesi satırı, dönem dersi, dönem sonu notları ve belge <b>onay bekliyor</b> durumunda başlar; onaylanana kadar kural hesabına girmez.</li>
-  <li>Onaylanan kayıt <b>kilitlenir</b>. Düzeltmeyi yalnız koordinatör gerekçeyle yapar; eski ve yeni değer işlem kaydına yazılır.</li>
-  <li>Reddedilen ve iptal edilen kayıt silinmez, durumuyla kalır. Gerekçe zorunludur ve öğrenciye bildirilir.</li>
-  <li>Koordinatörün girdiği kayıt ve mevcut öğrenciler için geriye dönük giriş doğrudan onaylıdır.</li>
-</ul>
+<div class="fig">
+<pre class="mermaid">
+flowchart LR
+  E["E-postadaki bağlantı<br/>şifre belirleme"] --> G["Giriş"] --> P["Yapılacaklar"]
+  P --> D["Durumum<br/>AKTS, uyarılar, kararlar"]
+  P --> DR["Derslerim"]
+  P --> N["Dönem sonu notları"]
+  P --> BE["Belgelerim"]
+  P --> M["Mesajlar"]
+  P --> BL["Bildirimler"]
+  P --> KT["Ders kataloğu"]
+  P --> YF["Yönerge ve formlar"]
+  DR --> DT["Ders talebi"]
+  DR --> YZ["Yazdır: ders kayıt formu"]
+  BE --> BI["Belge isteğine yanıt"]
+</pre>
+<p class="cap"><b>Şekil 4.</b> Öğrenci ekranları. Öğrenci yalnız kendi kartını görür.</p>
+</div>
 
-<h2>4. Temel ekranlar ve modüller</h2>
-<table>
-  <thead><tr><th style="width:4%">#</th><th style="width:20%">Modül</th><th>Ekranlar ve işlevler</th><th style="width:15%">Kullanan</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td>Giriş ve pano</td><td>Güvenli giriş; role göre yapılacaklar (onay bekleyenler, okunmamış mesajlar, açık belge istekleri, uyarılar) ve özet sayılar.</td><td>Herkes</td></tr>
-    <tr><td>2</td><td>Öğrenciler</td><td>Kabul edilen öğrenciyi ekleme; arama ve süzgeçler (program, durum, onay bekleyen, uyarılı, mezuniyete hazır); ilerleme çubuğu.</td><td>Koordinatör, bölüm başkanı</td></tr>
-    <tr><td>3</td><td>Öğrenci kartı: durum</td><td>Kimlik ve iletişim, tamamlanan ve kalan AKTS, son kural kontrolü (her kural, değeri ve yönerge maddesi), GANO geçmişi ve kaynağı, dönem izinleri, kararlar.</td><td>Herkes (öğrenci yalnız kendisi)</td></tr>
-    <tr><td>4</td><td>Öğrenci kartı: dersler</td><td><b>Sistemin merkezi.</b> Yarıyıl yarıyıl ders listesi; her satırın durumu (planlandı, alındı, geçti, kaldı, muaf, çıkarıldı) ve denemeleri (dönem, not, sonuç). Katalogdan ders ekleme, şablondan eksik dersleri ekleme, gerekçeli çıkarma ve muafiyet; dönem dersi girişi; geriye dönük giriş; yazdırılabilir ders listesi ve ders kayıt formu.</td><td>Öğrenci, koordinatör</td></tr>
-    <tr><td>5</td><td>Öğrenci kartı: dönem sonu notları</td><td>Dönemin derslerine harf notu; ÇAP/YDP not belgesi yüklenmeden gönderilemez; onay durumu.</td><td>Öğrenci, koordinatör</td></tr>
-    <tr><td>6</td><td>Öğrenci kartı: belgeler</td><td>Belge arşivi (tür, dönem, durum, sürümler); yükleme; koordinatörün belge istekleri ve yanıtları.</td><td>Öğrenci, koordinatör</td></tr>
-    <tr><td>7</td><td>Mesajlar</td><td>Öğrenci başına kalıcı yazışma; belge eki; okunmamış sayısı; gelen kutusu.</td><td>Öğrenci, koordinatör</td></tr>
-    <tr><td>8</td><td>Koordinatör notları, işlem geçmişi</td><td>Karta özel, öğrencinin görmediği notlar; o öğrenciyle ilgili bütün işlemler.</td><td>Koordinatör, bölüm başkanı</td></tr>
-    <tr><td>9</td><td>Onay bekleyenler</td><td>Tek kuyruk: dönem sonu notları (not belgesiyle yan yana), belgeler, ders listesi satırları, dönem dersleri; onayla / gerekçeyle reddet.</td><td>Koordinatör</td></tr>
-    <tr><td>10</td><td>Kural kontrolü ve kararlar</td><td>Bütün öğrencilerin son kontrolü; uyarılar ve kural dışı durumlar; mezuniyete / sertifikaya hazır olanlar; hepsini yeniden kontrol.</td><td>Koordinatör, bölüm başkanı</td></tr>
-    <tr><td>11</td><td>Ders kataloğu</td><td>Ders ekleme, bilgi güncelleme, pasife alma; öğrencilerin ders talepleri.</td><td>Koordinatör</td></tr>
-    <tr><td>12</td><td>Ders listesi şablonları</td><td>Bölümler arası protokollerden şablonlar: dersler, teknik seçmeli yerleri, ortak AKTS, özel şartlar.</td><td>Koordinatör</td></tr>
-    <tr><td>13</td><td>Yönerge kuralları</td><td>Kural sürümleri; yeni sürüm, taslakta deneme (kimin durumu değişir), yürürlüğe koyma.</td><td>Koordinatör</td></tr>
-    <tr><td>14</td><td>Dönemler ve ayarlar</td><td>Akademik dönemler, içinde bulunulan dönem; dosya türleri ve boyut sınırı, mesaj uzunluğu.</td><td>Koordinatör</td></tr>
-    <tr><td>15</td><td>İçeri aktar (CSV)</td><td>Ders kataloğu, öğrenci ve ders denemesi aktarımı: önce dene (satır satır hata), sonra yaz.</td><td>Koordinatör</td></tr>
-    <tr><td>16</td><td>Hesaplar, işlem kaydı, bildirimler</td><td>Hesap açma, davet yenileme, pasife alma; değiştirilemez işlem kaydı ve süzgeçleri; sistem içi bildirimler.</td><td>Koordinatör, bölüm başkanı</td></tr>
-  </tbody>
-</table>
+<h2>5. Kullanıcı akışları</h2>
+<h3>5.1 Uçtan uca akış</h3>
+<div class="fig">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor K as Koordinatör
+  participant S as Sistem
+  actor O as Öğrenci
+  K->>S: Kabul edilen öğrenciyi ekle
+  S-->>O: Şifre belirleme bağlantısı (e-posta)
+  O->>S: İmzalı formları yükle
+  K->>S: Onayla ya da gerekçeyle reddet
+  O->>S: Alacağı dersleri katalogdan gir
+  K->>S: Ders listesini onayla
+  loop Her dönem
+    O->>S: Bu dönem aldığı dersleri gir
+    K->>S: Onayla
+    O->>S: Not belgesi + dönem sonu notları
+    K->>S: Belgeyle karşılaştır, onayla
+    K->>S: Ana dal GANO (kaynağıyla)
+    S-->>K: Kural uyarısı
+    S-->>O: Kural uyarısı
+    opt Gerekirse
+      K->>S: Düzelt ya da iptal et (gerekçe)
+    end
+  end
+  S-->>K: Mezuniyete / sertifikaya hazır
+  K->>S: Karar (dayanak + gerekçe)
+</pre>
+<p class="cap"><b>Şekil 5.</b> Çerçeve e-postasındaki akışın sistemdeki karşılığı.</p>
+</div>
 
-<h2>5. Sistemde tutulacak veriler ve belgeler</h2>
-<table>
-  <thead><tr><th style="width:22%">Veri</th><th>İçerik</th><th style="width:24%">Giren</th></tr></thead>
-  <tbody>
-    <tr><td>Öğrenci</td><td>Öğrenci numarası (benzersiz anahtar), ad soyad, okul e-postası, ÇAP/YDP, kabul dönemi, ana dal bölümü, durum, kaynak (elle / geriye dönük / aktarım), dış referans.</td><td>Koordinatör</td></tr>
-    <tr><td>Ders kataloğu</td><td>Bilgisayar Mühendisliğinin 118 dersi: kod, ad, AKTS, yarıyıl, tür; etkin / pasif.</td><td><b>Gerçek:</b> Bologna ders paketi</td></tr>
-    <tr><td>Ders listesi şablonları</td><td>EEM → Bilgisayar (135 AKTS, 8 özel şart), Makine → Bilgisayar (171 AKTS, 2 özel şart), yan dal (temsilî).</td><td><b>Gerçek:</b> bölüm sitesindeki protokoller</td></tr>
-    <tr><td>Ders listesi</td><td>Öğrencinin alacağı dersler; ekleme ve çıkarma gerekçesi ve tarihi; muafiyet; onay durumu.</td><td>Öğrenci (onaylı), koordinatör</td></tr>
-    <tr><td>Ders denemeleri</td><td>Her alınış ayrı: dönem, not, sonuç, onay durumu, kaynak.</td><td>Öğrenci (onaylı), koordinatör</td></tr>
-    <tr><td>Dönem sonu not gönderimi</td><td>Dönem, ders başına not, bağlı ÇAP/YDP not belgesi, onay.</td><td>Öğrenci</td></tr>
-    <tr><td>GANO</td><td>Dönem, değer, kaynak (transkript, öğrenci işleri, diğer) ve not.</td><td><b>Yalnız koordinatör</b></td></tr>
-    <tr><td>Dönem izni, kararlar</td><td>İzin gerekçesi; mezuniyet / sertifika / kayıt silme / ayrılma / dondurma kararı, dayanağı ve gerekçesi.</td><td>Koordinatör</td></tr>
-    <tr><td>Belgeler ve istekler</td><td>Tür, dönem, dosya adı, boyut, tür, SHA-256, durum, önceki sürüm; belge isteği ve durumu.</td><td>Öğrenci, koordinatör</td></tr>
-    <tr><td>Mesajlar, notlar</td><td>Kalıcı yazışma ve ekleri; koordinatörün gizli notları.</td><td>Öğrenci, koordinatör</td></tr>
-    <tr><td>Kural sürümleri ve kontroller</td><td>Sürüm, durum, her kuralın kodu, dayanağı ve değerleri; her kontrolün sürümü, girdileri ve sonuçları.</td><td>Koordinatör; sistem</td></tr>
-    <tr><td>İşlem kaydı</td><td>Kim, hangi rolle, ne zaman, neyi, eski ve yeni değer, gerekçe. Değiştirilemez.</td><td>Sistem</td></tr>
-  </tbody>
-</table>
+<h3>5.2 Öğrenci ekleme ve ilk giriş</h3>
+<div class="fig">
+<pre class="mermaid">
+sequenceDiagram
+  actor K as Koordinatör
+  participant A as Sistem
+  participant KC as Keycloak
+  participant E as E-posta
+  actor O as Öğrenci
+  K->>A: Öğrenciyi ekle
+  Note over K,A: no, ad soyad, okul e-postası,<br/>ÇAP/YDP, kabul dönemi
+  A->>A: Kart + hesap (öğrenci)
+  A->>KC: Hesap aç
+  KC->>E: Şifre bağlantısı (72 saat)
+  E-->>O: E-posta
+  O->>KC: Şifre belirle
+  Note over KC,O: en az 10 karakter,<br/>büyük/küçük harf, rakam
+  O->>A: Giriş
+  A->>A: Hesap etkin mi, rolü ne?
+  A-->>O: Yapılacaklar
+</pre>
+<p class="cap"><b>Şekil 6.</b> Şifre sistemde hiç görünmez. Geriye dönük girilen öğrenciye bağlantı sonra gönderilebilir.</p>
+</div>
 
-<h3>Belgeler</h3>
-<table>
-  <thead><tr><th style="width:38%">Belge türü</th><th style="width:18%">Yükleyen</th><th>Kural</th></tr></thead>
-  <tbody>
-    <tr><td>Kabul ve Ders Protokolü (imzalı)</td><td>Öğrenci</td><td>Öğrenci ana dalında imzalatır, tarayıp yükler; koordinatör onaylar.</td></tr>
-    <tr><td>Ders kayıt formu, muafiyet formu (imzalı)</td><td>Öğrenci</td><td>Dönemle birlikte yüklenir. Sistem formu doldurulmuş olarak yazdırabilir.</td></tr>
-    <tr><td>ÇAP / YDP not belgesi</td><td>Öğrenci</td><td>Her dönem sonu <b>zorunlu</b>; yüklenmeden notlar onaya gönderilemez.</td></tr>
-    <tr><td>Ana dal transkripti</td><td>Öğrenci</td><td>İsteğe bağlı.</td></tr>
-    <tr><td>Yönetim kurulu kararı, resmî yazı</td><td>Yalnız koordinatör</td><td>Kararların dayanağı olarak arşivlenir.</td></tr>
-    <tr><td>Diğer (mesaj ekleri, istenen belgeler)</td><td>Öğrenci, koordinatör</td><td>Belge isteğine yanıt olarak ya da mesaja ekli.</td></tr>
-  </tbody>
-</table>
-<p class="src">Yenilenen belge eskisinin yeni sürümüdür, eski sürüm arşivde kalır. Öğrenci belge silemez.</p>
+<h3>5.3 Belge isteği ve mesajlaşma</h3>
+<div class="fig">
+<pre class="mermaid">
+sequenceDiagram
+  actor K as Koordinatör
+  participant S as Sistem
+  actor O as Öğrenci
+  K->>S: Belge iste (tür, açıklama)
+  S-->>O: Bildirim + e-posta
+  O->>S: Belgeyi yükle
+  Note over S: İstek: yüklendi
+  K->>S: Onayla / reddet
+  S-->>O: Sonuç, ret gerekçesi
+  O->>S: Mesaj + ek
+  S-->>K: Yeni mesaj bildirimi
+</pre>
+<p class="cap"><b>Şekil 7.</b> Belge isteği ve mesajlaşma. Mesajlar silinemez.</p>
+</div>
 
-<h2>6. Veritabanı şeması</h2>
-<p>PostgreSQL üzerinde <b><!--COUNT--> tablo</b>. Şema Prisma ile tanımlıdır (<span class="code">apps/api/prisma/schema.prisma</span>) ve tek göç dosyasıyla kurulur. Aşağıda üç bölümde ilişki çizimi, ardından bütün tabloların alan listesi verilmiştir. Çizimlerde çizginin çatallı ucu "çok" tarafıdır; anahtar alanlar <b>PK</b> (birincil) ve <b>FK</b> (yabancı) ile gösterilir. Kalabalık olmasın diye bazı ilişkiler (ör. dönem tablosuna bağlananlar) çizilmemiştir; kutudaki FK satırlarında görünür. Gri kutular başka bölümde ayrıntılanan ya da başka tabloya bağlanmayan (işlem kaydı, aktarım, bildirim) tablolardır.</p>
+<h3>5.4 Ders, dönem ve kural akışları</h3>
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+flowchart TD
+  A(["Öğrenci: Derslerim"]) --> B{"Katalogda<br/>mı?"}
+  B -- Evet --> C["Kod ya da adla seç<br/>listedeyse / pasifse eklenmez"]
+  B -- Hayır --> T["Koordinatöre<br/>ders talebi"]
+  T --> KE["Kabul: kataloğa eklenir<br/>Ret: gerekçe öğrenciye"]
+  C --> E["Satır: onay bekliyor"]
+  E --> O{"Koordinatör<br/>onayı"}
+  O -- Onay --> L["Kilitlenir,<br/>kurallara girer"]
+  O -- Ret --> R["Reddedildi,<br/>silinmez"]
+</pre>
+<p class="cap"><b>Şekil 8.</b> Ders listesine ders ekleme. Serbest metinle ders girilemez.</p>
+</div>
+<div class="fig">
+<pre class="mermaid">
+flowchart TD
+  A(["Dönem başı: alınan dersi gir<br/>yalnız listede geçilmemiş"]) --> B{"Koordinatör<br/>onayı"}
+  B -- Onay --> C["Deneme: alındı"]
+  B -- Ret --> R1["Gerekçe öğrenciye"]
+  C --> E{"Dönem sonu:<br/>not belgesi var mı?"}
+  E -- Hayır --> G["Gönderilemez,<br/>önce belge yüklenir"]
+  E -- Evet --> H["Notlar onaya gider"]
+  H --> I{"Belgeyle<br/>karşılaştırma"}
+  I -- Onay --> J["Geçti / kaldı işlenir<br/>DC: koordinatör işaretler"]
+  I -- Ret --> R2["Gerekçe, yeniden<br/>gönderilebilir"]
+</pre>
+<p class="cap"><b>Şekil 9.</b> Dönem dersleri ve dönem sonu notları.</p>
+</div>
+</div>
 
-<h3>6.1 Öğrenci, ders listesi ve ders takibi</h3>
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+flowchart TD
+  T(["Tetik: onay, GANO, izin,<br/>düzeltme, iptal, aktarım"]) --> H["Yalnız onaylı kayıtlardan<br/>geçmiş derlenir"]
+  H --> V[("Yürürlükteki sürümle<br/>değerlendirilir, saklanır")]
+  V --> W{"Yeni uyarı ya da<br/>kural dışı?"}
+  W -- Evet --> N["Öğrenciye ve<br/>koordinatöre bildirim"]
+  W -- Hayır --> Z["Yalnız kayıt"]
+  N --> KD["Koordinatör kararı<br/>dayanak + gerekçe"]
+  N --> D["ya da düzeltme / iptal<br/>kontrol yeniden çalışır"]
+</pre>
+<p class="cap"><b>Şekil 10.</b> Kural kontrolü. Uyarı karar değildir.</p>
+</div>
+<div class="fig">
+<pre class="mermaid">
+flowchart TD
+  A(["Yönerge değişti"]) --> B["Yeni sürüm (taslak)<br/>yeni değerler"]
+  B --> D["Dene: kimin<br/>durumu değişir?"]
+  D --> E["Yürürlüğe koy"]
+  E --> F["Eski sürüm emekli<br/>silinmez"]
+  E --> G["Yeni kontroller yeni sürümle<br/>eskiler yeniden yazılmaz"]
+</pre>
+<p class="cap"><b>Şekil 11.</b> Kural sürümü değiştirme. Sayılar koda gömülü değildir.</p>
+</div>
+</div>
+<div class="fig">
+<pre class="mermaid">
+flowchart LR
+  A(["CSV dosyası"]) --> B["Dene<br/>satır satır denetim"]
+  B --> C{"Hata<br/>var mı?"}
+  C -- Evet --> D["Hatalı satırlar<br/>gösterilir, yazılmaz"]
+  C -- Hayır --> E["Yaz: elle girişle<br/>aynı servisler"]
+  E --> F["Kaynak: aktarım<br/>işlem kaydı"]
+  F --> G["Etkilenenler için<br/>kural kontrolü"]
+</pre>
+<p class="cap"><b>Şekil 12.</b> İçeri aktarma: ders kataloğu, öğrenciler, ders denemeleri. İleride OBİS aynı yoldan gelir.</p>
+</div>
+
+<h2>6. Durum diyagramları</h2>
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Onay bekliyor" as P
+  state "Onaylandı (kilitli)" as A
+  state "Reddedildi" as R
+  state "İptal edildi" as C
+  [*] --> P: öğrenci girer
+  [*] --> A: koordinatör girer
+  P --> A: onay
+  P --> R: ret + gerekçe
+  P --> C: öğrenci geri çeker
+  A --> A: düzeltme, kayıt altında
+  A --> C: koordinatör + gerekçe
+</pre>
+<p class="cap"><b>Şekil 13.</b> Ders satırı, dönem dersi, not gönderimi ve belge için onay durumu. Hiçbiri silinmez.</p>
+</div>
+<div class="fig">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Planlandı" as PL
+  state "Alındı" as AL
+  state "Geçti" as GE
+  state "Kaldı" as KA
+  state "Muaf" as MU
+  state "Çıkarıldı" as CI
+  [*] --> PL
+  PL --> AL: dönem dersi onaylandı
+  AL --> GE: not onaylandı
+  AL --> KA: not onaylandı
+  KA --> AL: tekrar, yeni deneme
+  PL --> MU: özel şart
+  MU --> PL: muafiyet kaldırıldı
+  PL --> CI: gerekçe + tarih
+  KA --> CI: gerekçe + tarih
+</pre>
+<p class="cap"><b>Şekil 14.</b> Bir dersin durumu. Geçilmiş ders listeden çıkarılamaz.</p>
+</div>
+</div>
+
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Etkin" as E
+  state "Dondurulmuş" as D
+  [*] --> E: koordinatör ekler
+  E --> D: dondurma kararı
+  D --> E: etkinleştirme
+  E --> SON: karar (dayanak + gerekçe)
+  state "Kapanış kararları" as SON {
+    direction LR
+    state "Mezun (ÇAP)" as M
+    state "Sertifika aldı (YDP)" as S
+    state "Ayrıldı" as A
+    state "Kaydı silindi" as K
+  }
+</pre>
+<p class="cap"><b>Şekil 15.</b> Öğrenci durumu yalnız koordinatör kararıyla değişir; karar iptal edilirse önceki duruma döner.</p>
+</div>
+<div class="fig">
+<pre class="mermaid">
+stateDiagram-v2
+  state "Açık" as O
+  state "Yüklendi" as U
+  state "Onaylandı" as A
+  state "Reddedildi" as R
+  state "İptal" as C
+  [*] --> O: koordinatör ister
+  O --> U: öğrenci yükler
+  U --> A: onay
+  U --> R: ret + gerekçe
+  R --> U: yeni sürüm yüklenir
+  O --> C: koordinatör kapatır
+</pre>
+<p class="cap"><b>Şekil 16.</b> Belge isteği. Yenilenen belgenin eski sürümü arşivde kalır.</p>
+</div>
+</div>
+
+<h2>7. Veritabanı şeması</h2>
+<p class="lead">PostgreSQL, <b><!--COUNT--> tablo</b> (<span class="code">apps/api/prisma/schema.prisma</span>). Çatallı uç "çok" tarafıdır; <b>PK</b> birincil, <b>FK</b> yabancı anahtar. Gri kutular başka bölümde ayrıntılanan ya da bağımsız tablolardır. Bütün alanlar Ek A'dadır.</p>
+<h3>7.1 Öğrenci, ders listesi ve ders takibi</h3>
 <!--ER-A-->
-<h3>6.2 Belgeler, mesajlar ve notlar</h3>
+<h3>7.2 Belgeler, mesajlar ve notlar</h3>
 <!--ER-B-->
-<h3>6.3 Kurallar, kararlar, şablonlar ve kayıt</h3>
+<h3>7.3 Kurallar, kararlar, şablonlar ve kayıt</h3>
 <!--ER-C-->
 
-<h3>6.4 Tablolar ve alanları</h3>
+<h3>7.4 Veritabanının kendisinin koruduğu kurallar</h3>
+<table>
+  <thead><tr><th style="width:46%">Kısıt</th><th>Sağladığı</th></tr></thead>
+  <tbody>
+    <tr><td>Her tabloda <span class="code">DELETE</span>'i reddeden tetikleyici</td><td>Hiçbir veri silinmez</td></tr>
+    <tr><td><span class="code">AuditLog</span> değiştirilemez; <span class="code">Message</span> yalnız okundu bilgisi; <span class="code">Document</span> dosya alanları sabit</td><td>İşlem kaydı, yazışma ve arşiv sonradan değişmez</td></tr>
+    <tr><td>Kısmi tekil indeksler: etkin ders satırı, dönem başına deneme, bekleyen not gönderimi, geçerli GANO ve izin</td><td>Aynı ders listede bir kez, aynı dönemde bir kez alınır</td></tr>
+    <tr><td>Aralık denetimleri: öğrenci no 9 hane, GANO 0–4, harf notları, AKTS, yarıyıl</td><td>Elle ya da aktarımla hatalı değer giremez</td></tr>
+  </tbody>
+</table>
+
+<h2>8. Yönerge kuralları</h2>
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+flowchart TD
+  G["Dönem sonu<br/>ana dal GANO"] --> A{"≥ 2,72?"}
+  A -- Evet --> OK["Sorun yok"]:::ok
+  A -- Hayır --> B{"2,50'nin<br/>altında mı?"}
+  B -- Evet --> F["Kural dışı<br/>kayıt silme koşulu"]:::bad
+  B -- Hayır --> C{"Daha önce<br/>düştü mü?"}
+  C -- Hayır --> W["Uyarı<br/>tek hak kullanıldı"]:::warn
+  C -- Evet --> F
+  classDef ok fill:#e7f6ec,stroke:#15803d
+  classDef warn fill:#fff6d6,stroke:#c99a00
+  classDef bad fill:#fde8e8,stroke:#b91c1c
+</pre>
+<p class="cap"><b>Şekil 17.</b> KR-ÇAP-11 (ÇAP Yön. m.9/1-e). GANO'yu yalnız koordinatör, kaynağıyla girer.</p>
+</div>
+<div class="fig">
+<pre class="mermaid">
+flowchart TD
+  A["Ders listesi tamam mı?<br/>her satır geçti ya da muaf"] -->|hayır| N["Kalan AKTS gösterilir"]
+  A -->|evet| T{"Program"}
+  T -->|ÇAP| C{"Ana dal GANO ≥ 2,72<br/>liste + ortak ≥ 240 AKTS"}
+  T -->|YDP| Y{"Yan dal<br/>ortalaması ≥ 2,00"}
+  C -->|evet| H["Mezuniyete hazır"]:::ok
+  Y -->|evet| H2["Sertifikaya hazır"]:::ok
+  H --> K["Koordinatör kararı"]
+  H2 --> K
+  classDef ok fill:#e7f6ec,stroke:#15803d
+</pre>
+<p class="cap"><b>Şekil 18.</b> KR-ÇAP-13 ve KR-YD-10: mezuniyet ve sertifika denetimi.</p>
+</div>
+</div>
+<table>
+  <thead><tr><th style="width:13%">Kod</th><th>Kural</th><th style="width:31%">Değer (kural setinde, değiştirilebilir)</th><th style="width:18%">Dayanak</th></tr></thead>
+  <tbody>
+    <tr><td class="code">KR-ÇAP-18</td><td>Liste + ortak dersler AKTS</td><td>≥ 240 (EEM 135 + 105; Makine 171 + 69)</td><td class="src">ÇAP m.7/2</td></tr>
+    <tr><td class="code">KR-ÇAP-10</td><td>Üst üste ders almama</td><td>2 dönem (izinli dönem sayılmaz)</td><td class="src">ÇAP m.9/1-d</td></tr>
+    <tr><td class="code">KR-ÇAP-11</td><td>Ana dal GANO düşüşü</td><td>Şekil 17</td><td class="src">ÇAP m.9/1-e</td></tr>
+    <tr><td class="code">KR-ÇAP-12</td><td>Ana dalla birlikte dondurma</td><td>—</td><td class="src">ÇAP m.9/1-ç</td></tr>
+    <tr><td class="code">KR-ÇAP-14</td><td>Azami süre</td><td>Kabulden 14 yarıyıl (doğrulanacak)</td><td class="src">ÇAP m.8/1-d, m.9/1-g</td></tr>
+    <tr><td class="code">KR-ÇAP-13</td><td>ÇAP diploması</td><td>Şekil 18</td><td class="src">ÇAP m.7/2, m.8/1-c,ç</td></tr>
+    <tr><td class="code">KR-YD-05</td><td>Yan dal listesi</td><td>≥ 30 AKTS ve ≥ 6 ders</td><td class="src">Yan Dal m.5/1-g</td></tr>
+    <tr><td class="code">KR-YD-06</td><td>Ana dal GANO alt sınırı</td><td>&lt; 2,30 kural dışı; &lt; 2,45 uyarı</td><td class="src">Yan Dal m.7/5</td></tr>
+    <tr><td class="code">KR-YD-07</td><td>Yan dal ortalaması</td><td>Üst üste 2 dönem &lt; 2,00</td><td class="src">Yan Dal m.7/6</td></tr>
+    <tr><td class="code">KR-YD-08, 12</td><td>Üst üste ders almama; ana dalla birlikte izin</td><td>2 dönem</td><td class="src">Yan Dal m.7/4, m.7/2</td></tr>
+    <tr><td class="code">KR-YD-14</td><td>Ana dal mezuniyetinden sonra ek süre</td><td>2 yarıyıl</td><td class="src">Yan Dal m.7/9</td></tr>
+    <tr><td class="code">KR-YD-10</td><td>Yan dal sertifikası</td><td>Şekil 18</td><td class="src">Yan Dal m.7/8</td></tr>
+  </tbody>
+</table>
+
+<h2>9. Güvenlik</h2>
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+flowchart TB
+  E["Uçtan uca · 18 test<br/>tarayıcıdan akış, ekran, mobil"]:::e
+  A["API · 35 test<br/>17 akış + 18 sızma testi"]:::a
+  U["Kural motoru · 135 test<br/>sınır değerler, %100 kapsam"]:::u
+  E --- A --- U
+  classDef e fill:#fff6d6,stroke:#c99a00
+  classDef a fill:#eef2f9,stroke:#1c458b
+  classDef u fill:#1c458b,color:#fff,stroke:#0d2d5e
+</pre>
+<p class="cap"><b>Şekil 19.</b> Test katmanları; hepsi her koşuda tekrarlanır.</p>
+</div>
+<div>
+<table>
+  <thead><tr><th>Sızma testi</th><th style="width:28%">Sonuç</th></tr></thead>
+  <tbody>
+    <tr><td>Belirteçsiz, bozuk imzalı, açılmamış hesap</td><td>401 / 403</td></tr>
+    <tr><td>Başkasının kaydı (IDOR)</td><td>404</td></tr>
+    <tr><td>Öğrenci → koordinatör işlemi</td><td>403</td></tr>
+    <tr><td>Bölüm başkanı → değiştirme</td><td>403</td></tr>
+    <tr><td>Fazladan alan (durum, kaynak)</td><td>yok sayılır</td></tr>
+    <tr><td>SQL ve yol enjeksiyonu, XSS</td><td>etkisiz</td></tr>
+    <tr><td>Sahte tür, zararlı ve bozuk dosya</td><td>400</td></tr>
+    <tr><td>Dakikada 20'den fazla yükleme</td><td>429</td></tr>
+    <tr><td>Veritabanından silme</td><td>tetikleyici reddeder</td></tr>
+  </tbody>
+</table>
+<p class="src">Testler yalnız kendi uygulamamızda, yerel ortamda; bütün veri sentetik.</p>
+</div>
+</div>
+<div class="grid2">
+<div class="fig">
+<pre class="mermaid">
+flowchart TB
+  I(["İstek"]) --> L1["Başlıklar, CORS, oran sınırı<br/><b>aşılırsa 429</b>"]
+  L1 --> L2["Belirteç: RS256, yayıncı<br/><b>geçersizse 401</b>"]
+  L2 --> L3["Hesap veritabanında, etkin<br/><b>değilse 403</b>"]
+  L3 --> L4["Rol: bölüm başkanı yalnız okur<br/><b>yazarsa 403</b>"]
+  L4 --> L5["Kapsam: öğrenci kendi no<br/><b>başkasıysa 404</b>"]
+  L5 --> L6["Şema doğrulama, fazla alan atılır<br/><b>hatalıysa 400</b>"]
+  L6 --> L7["İş kuralı: kilit, gerekçe<br/><b>çiğnenirse 403 / 409 / 422</b>"]
+  L7 --> L8[("Veritabanı: silme yok<br/>işlem kaydı: eski + yeni")]:::ok
+  classDef ok fill:#e7f6ec,stroke:#15803d
+</pre>
+<p class="cap"><b>Şekil 20.</b> Her isteğin geçtiği katmanlar ve ret kodları.</p>
+</div>
+<div class="fig">
+<pre class="mermaid">
+flowchart TB
+  U(["Dosya"]) --> S1["Boyut: ayardan, en çok 20 MB"]
+  S1 --> S2["Tür içerikten: sihirli bayt"]
+  S2 --> S3["İzinli tür: PDF, JPEG, PNG"]
+  S3 --> S4["Bütünlük: kesik dosya"]
+  S4 --> S5["PDF: JavaScript, Launch,<br/>gömülü dosya, şifre"]
+  S5 --> S6["Zararlı imza: EICAR"]
+  S6 --> S7["Ad temizlenir,<br/>rastgele adla saklanır"]
+  S7 --> S8[("SHA-256 saklanır<br/>onay bekliyor")]:::ok
+  classDef ok fill:#e7f6ec,stroke:#15803d
+</pre>
+<p class="cap"><b>Şekil 21.</b> Belge yükleme denetimi; herhangi bir adımda ret (400). İndirmede tarayıcı içerik çalıştırmaz.</p>
+</div>
+</div>
+
+<h2>10. Ekranlar</h2>
+<div class="grid2">
+  <div class="shot"><img src="../ekranlar/04-ogrenci-dersler.png" alt=""><p class="cap"><b>Şekil 22.</b> Öğrenci: Derslerim</p></div>
+  <div class="shot"><img src="../ekranlar/05-ogrenci-donem-sonu-notlari.png" alt=""><p class="cap"><b>Şekil 23.</b> Öğrenci: dönem sonu notları</p></div>
+  <div class="shot"><img src="../ekranlar/09-onay-bekleyenler.png" alt=""><p class="cap"><b>Şekil 24.</b> Koordinatör: onay bekleyenler</p></div>
+  <div class="shot"><img src="../ekranlar/11-ogrenci-karti-uyari.png" alt=""><p class="cap"><b>Şekil 25.</b> Öğrenci kartı: kural uyarısı</p></div>
+  <div class="shot"><img src="../ekranlar/15-yonerge-kurallari.png" alt=""><p class="cap"><b>Şekil 26.</b> Yönerge kuralları ve sürümler</p></div>
+  <div class="shot"><img src="../ekranlar/19-islem-kaydi.png" alt=""><p class="cap"><b>Şekil 27.</b> İşlem kaydı</p></div>
+</div>
+
+<h2>11. Yönergeyle çelişen ya da netleşecek noktalar</h2>
+<table>
+  <thead><tr><th style="width:4%">#</th><th>Konu</th><th style="width:46%">Sistemdeki uygulama</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><b>Kayıt silme:</b> e-postada kararı koordinatör verir; ÇAP m.9/1-d, e "kaydı silinir" der.</td><td>Sistem uyarır; koordinatör kararı YK karar sayısıyla kaydeder.</td></tr>
+    <tr><td>2</td><td><b>Mezuniyet / sertifika:</b> belgeyi üniversite verir.</td><td>Sistemdeki karar bölümün tespitidir.</td></tr>
+    <tr><td>3</td><td><b>Başvuru dönemleri</b> ayarlanabilir sayılar arasında; başvuru sistemde yok.</td><td>Başvuru kuralları çıkarıldı.</td></tr>
+    <tr><td>4</td><td><b>DC notu</b> yarıyıl ortalamasına bağlı.</td><td>Koordinatör onayda işaretler.</td></tr>
+    <tr><td>5</td><td><b>ÇAP azami süresi</b> yönergede yarıyıl olarak yok.</td><td>14 yarıyıl (2547 s. K. m.44/c), değiştirilebilir.</td></tr>
+    <tr><td>6</td><td><b>Yan dal ders listesi</b> yayımlanmış mı?</td><td>Şablon temsilî (8 ders, 33 AKTS).</td></tr>
+  </tbody>
+</table>
+
+<h2 class="break">Ek A. Tablolar ve alanları</h2>
 <!--TABLES-->
 
-<h3>6.5 Veritabanı düzeyindeki kısıtlar</h3>
-<table>
-  <thead><tr><th style="width:40%">Kısıt</th><th>Amaç</th></tr></thead>
-  <tbody>
-    <tr><td>Bütün tablolarda <span class="code">DELETE</span>'i reddeden tetikleyici</td><td>Hiçbir veri silinmez; yanlış kayıt "iptal" işaretlenir.</td></tr>
-    <tr><td><span class="code">AuditLog</span>: <span class="code">UPDATE</span> ve <span class="code">DELETE</span> engelli</td><td>İşlem kaydı değiştirilemez ve silinemez.</td></tr>
-    <tr><td><span class="code">Message</span>: yalnız <span class="code">readAt</span> güncellenebilir; <span class="code">Document</span>: dosya alanları değiştirilemez</td><td>Yazışmalar kalıcı; arşivdeki dosya sonradan değiştirilemez.</td></tr>
-    <tr><td>Kısmi benzersiz indeks: <span class="code">PlanItem(studentNo, courseCode)</span> etkin satırlarda</td><td>Ders listesinde bir ders tek kez bulunur; çıkarılan ve reddedilen satırlar kalır.</td></tr>
-    <tr><td><span class="code">CourseAttempt(planItemId, termId)</span> bekleyen ve onaylı denemelerde</td><td>Bir ders aynı dönemde bir kez alınır; tekrar ayrı dönemde yeni denemedir.</td></tr>
-    <tr><td><span class="code">GradeSubmission(studentNo, termId)</span> bekleyenlerde; <span class="code">GanoRecord</span>, <span class="code">TermLeave(studentNo, termId)</span> iptal edilmemişlerde</td><td>Dönem başına tek bekleyen not gönderimi, tek geçerli GANO, tek izin.</td></tr>
-    <tr><td><span class="code">Term.isCurrent</span>, <span class="code">Program.isHome</span> için tek satır</td><td>Tek "içinde bulunulan dönem", tek ev sahibi bölüm.</td></tr>
-    <tr><td>Aralık denetimleri: öğrenci no 9 hane, GANO 0–4, harf notu listesi, AKTS ve yarıyıl aralığı, dosya boyutu &gt; 0, dönem bitişi &gt; başlangıç</td><td>Elle ya da aktarımla gelen hatalı değer veritabanına giremez.</td></tr>
-  </tbody>
-</table>
-
-<h2>7. Yönerge kuralları</h2>
-<p>Kural değerleri koda gömülmez; <b>sürümlü kural setinde</b> tutulur. Koordinatör yeni değerle yeni sürüm oluşturur, taslağı deneyip yürürlüğe koyar; eski sürüm silinmez. Her kontrol kullandığı sürümle saklanır, yeni sürüm geçmiş kontrolleri yeniden yazmaz. Kontrol <b>yalnızca onaylı kayıtları</b> kullanır; yeni uyarıda koordinatör ve öğrenci bilgilendirilir. <b>Uyarı karar değildir</b>; kararı koordinatör dayanağıyla kaydeder.</p>
-
-<h3>7.1 Çift ana dal (sürüm CAP-2026.4)</h3>
-<table>
-  <thead><tr><th style="width:13%">Kod</th><th>Kural</th><th style="width:30%">Değer</th><th style="width:18%">Dayanak</th></tr></thead>
-  <tbody>
-    <tr><td class="code">KR-ÇAP-18</td><td>Ders listesi ile ana dalda alınan ortak derslerin AKTS toplamı</td><td>≥ 240 (EEM 135 + 105; Makine 171 + 69)</td><td class="src">ÇAP Yön. m.7/2</td></tr>
-    <tr><td class="code">KR-ÇAP-10</td><td>İzinsiz üst üste ders almama</td><td>2 dönem (izinli / dondurulan dönem sayılmaz)</td><td class="src">ÇAP Yön. m.9/1-d</td></tr>
-    <tr><td class="code">KR-ÇAP-11</td><td>Ana dal GANO düşüşü</td><td>2,50 ≤ GANO &lt; 2,72 bir defa (uyarı); ikinci kez &lt; 2,72 ya da &lt; 2,50: kural dışı</td><td class="src">ÇAP Yön. m.9/1-e; YÖK m.17/4</td></tr>
-    <tr><td class="code">KR-ÇAP-12</td><td>Ana dalda dondurulan kayıt ÇAP'ta da dondurulur</td><td>—</td><td class="src">ÇAP Yön. m.9/1-ç</td></tr>
-    <tr><td class="code">KR-ÇAP-14</td><td>Azami öğrenim süresi</td><td>Kabulden itibaren 14 yarıyıl (doğrulanacak)</td><td class="src">ÇAP Yön. m.8/1-d, m.9/1-g</td></tr>
-    <tr><td class="code">KR-ÇAP-13</td><td>Çift ana dal diploması koşulları</td><td>Liste tamam (geçti ya da muaf); ana dal GANO ≥ 2,72</td><td class="src">ÇAP Yön. m.7/2, m.8/1-c,ç</td></tr>
-  </tbody>
-</table>
-
-<h3>7.2 Yan dal (sürüm YANDAL-2023.4)</h3>
-<table>
-  <thead><tr><th style="width:13%">Kod</th><th>Kural</th><th style="width:30%">Değer</th><th style="width:18%">Dayanak</th></tr></thead>
-  <tbody>
-    <tr><td class="code">KR-YD-05</td><td>Yan dal ders listesi</td><td>≥ 30 AKTS ve ≥ 6 ders</td><td class="src">Yan Dal Yön. m.5/1-g</td></tr>
-    <tr><td class="code">KR-YD-06</td><td>Ana dal GANO alt sınırı</td><td>&lt; 2,30 kural dışı; 2,45 altında uyarı</td><td class="src">Yan Dal Yön. m.7/5</td></tr>
-    <tr><td class="code">KR-YD-07</td><td>Yan dal ortalaması</td><td>Üst üste 2 dönem &lt; 2,00</td><td class="src">Yan Dal Yön. m.7/6</td></tr>
-    <tr><td class="code">KR-YD-08</td><td>İzinsiz üst üste ders almama</td><td>2 dönem</td><td class="src">Yan Dal Yön. m.7/4</td></tr>
-    <tr><td class="code">KR-YD-12</td><td>Ana dalla birlikte izin</td><td>—</td><td class="src">Yan Dal Yön. m.7/2</td></tr>
-    <tr><td class="code">KR-YD-14</td><td>Ana daldan mezuniyetten sonra ek süre</td><td>2 yarıyıl</td><td class="src">Yan Dal Yön. m.7/9</td></tr>
-    <tr><td class="code">KR-YD-10</td><td>Yan dal sertifikası koşulları</td><td>Liste tamam; yan dal ortalaması ≥ 2,00</td><td class="src">Yan Dal Yön. m.7/8</td></tr>
-  </tbody>
-</table>
-
-<h3>7.3 Sistemin kendi denetimleri</h3>
-<table>
-  <thead><tr><th style="width:5%">#</th><th>Denetim</th><th style="width:32%">Kaynak</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td>Ders yalnız katalogdan seçilir; pasif ders yeni listeye eklenemez; katalogda olmayan ders için talep gönderilir.</td><td class="src">Çerçeve e-postası</td></tr>
-    <tr><td>2</td><td>Dönem sonu notları, o dönemin ÇAP/YDP not belgesi yüklenmeden gönderilemez.</td><td class="src">Çerçeve e-postası</td></tr>
-    <tr><td>3</td><td>Geçilmiş ders listeden çıkarılamaz; notu değişmez (koordinatörün gerekçeli düzeltmesi dışında).</td><td class="src">Çerçeve e-postası</td></tr>
-    <tr><td>4</td><td>Dönem dersine yalnız listede geçilmemiş ders girilir; seçmeli ders yerine yalnız o yarıyılın teknik seçmelisi seçilir.</td><td class="src">Protokoller</td></tr>
-    <tr><td>5</td><td>DC notu: yarıyıl ortalaması sistemde olmadığından geçip geçmediğini koordinatör onayda işaretler.</td><td class="src">Sınav Yön. m.13/3-b, m.15/1</td></tr>
-    <tr><td>6</td><td>GANO girilmemişse GANO kuralları çalışmaz, "veri eksik" uyarısı yazılır.</td><td class="src">Uyarı yalnız onaylı veriyle</td></tr>
-  </tbody>
-</table>
-
-<h2>8. Güvenlik: yapılan testler ve alınan önlemler</h2>
-<p>Bütün testler <b>yalnızca bu uygulamanın yerel test ortamında</b> yapıldı; sistemdeki bütün veri sentetiktir (okul e-postaları var olmayan bir alan adında, e-postalar yerel test sunucusunda kalır). Sızma testleri otomatiktir ve her koşuda tekrarlanır (<span class="code">apps/api/test/security.spec.ts</span>, 18 test).</p>
-<table>
-  <thead><tr><th style="width:26%">Denenen</th><th>Sonuç ve önlem</th></tr></thead>
-  <tbody>
-    <tr><td>Kimliksiz erişim, sahte belirteç, hesap devralma</td><td>401 / 403. Yalnız RS256 imzalı, doğru yayıncılı belirteç; hesap ve rol veritabanından; kimlik (<span class="code">sub</span>) eşleşmezse ret; pasif hesap reddedilir.</td></tr>
-    <tr><td>Başkasının kaydına erişim (IDOR)</td><td>Öğrencinin her sorgusu kendi numarasıyla sınırlı; başkasının kaydı 404 (varlığı bile sızdırılmaz).</td></tr>
-    <tr><td>Yetki yükseltme</td><td>Öğrenci koordinatör işlemlerinde 403; bölüm başkanının okuma dışındaki her isteği genel koruyucuda 403.</td></tr>
-    <tr><td>Toplu atama, SQL ve yol enjeksiyonu, XSS</td><td>Şema doğrulaması fazladan alanları atar (öğrenci kaydı "onay bekliyor" başlar); parametreli sorgu; biçim denetimi; mesajlar düz metin saklanır, ekranda kaçışlanır.</td></tr>
-    <tr><td>Zararlı ve bozuk dosya</td><td>Tür sihirli baytlardan; PDF'te etkin içerik (JavaScript, Launch, gömülü dosya) ve şifreleme, kesik dosya, EICAR imzası reddedilir; boyut ve türler ayarlardan (varsayılan PDF/JPEG/PNG, 10 MB, sabit üst sınır 20 MB); dosya adı temizlenir, rastgele adla web kökü dışında saklanır; indirmede <span class="code">nosniff</span> ve <span class="code">default-src 'none'</span>.</td></tr>
-    <tr><td>Kötüye kullanım</td><td>Kullanıcı başına oran sınırı (dakikada 300; yükleme 20, mesaj 30); Keycloak'ta kaba kuvvet koruması.</td></tr>
-    <tr><td>Veri silme, kaydın değiştirilmesi</td><td>Silme uç noktası yok; veritabanı tetikleyicileri silmeyi ve işlem kaydının değiştirilmesini reddeder.</td></tr>
-    <tr><td>Tarayıcı güvenliği</td><td>helmet başlıkları; web'de Content-Security-Policy, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, COOP.</td></tr>
-  </tbody>
-</table>
-<p class="src">Şifre politikası: en az 10 karakter, büyük/küçük harf ve rakam, kullanıcı adı ya da e-posta olamaz, son 3 şifre tekrar edilemez. Şifre belirleme bağlantısı 72 saat geçerli. Üretimde ayrıca TLS ve HSTS, sırların sır yöneticisinden gelmesi ve virüs tarayıcısı gerekir. Ayrıntı: <span class="code">docs/GUVENLIK.md</span>.</p>
-
-<h2>9. Yönergeyle çelişen ya da netleşmesi gereken noktalar</h2>
-<p>Çerçeve e-postası "yönergeyle çelişirse yönerge esas alınır" der. Bulunanlar:</p>
-<table>
-  <thead><tr><th style="width:5%">#</th><th>Konu</th><th style="width:44%">Sistemdeki uygulama</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td><b>Kayıt silme.</b> E-postada kararı koordinatör verir; ÇAP Yön. m.9/1-d ve m.9/1-e ise koşul oluşunca "kaydı silinir" der, takdir bırakmaz. Dondurma ve kabul birim yönetim kurulu kararıyladır.</td><td>Sistem koşulu kural dışı olarak gösterir; koordinatör kararı yönetim kurulu karar sayısıyla kaydeder. Sistem kaydı kendiliğinden kapatmaz.</td></tr>
-    <tr><td>2</td><td><b>Mezuniyet ve sertifika.</b> Diploma ve sertifikayı üniversite verir.</td><td>Sistemdeki karar bölümün tespitidir ve kayda geçer; diploma işlemi değildir.</td></tr>
-    <tr><td>3</td><td><b>Başvuru dönemleri</b> e-postada ayarlanabilir sayılar arasında; başvuru ise sistemde yok.</td><td>Başvuru kuralları kural setlerinden çıkarıldı.</td></tr>
-    <tr><td>4</td><td><b>DC notu</b> yarıyıl ortalamasına bağlı; sistem ana dal yarıyıl ortalamasını tutmaz.</td><td>Koordinatör onayda işaretler.</td></tr>
-    <tr><td>5</td><td><b>ÇAP azami süresi</b> yönergede yarıyıl olarak yazmıyor.</td><td>14 yarıyıl (2547 s. Kanun m.44/c); kural setinde değiştirilebilir.</td></tr>
-    <tr><td>6</td><td>Bölümün <b>yan dal ders listesi</b> yayımlanmış mı?</td><td>Şablon temsilî kuruldu (8 ders, 33 AKTS).</td></tr>
-  </tbody>
-</table>
-
 <footer>
-  Esas kaynak: danışmanın çerçeve e-postası (9 Ekim 2026). İncelenen diğer kaynaklar: Bilgisayar Mühendisliği Bölümü "Çift Anadal" sayfası (Rehber Şubat 2025, FORM01 Ders Kayıt Formu, Elektrik-Elektronikten Bilgisayara ve Makineden Bilgisayara protokolleri) · Bologna ders paketi · YÖK Geçiş, Çift Anadal, Yan Dal Yönetmeliği (m.16–20) · Selçuk Üniversitesi Çift Ana Dal Yönergesi (2026-20) · Yan Dal Yönergesi (2023-131) · Ön Lisans ve Lisans Eğitim-Öğretim ve Sınav Yönetmeliği.
+  Esas kaynak: danışmanın çerçeve e-postası (9 Ekim 2026). Diğer kaynaklar: bölümün "Çift Anadal" sayfası (Rehber 2025, FORM01, EEM ve Makine protokolleri) · Bologna ders paketi · YÖK Geçiş, Çift Anadal, Yan Dal Yönetmeliği · Selçuk Üniversitesi Çift Ana Dal Yönergesi (2026-20) ve Yan Dal Yönergesi (2023-131) · Ön Lisans ve Lisans Eğitim-Öğretim ve Sınav Yönetmeliği. Bütün öğrenci ve personel verisi sentetiktir.
 </footer>
 
 </body>

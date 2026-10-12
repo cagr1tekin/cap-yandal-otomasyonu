@@ -1,7 +1,8 @@
 /**
  * Proje taslak dosyasını üretir: proje-taslak.kaynak.html → proje-taslak.html → Proje-Taslak-Dosyasi.pdf
  * Veritabanı bölümü (ilişki çizimleri ve tablo listesi) apps/api/prisma/schema.prisma dosyasından üretilir;
- * şema değişince belge elle güncellenmez. Kullanım (depo kökünden): node docs/taslak/build.cjs
+ * şema değişince belge elle güncellenmez. Akış, durum ve sıra çizimleri kaynakta Mermaid metnidir.
+ * Kullanım (depo kökünden): node docs/taslak/build.cjs
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -269,8 +270,65 @@ fs.writeFileSync(htmlPath, html);
 (async () => {
   const { chromium } = require(path.join(root, 'e2e/node_modules/@playwright/test'));
   const browser = await chromium.launch();
-  const page = await browser.newPage();
+  const page = await browser.newPage({ viewport: { width: 794, height: 1123 } });
   await page.goto('file:///' + htmlPath.replace(/\\/g, '/'));
+
+  // Akış, durum ve sıra çizimleri kaynakta Mermaid metnidir; burada SVG'ye çevrilip HTML'e gömülür.
+  await page.addScriptTag({ path: path.join(root, 'e2e/node_modules/mermaid/dist/mermaid.min.js') });
+  const errors = await page.evaluate(async () => {
+    const m = window.mermaid;
+    m.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      fontFamily: 'Segoe UI, Arial, sans-serif',
+      themeVariables: {
+        fontSize: '14px',
+        primaryColor: '#eef2f9',
+        primaryBorderColor: '#1c458b',
+        primaryTextColor: '#212529',
+        lineColor: '#1c458b',
+        secondaryColor: '#fff6d6',
+        tertiaryColor: '#f8fafc',
+        clusterBkg: '#f8fafc',
+        clusterBorder: '#94a3b8',
+        actorBkg: '#eef2f9',
+        actorBorder: '#1c458b',
+        signalColor: '#1c458b',
+        noteBkgColor: '#fff6d6',
+        noteBorderColor: '#c99a00',
+        labelBoxBkgColor: '#fff6d6',
+      },
+      flowchart: { curve: 'basis', padding: 10, nodeSpacing: 30, rankSpacing: 38 },
+      sequence: { mirrorActors: false, messageMargin: 26, boxMargin: 6 },
+    });
+    const out = [];
+    for (const el of document.querySelectorAll('pre.mermaid')) {
+      try {
+        await m.run({ nodes: [el] });
+      } catch (e) {
+        out.push(`${String(e).slice(0, 300)} :: ${el.textContent.trim().slice(0, 60)}`);
+      }
+    }
+    // Bütün çizimler aynı ölçekte basılır (yazı boyu tutarlı); sığmayan küçültülür.
+    // Sayfa içeriği yaklaşık 680 px, iki sütunlu düzende sütun 335 px genişliğindedir.
+    for (const svg of document.querySelectorAll('.fig .mermaid svg')) {
+      const [, , w, h] = svg.getAttribute('viewBox').split(/\s+/).map(Number);
+      const half = Boolean(svg.closest('.grid2'));
+      const s = Math.min(0.8, (half ? 335 : 680) / w, 800 / h);
+      svg.removeAttribute('width');
+      svg.style.maxWidth = 'none';
+      svg.style.width = `${(w * s).toFixed(1)}px`;
+      svg.style.height = `${(h * s).toFixed(1)}px`;
+    }
+    document.querySelectorAll('script').forEach((s) => s.remove());
+    return out;
+  });
+  if (errors.length) {
+    await browser.close();
+    throw new Error(`Mermaid hatası:\n${errors.join('\n')}`);
+  }
+  fs.writeFileSync(htmlPath, `<!doctype html>\n${await page.evaluate(() => document.documentElement.outerHTML)}`);
+
   await page.pdf({
     path: path.join(__dirname, 'Proje-Taslak-Dosyasi.pdf'),
     format: 'A4',
@@ -278,8 +336,8 @@ fs.writeFileSync(htmlPath, html);
     displayHeaderFooter: true,
     headerTemplate: '<span></span>',
     footerTemplate:
-      '<div style="width:100%;font-size:8px;color:#475569;padding:0 16mm;display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif"><span>Bilgisayar Mühendisliği ÇAP ve YDP Öğrenci Takip Sistemi — Proje Taslak Dosyası</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
-    margin: { top: '18mm', bottom: '18mm', left: '16mm', right: '16mm' },
+      '<div style="width:100%;font-size:8px;color:#475569;padding:0 14mm;display:flex;justify-content:space-between;font-family:Segoe UI,Arial,sans-serif"><span>Bilgisayar Mühendisliği ÇAP ve YDP Öğrenci Takip Sistemi — Proje Taslak Dosyası</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    margin: { top: '16mm', bottom: '16mm', left: '14mm', right: '14mm' },
   });
   await browser.close();
   console.log(`${TABLE_COUNT} tablo → ${path.relative(root, htmlPath)}, Proje-Taslak-Dosyasi.pdf`);
