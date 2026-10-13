@@ -1,8 +1,6 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
-import { currentUser } from './auth';
-
-const BASE = process.env.API_URL ?? 'http://127.0.0.1:4000/api/v1';
+import { API_BASE as BASE, currentUser } from './auth';
 
 export interface Problem {
   status: number;

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Montserrat } from 'next/font/google';
 import { Footer, Header } from '@/components/header';
+import { API_BASE } from '@/lib/auth';
 import { getMe } from '@/lib/me';
 import './globals.css';
 
@@ -16,7 +17,7 @@ export const viewport: Viewport = { themeColor: '#1c458b' };
 
 async function unreadCount(token: string): Promise<number> {
   try {
-    const res = await fetch(`${process.env.API_URL}/notifications`, { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/notifications`, { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' });
     if (!res.ok) return 0;
     return ((await res.json()) as { unread: number }).unread;
   } catch {

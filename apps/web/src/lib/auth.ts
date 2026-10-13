@@ -3,7 +3,11 @@ import { decode, type JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { cookies } from 'next/headers';
 
-export const API_BASE = process.env.API_URL ?? 'http://127.0.0.1:4000/api/v1';
+/** API kökü; ortam değişkeni sonu /api/v1 olmadan girilse de tamamlanır. */
+export const API_BASE = (() => {
+  const raw = (process.env.API_URL ?? 'http://127.0.0.1:4000/api/v1').trim().replace(/\/+$/, '');
+  return raw.endsWith('/api/v1') ? raw : `${raw}/api/v1`;
+})();
 
 /** Oturum açmadan çağrılan API uçları (giriş, şifre belirleme). */
 export async function publicApi<T>(path: string, json: unknown): Promise<{ ok: true; data: T } | { ok: false; status: number; detail: string }> {

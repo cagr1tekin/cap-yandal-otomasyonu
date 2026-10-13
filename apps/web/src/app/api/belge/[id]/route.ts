@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { currentUser } from '@/lib/auth';
+import { API_BASE, currentUser } from '@/lib/auth';
 
 /** Yüklenen belgeyi API üzerinden aktarır; erişim yetkisi API'de denetlenir. */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await currentUser();
   if (!user) return NextResponse.redirect(new URL('/giris', req.url));
   const { id } = await params;
-  const res = await fetch(`${process.env.API_URL}/documents/${encodeURIComponent(id)}/file`, { headers: { authorization: `Bearer ${user.accessToken}` }, cache: 'no-store' });
+  const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(id)}/file`, { headers: { authorization: `Bearer ${user.accessToken}` }, cache: 'no-store' });
   if (!res.ok) return NextResponse.json(await res.json().catch(() => ({})), { status: res.status });
   return new NextResponse(res.body, {
     headers: {
