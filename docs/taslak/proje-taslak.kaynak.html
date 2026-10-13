@@ -66,7 +66,7 @@ flowchart TB
   O(["Öğrenci"]):::actor <-->|ders, not,<br/>belge, mesaj| S
   B(["Bölüm başkanı"]):::actor -->|yalnız izler| S
   OB["OBİS · ileride"]:::future -.->|aktarım| S
-  S -->|davet, bildirim| M["Okul e-postası"]:::ext
+  S -.->|bildirim · isteğe bağlı| M["E-posta (SMTP)"]:::ext
   classDef sys fill:#1c458b,color:#fff,stroke:#0d2d5e,font-weight:bold
   classDef actor fill:#fff6d6,stroke:#c99a00,color:#212529
   classDef ext fill:#eef2f9,stroke:#1c458b,color:#212529
@@ -81,20 +81,17 @@ flowchart TB
 flowchart TB
   T["Tarayıcı · masaüstü ve telefon"]:::client
   T -->|HTTPS| W["Next.js 15 · React · Tailwind<br/>sayfalar, sunucu eylemleri"]:::app
-  T <-->|giriş, şifre| KC["Keycloak<br/>OpenID Connect"]:::ext
-  W -->|JWT| A["NestJS 11 · REST API<br/>kimlik, rol, kapsam, onay, işlem kaydı"]:::app
+  W -->|imzalı oturum belirteci| A["NestJS 11 · REST API<br/>giriş, rol, kapsam, onay, işlem kaydı"]:::app
   A --> R["Kural motoru<br/>sürümlü kural setleri"]:::app
-  A --> P[("PostgreSQL · Prisma<br/>27 tablo, tetikleyiciler")]
-  A --> F[("Belge deposu<br/>rastgele adlı dosyalar")]
+  A --> P[("PostgreSQL · Prisma<br/>tablolar, tetikleyiciler")]
+  A --> F[("Belge içeriği<br/>diskte ya da veritabanında")]
   A --> Q["BullMQ + Redis<br/>e-posta kuyruğu"]:::app
-  A -->|hesap aç, davet| KC
-  Q --> ML["SMTP<br/>geliştirmede Mailpit"]:::ext
-  KC --> ML
+  Q -.-> ML["SMTP · isteğe bağlı<br/>geliştirmede Mailpit"]:::ext
   classDef client fill:#fff6d6,stroke:#c99a00
   classDef app fill:#1c458b,color:#fff,stroke:#0d2d5e
   classDef ext fill:#eef2f9,stroke:#1c458b
 </pre>
-<p class="cap"><b>Şekil 2.</b> Bileşenler. Test: Vitest (kural motoru), Jest (API), Playwright (uçtan uca). Çalıştırma: Docker Compose.</p>
+<p class="cap"><b>Şekil 2.</b> Bileşenler. Şifreler yalnız scrypt özetiyle saklanır; oturum belirtecini API imzalar (8 saat). Test: Vitest (kural motoru), Jest (API), Playwright (uçtan uca). Yayın: web Vercel, API Render, veritabanı Neon; yerelde Docker Compose.</p>
 </div>
 
 <h2>3. Roller ve yetkiler</h2>
@@ -147,7 +144,7 @@ flowchart TB
 <div class="fig">
 <pre class="mermaid">
 flowchart LR
-  E["E-postadaki bağlantı<br/>şifre belirleme"] --> G["Giriş"] --> P["Yapılacaklar"]
+  E["Koordinatörün ilettiği bağlantı<br/>şifre belirleme"] --> G["Giriş"] --> P["Yapılacaklar"]
   P --> D["Durumum<br/>AKTS, uyarılar, kararlar"]
   P --> DR["Derslerim"]
   P --> N["Dönem sonu notları"]
@@ -173,7 +170,7 @@ sequenceDiagram
   participant S as Sistem
   actor O as Öğrenci
   K->>S: Kabul edilen öğrenciyi ekle
-  S-->>O: Şifre belirleme bağlantısı (e-posta)
+  S-->>O: Şifre belirleme bağlantısı
   O->>S: İmzalı formları yükle
   K->>S: Onayla ya da gerekçeyle reddet
   O->>S: Alacağı dersleri katalogdan gir
@@ -202,22 +199,19 @@ sequenceDiagram
 sequenceDiagram
   actor K as Koordinatör
   participant A as Sistem
-  participant KC as Keycloak
-  participant E as E-posta
   actor O as Öğrenci
   K->>A: Öğrenciyi ekle
   Note over K,A: no, ad soyad, okul e-postası,<br/>ÇAP/YDP, kabul dönemi
   A->>A: Kart + hesap (öğrenci)
-  A->>KC: Hesap aç
-  KC->>E: Şifre bağlantısı (72 saat)
-  E-->>O: E-posta
-  O->>KC: Şifre belirle
-  Note over KC,O: en az 10 karakter,<br/>büyük/küçük harf, rakam
+  A-->>K: Tek kullanımlık bağlantı (72 saat)
+  K-->>O: Bağlantıyı iletir · e-posta açıksa sistem gönderir
+  O->>A: Şifre belirle (en az 10 karakter)
+  Note over A: yalnız özeti saklanır,<br/>bağlantı geçersiz olur
   O->>A: Giriş
   A->>A: Hesap etkin mi, rolü ne?
   A-->>O: Yapılacaklar
 </pre>
-<p class="cap"><b>Şekil 6.</b> Şifre sistemde hiç görünmez. Geriye dönük girilen öğrenciye bağlantı sonra gönderilebilir.</p>
+<p class="cap"><b>Şekil 6.</b> Şifreyi kimse görmez, koordinatör de. Geriye dönük girilen öğrenciye bağlantı sonra verilebilir; yeni bağlantı eskisini geçersiz kılar.</p>
 </div>
 
 <h3>5.3 Belge isteği ve mesajlaşma</h3>
@@ -228,7 +222,7 @@ sequenceDiagram
   participant S as Sistem
   actor O as Öğrenci
   K->>S: Belge iste (tür, açıklama)
-  S-->>O: Bildirim + e-posta
+  S-->>O: Bildirim
   O->>S: Belgeyi yükle
   Note over S: İstek: yüklendi
   K->>S: Onayla / reddet
