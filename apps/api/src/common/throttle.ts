@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { createHash } from 'node:crypto';
 
-/** Oran sınırı kullanıcı başına sayılır (belirteç özeti); belirteç yoksa IP'ye göre. */
+/** Oran sınırı kullanıcı başına sayılır (belirteç özeti); giriş uçlarında hesap başına, diğerlerinde IP'ye göre. */
 @Injectable()
 export class UserThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Record<string, any>): Promise<string> {
@@ -17,6 +17,10 @@ export class UserThrottlerGuard extends ThrottlerGuard {
       }
       return `t:${createHash('sha256').update(auth).digest('hex').slice(0, 16)}`;
     }
+    // Giriş uçları web sunucusu üzerinden çağrıldığı için IP herkes için aynıdır; sınır hesap başına sayılır.
+    const body = req.body as { username?: unknown; token?: unknown } | undefined;
+    if (typeof body?.username === 'string') return `l:${body.username.trim().toLowerCase()}`;
+    if (typeof body?.token === 'string') return `r:${createHash('sha256').update(body.token).digest('hex').slice(0, 16)}`;
     return req.ip;
   }
 }

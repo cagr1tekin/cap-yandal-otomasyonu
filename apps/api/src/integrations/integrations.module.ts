@@ -13,7 +13,12 @@ export class SmtpMailAdapter extends MailPort {
 
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
     super();
-    this.transport = nodemailer.createTransport({ host: config.SMTP_HOST, port: config.SMTP_PORT, secure: false });
+    this.transport = nodemailer.createTransport({
+      host: config.SMTP_HOST,
+      port: config.SMTP_PORT,
+      secure: config.SMTP_PORT === 465,
+      auth: config.SMTP_USER ? { user: config.SMTP_USER, pass: config.SMTP_PASS } : undefined,
+    });
   }
 
   async send(to: string, subject: string, text: string) {

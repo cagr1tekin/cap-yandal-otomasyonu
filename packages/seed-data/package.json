@@ -2,14 +2,13 @@
   "name": "@cap/seed-data",
   "version": "0.1.0",
   "private": true,
-  "description": "Veritabanı seed'i ve Keycloak realm'inin ortak kullandığı deneme verisi",
+  "description": "Veritabanı seed'inin kullandığı deneme verisi",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "realm": "node dist/gen-realm.js ../../infra/keycloak/realm.json"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

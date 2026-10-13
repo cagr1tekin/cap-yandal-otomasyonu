@@ -28,6 +28,7 @@ type Meta = z.infer<typeof DocumentMetaSchema>;
 @Injectable()
 export class DocumentsService {
   private readonly root: string;
+  private readonly inDb: boolean;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -38,6 +39,24 @@ export class DocumentsService {
     @Inject(APP_CONFIG) config: AppConfig,
   ) {
     this.root = resolve(config.UPLOAD_DIR);
+    this.inDb = config.STORAGE_DRIVER === 'db';
+  }
+
+  private async writeContent(storageKey: string, data: Buffer, tx: Tx) {
+    if (this.inDb) {
+      await tx.documentFile.create({ data: { storageKey, data: new Uint8Array(data) } });
+      return;
+    }
+    await mkdir(join(this.root, storageKey.split('/')[0]!), { recursive: true });
+    await writeFile(this.path(storageKey), data, { flag: 'wx' });
+  }
+
+  private async readContent(storageKey: string): Promise<Buffer | null> {
+    if (this.inDb) {
+      const f = await this.prisma.documentFile.findUnique({ where: { storageKey } });
+      return f ? Buffer.from(f.data) : null;
+    }
+    return readFile(this.path(storageKey)).catch(() => null);
   }
 
   private path(storageKey: string) {
@@ -69,8 +88,7 @@ export class DocumentsService {
     const settings = await this.catalog.settings();
     const checked = checkFile(file, { maxMb: settings.uploadMaxMb, types: settings.uploadTypes });
     const storageKey = `${student.studentNo}/${randomUUID()}.${checked.extension}`;
-    await mkdir(join(this.root, student.studentNo), { recursive: true });
-    await writeFile(this.path(storageKey), file!.buffer, { flag: 'wx' });
+    await this.writeContent(storageKey, file!.buffer, tx);
 
     const staff = user.role === 'KOORDINATOR';
     const doc = await tx.document.create({
@@ -143,7 +161,7 @@ export class DocumentsService {
     const d = await this.prisma.document.findUnique({ where: { id } });
     if (!d) throw notFound('Belge');
     await this.access.student(user, d.studentNo);
-    const body = await readFile(this.path(d.storageKey)).catch(() => null);
+    const body = await this.readContent(d.storageKey);
     if (!body) throw notFound('Belge dosyası');
     if (user.studentNo !== d.studentNo) await this.audit.log(user, { action: 'DOCUMENT_VIEW', entity: 'Document', entityId: id, studentNo: d.studentNo });
     return { doc: d, body };

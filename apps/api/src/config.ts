@@ -8,18 +8,19 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   PORT: z.coerce.number().default(4000),
+  /** Yerelde yalnızca 127.0.0.1; barındırmada (Render) 0.0.0.0. */
+  HOST: z.string().default('127.0.0.1'),
   WEB_ORIGIN: z.string().url(),
-  OIDC_ISSUER: z.string().url(),
-  OIDC_AUDIENCE: z.string().min(1),
-  /** Hesap açmak için Keycloak yönetim API'si (yalnızca kullanıcı yönetimi yetkili servis hesabı). */
-  KEYCLOAK_URL: z.string().url().default('http://localhost:8088'),
-  KEYCLOAK_REALM: z.string().default('selcuk'),
-  KEYCLOAK_ADMIN_CLIENT_ID: z.string().default('cap-api'),
-  KEYCLOAK_ADMIN_CLIENT_SECRET: z.string().min(1),
+  /** Oturum belirteçlerinin imza anahtarı (en az 32 karakter, rastgele). */
+  AUTH_SECRET: z.string().min(32),
   /** Öğrencilerin yüklediği belgelerin tutulduğu dizin (sürüm denetimine girmez). */
   UPLOAD_DIR: z.string().default('./storage'),
+  /** Belge içeriğinin yeri: disk (UPLOAD_DIR) ya da veritabanı (kalıcı diski olmayan barındırma). */
+  STORAGE_DRIVER: z.enum(['disk', 'db']).default('disk'),
   SMTP_HOST: z.string().default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().default(1035),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default('Bilgisayar Müh. ÇAP-YDP <noreply@cap.test>'),
   WORKER_ENABLED: z
     .string()

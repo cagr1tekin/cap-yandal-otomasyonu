@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import type { Role } from '@cap/contracts';
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
+import { jwtVerify, SignJWT, type JWTPayload } from 'jose';
 import type { Request } from 'express';
 import { APP_CONFIG, type AppConfig } from '../config';
 import { forbidden } from '../common/http';
@@ -44,18 +44,35 @@ export abstract class TokenVerifier {
   abstract verify(token: string): Promise<JWTPayload>;
 }
 
-@Injectable()
-export class OidcTokenVerifier extends TokenVerifier {
-  private readonly jwks;
+const ISSUER = 'cap-api';
+const AUDIENCE = 'cap-web';
+/** Oturum süresi; web tarafındaki oturumla aynı (8 saat). */
+export const SESSION_SECONDS = 8 * 60 * 60;
 
-  constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {
+/** API'nin kendi imzaladığı oturum belirteci (HS256, AUTH_SECRET). */
+@Injectable()
+export class LocalTokenVerifier extends TokenVerifier {
+  private readonly key: Uint8Array;
+
+  constructor(@Inject(APP_CONFIG) config: AppConfig) {
     super();
-    this.jwks = createRemoteJWKSet(new URL(`${config.OIDC_ISSUER}/protocol/openid-connect/certs`));
+    this.key = new TextEncoder().encode(config.AUTH_SECRET);
+  }
+
+  async issue(user: { id: string; username: string }) {
+    return new SignJWT({ preferred_username: user.username })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject(user.id)
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setIssuedAt()
+      .setExpirationTime(`${SESSION_SECONDS}s`)
+      .sign(this.key);
   }
 
   async verify(token: string): Promise<JWTPayload> {
-    // Yalnızca RS256 kabul edilir: "alg: none" ve simetrik anahtar karışıklığı saldırılarına karşı.
-    const { payload } = await jwtVerify(token, this.jwks, { issuer: this.config.OIDC_ISSUER, audience: this.config.OIDC_AUDIENCE, algorithms: ['RS256'] });
+    // Yalnızca HS256 kabul edilir: "alg: none" ve algoritma karışıklığı saldırılarına karşı.
+    const { payload } = await jwtVerify(token, this.key, { issuer: ISSUER, audience: AUDIENCE, algorithms: ['HS256'] });
     return payload;
   }
 }
@@ -63,7 +80,7 @@ export class OidcTokenVerifier extends TokenVerifier {
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
 /**
- * Kimlik doğrulama ve yetki. Keycloak yalnızca kimliği doğrular; rol ve hesabın etkinliği veritabanındadır.
+ * Kimlik doğrulama ve yetki. Belirteç yalnızca kimliği taşır; rol ve hesabın etkinliği her istekte veritabanından okunur.
  * Hesapları koordinatör açar: veritabanında olmayan ya da pasif hesap hiçbir işlem yapamaz.
  * Bölüm başkanı yalnızca izler: veri değiştiren her istek burada reddedilir.
  */
@@ -117,9 +134,10 @@ export class AuthGuard implements CanActivate {
 @Global()
 @Module({
   providers: [
-    { provide: TokenVerifier, useClass: OidcTokenVerifier },
+    LocalTokenVerifier,
+    { provide: TokenVerifier, useExisting: LocalTokenVerifier },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [TokenVerifier],
+  exports: [TokenVerifier, LocalTokenVerifier],
 })
 export class AuthModule {}

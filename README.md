@@ -36,13 +36,13 @@ Sistemin tek esas kaynağı danışman hocanın [çerçeve e-postasıdır](kayna
 ## Yapı
 
 ```
-apps/web            Next.js 15: üç rolün ekranları, yazdırılabilir formlar, next-auth (Keycloak)
-apps/api            NestJS 11: REST API, Prisma/PostgreSQL, belge deposu, BullMQ e-posta kuyruğu, Keycloak yönetim istemcisi
+apps/web            Next.js 15: üç rolün ekranları, yazdırılabilir formlar, next-auth (kullanıcı adı + şifre)
+apps/api            NestJS 11: REST API, Prisma/PostgreSQL, belge deposu, BullMQ e-posta kuyruğu, giriş ve şifre belirleme (scrypt, imzalı oturum belirteci)
 packages/rules      Kural motoru (saf TypeScript, 135 test, %100 kapsam)
 packages/contracts  Ortak şemalar, durumlar, ayarlar, Türkçe etiketler
-packages/seed-data  Gerçek müfredat ve ders listesi şablonları; sentetik öğrenciler ve personel; Keycloak realm üreteci
+packages/seed-data  Gerçek müfredat ve ders listesi şablonları; sentetik öğrenciler ve personel
 e2e                 Playwright uçtan uca testleri
-infra               docker-compose (PostgreSQL, Redis, Keycloak, Mailpit) + realm
+infra               docker-compose (PostgreSQL, Redis, Mailpit)
 docs/taslak         Taslak dosyası ve üretim betiği (veritabanı bölümü şemadan üretilir)
 ```
 
@@ -52,10 +52,9 @@ Gerekenler: Node 22+, pnpm 10, Docker.
 
 ```bash
 pnpm install
-pnpm --filter @cap/seed-data build && pnpm --filter @cap/seed-data realm   # infra/keycloak/realm.json
-pnpm infra:up                       # PostgreSQL 5442, Redis 6389, Keycloak 8088, Mailpit 8035
+pnpm infra:up                       # PostgreSQL 5442, Redis 6389, Mailpit 8035
 docker exec cap-yandal-postgres-1 psql -U cap -d postgres -c "CREATE DATABASE cap_takip" -c "CREATE DATABASE cap_takip_test"
-cp apps/api/.env.example apps/api/.env
+cp apps/api/.env.example apps/api/.env       # AUTH_SECRET'a uzun rastgele bir değer girin
 cp apps/web/.env.example apps/web/.env.local   # NEXTAUTH_SECRET'a uzun rastgele bir değer girin
 pnpm build
 pnpm --filter @cap/api db:deploy && pnpm db:seed
@@ -67,11 +66,10 @@ pnpm dev                            # web :3000, api :4000
 | http://localhost:3000 | Uygulama |
 | http://localhost:4000/api/docs | API belgeleri (OpenAPI) |
 | http://localhost:8035 | Mailpit: şifre belirleme ve bildirim e-postaları |
-| http://localhost:8088 | Keycloak (yönetici: admin/admin, yalnızca yerel) |
 
 ### Deneme hesapları
 
-Seed hesapları aynı yerel şifreyi kullanır: `packages/seed-data/src/users.ts` içindeki `DEV_PASSWORD`. Yalnızca yerel Keycloak realm'inde geçerlidir. Koordinatörün yeni eklediği öğrenci şifresini Mailpit'e düşen bağlantıyla kendisi belirler.
+Seed hesapları aynı yerel şifreyi kullanır: `packages/seed-data/src/users.ts` içindeki `DEV_PASSWORD`. Canlı ortamda seed `SEED_PASSWORD` ile çalıştırılır, bu şifre orada geçmez. Koordinatörün yeni eklediği öğrenci şifresini Mailpit'e düşen bağlantıyla kendisi belirler.
 
 | Kullanıcı | Rol |
 |---|---|

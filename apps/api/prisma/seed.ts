@@ -7,7 +7,8 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { DEFAULT_RULE_SETS } from '@cap/rules';
-import { COURSES, CURRENT_TERM_ID, PROGRAMS, STUDENTS, TEMPLATES, TERMS, USERS, studentEmail, type SeedStudent } from '@cap/seed-data';
+import { COURSES, CURRENT_TERM_ID, DEV_PASSWORD, PROGRAMS, STUDENTS, TEMPLATES, TERMS, USERS, studentEmail, type SeedStudent } from '@cap/seed-data';
+import { hashPassword } from '../src/auth/password';
 import { AuditService } from '../src/audit/audit.service';
 import type { NotificationsService } from '../src/notifications/notifications';
 import type { PrismaService } from '../src/prisma/prisma.service';
@@ -17,6 +18,9 @@ import { resultForGrade } from '../src/curriculum/progress';
 
 const prisma = new PrismaClient();
 const STORAGE = resolve(process.env.UPLOAD_DIR ?? './storage');
+const IN_DB = process.env.STORAGE_DRIVER === 'db';
+/** Deneme hesaplarının şifresi: barındırmada SEED_PASSWORD, yerelde DEV_PASSWORD. */
+const SEED_PASSWORD = process.env.SEED_PASSWORD ?? DEV_PASSWORD;
 const COORD = 'koord.bilgisayar';
 const SETUP = new Date('2026-09-10T10:00:00+03:00');
 
@@ -109,11 +113,12 @@ async function seedStudent(s: SeedStudent) {
     await prisma.ganoRecord.create({ data: { studentNo: s.studentNo, termId: g.termId, gano: g.gano, source: 'TRANSKRIPT', sourceNote: 'Kurulum: transkriptten', mainFrozen: g.mainFrozen ?? false, mainGraduated: g.mainGraduated ?? false, enteredBy: COORD, createdAt: SETUP } });
   }
 
-  mkdirSync(join(STORAGE, s.studentNo), { recursive: true });
+  if (!IN_DB) mkdirSync(join(STORAGE, s.studentNo), { recursive: true });
   for (const [i, d] of s.documents.entries()) {
     const file = placeholderPdf(`Sentetik belge - ${d.kind} - ${s.studentNo}`);
     const storageKey = `${s.studentNo}/seed-${i}.pdf`;
-    writeFileSync(join(STORAGE, storageKey), file);
+    if (IN_DB) await prisma.documentFile.create({ data: { storageKey, data: new Uint8Array(file) } });
+    else writeFileSync(join(STORAGE, storageKey), file);
     const pending = d.status === 'PENDING';
     await prisma.document.create({
       data: {
@@ -137,7 +142,7 @@ async function main() {
   const tables = (await prisma.$queryRaw<{ tablename: string }[]>`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '\_prisma%'`).map((t) => t.tablename);
   // TRUNCATE satır tetikleyicilerini çalıştırmaz; silinmezlik ve denetim kaydı yalnızca seed ile sıfırlanabilir.
   await prisma.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE`);
-  rmSync(STORAGE, { recursive: true, force: true });
+  if (!IN_DB) rmSync(STORAGE, { recursive: true, force: true });
 
   await prisma.program.createMany({ data: PROGRAMS.map((p) => ({ id: p.id, name: p.name, faculty: p.faculty, codePrefix: p.codePrefix, isHome: p.isHome })) });
   await prisma.course.createMany({ data: COURSES.map((c) => ({ ...c, updatedBy: 'seed' })) });
@@ -172,8 +177,9 @@ async function main() {
       },
     });
   }
+  const passwordHash = await hashPassword(SEED_PASSWORD);
   for (const u of USERS) {
-    await prisma.user.create({ data: { username: u.username, displayName: u.displayName, email: u.email, role: u.role, createdBy: 'seed', invitedAt: u.role === 'OGRENCI' ? null : SETUP } });
+    await prisma.user.create({ data: { username: u.username, displayName: u.displayName, email: u.email, role: u.role, passwordHash, createdBy: 'seed', invitedAt: u.role === 'OGRENCI' ? null : SETUP } });
   }
   for (const s of STUDENTS) await seedStudent(s);
 

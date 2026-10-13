@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { acceptDialogs, actionLinkFor, login, PDF } from './helpers';
 
 /**
- * Koordinatörün çerçeve e-postasındaki akış, arayüzden uçtan uca (gerçek Keycloak ve Mailpit dahil):
+ * Koordinatörün çerçeve e-postasındaki akış, arayüzden uçtan uca (gerçek e-posta kutusu Mailpit dahil):
  * öğrenciyi ekle → öğrenci şifresini e-postadaki bağlantıyla belirler → formunu yükler → koordinatör onaylar →
  * ders listesi → dönem dersi → dönem sonu not + not belgesi → onay → mesajlaşma → kural uyarısı → karar.
  */
@@ -10,7 +10,7 @@ test.describe.configure({ mode: 'serial' });
 
 const KOORD = 'koord.bilgisayar';
 const HEAD = 'bolum.bilgisayar';
-// Her koşuda yeni numara: Keycloak hesabı koşular arasında kalır.
+// Her koşuda yeni numara: önceki koşunun hesabı veritabanında kalır.
 const NO = `26${String(Date.now()).slice(-7)}`;
 const EMAIL = `e2e.${NO}@ogrenci.selcuk.test`;
 const PASSWORD = 'Yeni.Sifre2026';
@@ -31,11 +31,10 @@ test('koordinatör kabul edilen öğrenciyi ekler; öğrenci e-postadaki bağlan
   // Kendi kendine kayıt yok: şifreyi öğrenci, okul e-postasına gelen tek kullanımlık bağlantıyla belirler.
   await page.context().clearCookies();
   await page.goto(await actionLinkFor(EMAIL));
-  const proceed = page.getByRole('link', { name: /buraya tıklayın|Click here/i });
-  if (await proceed.isVisible().catch(() => false)) await proceed.click();
-  await page.locator('#password-new').fill(PASSWORD);
-  await page.locator('#password-confirm').fill(PASSWORD);
-  await page.locator('input[type=submit], button[type=submit]').first().click();
+  await page.getByLabel('Yeni şifre', { exact: true }).fill(PASSWORD);
+  await page.getByLabel('Yeni şifre (tekrar)').fill(PASSWORD);
+  await page.getByRole('button', { name: 'ŞİFREYİ BELİRLE' }).click();
+  await page.waitForURL(/\/giris\?sifre=tamam/);
 
   await login(page, NO, '/panel', PASSWORD);
   await expect(page.getByText('İmzalı protokolünüzü yükleyin')).toBeVisible();

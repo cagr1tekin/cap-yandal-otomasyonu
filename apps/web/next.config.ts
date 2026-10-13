@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 
-const keycloak = new URL(process.env.KEYCLOAK_ISSUER ?? 'http://localhost:8088/realms/selcuk').origin;
 const dev = process.env.NODE_ENV !== 'production';
 
 /**
@@ -17,7 +16,7 @@ const csp = [
   "object-src 'none'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
-  `form-action 'self' ${keycloak}`,
+  "form-action 'self'",
 ].join('; ');
 
 const config: NextConfig = {

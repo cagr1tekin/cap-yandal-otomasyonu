@@ -188,6 +188,11 @@ model User {
   email       String    @unique
   role        UserRole
   active      Boolean   @default(true)
+  /// scrypt özeti (tuz:özet). Şifrenin kendisi saklanmaz; null ise kullanıcı henüz şifre belirlememiştir.
+  passwordHash   String?
+  /// Şifre belirleme bağlantısındaki tek kullanımlık anahtarın SHA-256 özeti.
+  resetTokenHash String?   @unique
+  resetExpiresAt DateTime?
   invitedAt   DateTime?
   lastLoginAt DateTime?
   createdBy   String
@@ -350,7 +355,7 @@ model CourseRequest {
 
 // ---------------------------------------------------------------- Belgeler ve yazışma
 
-/// Belge arşivi. Dosya diskte; özeti ve üst verisi burada. Yeni sürüm eskisini silmez (previousId zinciri).
+/// Belge arşivi. Dosya diskte ya da DocumentFile tablosunda; özeti ve üst verisi burada. Yeni sürüm eskisini silmez (previousId zinciri).
 model Document {
   id          String            @id @default(cuid())
   studentNo   String
@@ -380,6 +385,13 @@ model Document {
   submissions GradeSubmission[]
 
   @@index([studentNo, kind])
+}
+
+/// Belge içeriği; kalıcı diski olmayan barındırmada (STORAGE_DRIVER=db) dosya yerine burada tutulur.
+model DocumentFile {
+  storageKey String   @id
+  data       Bytes
+  createdAt  DateTime @default(now())
 }
 
 /// Koordinatörün öğrenciden belge ya da bilgi istemesi; yanıtı izlenir.

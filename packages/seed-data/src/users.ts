@@ -13,7 +13,7 @@ export interface SeedUser {
   role: SeedRole;
 }
 
-/** Yerel geliştirme için ortak deneme şifresi; yalnızca infra/keycloak/realm.json içinde kullanılır. */
+/** Yerel deneme hesaplarının ortak şifresi (seed). Barındırmada SEED_PASSWORD ile değiştirilir. */
 export const DEV_PASSWORD = 'Deneme.2026';
 
 export const STAFF: SeedUser[] = [

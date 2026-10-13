@@ -7,6 +7,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AuditModule } from './audit/audit.service';
 import { AccessModule } from './auth/access.service';
 import { AuthModule } from './auth/auth';
+import { LoginController } from './auth/login';
 import { CatalogController, CatalogService } from './catalog/catalog';
 import { UserThrottlerGuard } from './common/throttle';
 import { APP_CONFIG, loadConfig, type AppConfig } from './config';
@@ -36,7 +37,15 @@ class ConfigModule {}
 function redisConnection(c: AppConfig) {
   const u = new URL(c.REDIS_URL);
   // redis://host:port/1 → 1 numaralı veritabanı (testler ayrı veritabanı kullanır)
-  return { host: u.hostname, port: Number(u.port || 6379), db: Number(u.pathname.slice(1) || 0) };
+  return {
+    host: u.hostname,
+    port: Number(u.port || 6379),
+    db: Number(u.pathname.slice(1) || 0),
+    username: u.username ? decodeURIComponent(u.username) : undefined,
+    password: u.password ? decodeURIComponent(u.password) : undefined,
+    // rediss:// → TLS (barındırılan Redis)
+    tls: u.protocol === 'rediss:' ? {} : undefined,
+  };
 }
 
 const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor] : [];
@@ -68,6 +77,7 @@ const workers: Provider[] = config.WORKER_ENABLED ? [MailProcessor] : [];
     IntegrationsModule,
   ],
   controllers: [
+    LoginController,
     MeController,
     HealthController,
     CatalogController,
