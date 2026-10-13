@@ -71,6 +71,12 @@ export function ActionResult({ state }: { state: ActionState }) {
   const p = state.problem;
   return (
     <Alert tone={state.ok ? 'ok' : 'bad'} title={state.message}>
+      {state.link ? (
+        <div className="space-y-1">
+          <input readOnly value={state.link} onFocus={(e) => e.currentTarget.select()} aria-label="Şifre belirleme bağlantısı" className="w-full rounded-md border border-su-border bg-white px-2 py-1 font-mono text-xs" />
+          <p className="text-xs">Bağlantıyı kopyalayıp kişiye iletin. 72 saat geçerli ve tek kullanımlık; yenisi oluşturulunca eskisi geçersiz olur.</p>
+        </div>
+      ) : null}
       {p?.results?.length ? (
         <ul className="list-disc space-y-0.5 pl-4">
           {p.results.map((r) => (

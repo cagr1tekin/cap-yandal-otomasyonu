@@ -36,16 +36,10 @@ services:
         generateValue: true
       - key: STORAGE_DRIVER
         value: db
-      - key: SMTP_HOST
-        value: smtp-relay.brevo.com
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: MAIL_FROM
-        sync: false
+      # E-posta kapalı: şifre belirleme bağlantısını koordinatör ekrandan alıp kişiye iletir.
+      # Açmak için MAIL_ENABLED=true ve SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/MAIL_FROM girin.
+      - key: MAIL_ENABLED
+        value: "false"
       - key: WORKER_ENABLED
         value: "true"
       - key: LOG_PRETTY

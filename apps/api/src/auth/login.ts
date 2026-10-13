@@ -1,7 +1,8 @@
-import { Body, Controller, HttpCode, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, UnauthorizedException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { z } from 'zod';
 import { badRequest, forbidden, ZodPipe } from '../common/http';
+import { APP_CONFIG, type AppConfig } from '../config';
 import { IdentityPort } from '../identity/identity';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocalTokenVerifier, Public, SESSION_SECONDS } from './auth';
@@ -25,6 +26,7 @@ export class LoginController {
     private readonly prisma: PrismaService,
     private readonly tokens: LocalTokenVerifier,
     private readonly identity: IdentityPort,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   @Post('login')
@@ -54,8 +56,10 @@ export class LoginController {
   @HttpCode(200)
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   async forgot(@Body(new ZodPipe(ForgotSchema)) body: z.infer<typeof ForgotSchema>) {
+    // E-posta kapalıyken bağlantı yalnızca koordinatörün ekranında üretilir.
+    if (!this.config.MAIL_ENABLED) return { ok: true, mail: false };
     const user = await this.prisma.user.findUnique({ where: { username: body.username } });
     if (user?.active) await this.identity.invite(user.username).catch(() => undefined);
-    return { ok: true };
+    return { ok: true, mail: true };
   }
 }

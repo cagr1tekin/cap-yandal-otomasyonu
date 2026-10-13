@@ -21,14 +21,14 @@ export const INVITE_HOURS = 72;
 export abstract class IdentityPort {
   /** Hesabı açar ya da varsa günceller. */
   abstract ensure(account: IdentityAccount): Promise<void>;
-  /** Şifre belirleme bağlantısı gönderir. */
-  abstract invite(username: string): Promise<void>;
+  /** Şifre belirleme bağlantısı oluşturur; e-posta kapalıysa bağlantıyı döndürür (koordinatör iletir), açıksa gönderir ve null döner. */
+  abstract invite(username: string): Promise<string | null>;
   abstract setEnabled(username: string, enabled: boolean): Promise<void>;
 }
 
 /**
  * Yerel kimlik: hesap ve etkinlik bilgisi zaten User tablosunda olduğu için ensure ve setEnabled ek iş yapmaz;
- * davet, tek kullanımlık anahtarı (özetini) kaydedip bağlantıyı e-postayla gönderir.
+ * davet, tek kullanımlık anahtarı (özetini) kaydedip bağlantıyı e-postayla gönderir ya da (MAIL_ENABLED=false) döndürür.
  */
 @Injectable()
 export class LocalIdentity extends IdentityPort {
@@ -50,6 +50,7 @@ export class LocalIdentity extends IdentityPort {
     const { token, hash } = newResetToken();
     await this.prisma.user.update({ where: { id: u.id }, data: { resetTokenHash: hash, resetExpiresAt: new Date(Date.now() + INVITE_HOURS * 3600_000) } });
     const link = `${this.config.WEB_ORIGIN}/sifre-belirle?anahtar=${token}`;
+    if (!this.config.MAIL_ENABLED) return link;
     await this.mail.send(
       u.email,
       'ÇAP / YDP Takip Sistemi: şifrenizi belirleyin',
@@ -63,6 +64,7 @@ export class LocalIdentity extends IdentityPort {
         'Bu e-postayı siz istemediyseniz dikkate almayın.',
       ].join('\n'),
     );
+    return null;
   }
 }
 

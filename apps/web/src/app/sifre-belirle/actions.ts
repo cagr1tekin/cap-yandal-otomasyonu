@@ -6,6 +6,8 @@ import { publicApi } from '@/lib/auth';
 export interface PublicFormState {
   error?: string;
   done?: boolean;
+  /** false: e-posta gönderimi kapalı; bağlantıyı koordinatör verir. */
+  mail?: boolean;
 }
 
 export async function setPassword(_: PublicFormState, form: FormData): Promise<PublicFormState> {
@@ -17,7 +19,7 @@ export async function setPassword(_: PublicFormState, form: FormData): Promise<P
 }
 
 export async function forgotPassword(_: PublicFormState, form: FormData): Promise<PublicFormState> {
-  const r = await publicApi('/auth/forgot', { username: String(form.get('username') ?? '').trim() });
+  const r = await publicApi<{ mail: boolean }>('/auth/forgot', { username: String(form.get('username') ?? '').trim() });
   if (!r.ok) return { error: r.detail };
-  return { done: true };
+  return { done: true, mail: r.data.mail };
 }

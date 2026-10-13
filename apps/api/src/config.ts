@@ -19,6 +19,11 @@ const EnvSchema = z.object({
   STORAGE_DRIVER: z.enum(['disk', 'db']).default('disk'),
   SMTP_HOST: z.string().default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().default(1035),
+  /** false: e-posta gönderilmez; şifre belirleme bağlantısı koordinatöre ekranda verilir. */
+  MAIL_ENABLED: z
+    .string()
+    .default('true')
+    .transform((v) => v === 'true'),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().default('Bilgisayar Müh. ÇAP-YDP <noreply@cap.test>'),

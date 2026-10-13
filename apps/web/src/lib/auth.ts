@@ -14,7 +14,7 @@ export async function publicApi<T>(path: string, json: unknown): Promise<{ ok: t
     const detail = res.status === 429 ? 'Çok fazla deneme yapıldı. Bir dakika sonra tekrar deneyin.' : (body.detail ?? body.errors?.[0]?.message ?? body.title ?? 'İşlem yapılamadı.');
     return { ok: false, status: res.status, detail };
   } catch {
-    return { ok: false, status: 503, detail: 'Sunucuya ulaşılamadı. Biraz sonra tekrar deneyin.' };
+    return { ok: false, status: 503, detail: 'Sunucuya ulaşılamadı. Sunucu uykudan uyanıyor olabilir; bir dakika sonra tekrar deneyin.' };
   }
 }
 

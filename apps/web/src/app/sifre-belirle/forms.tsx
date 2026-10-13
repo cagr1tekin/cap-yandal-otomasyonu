@@ -25,6 +25,9 @@ export function SetPasswordForm({ token }: { token: string }) {
 
 export function ForgotPasswordForm() {
   const [state, action, pending] = useActionState<PublicFormState, FormData>(forgotPassword, {});
+  if (state.done && state.mail === false) {
+    return <Alert tone="info">Bu sistemde e-posta gönderimi kapalı. Yeni şifre belirleme bağlantısı için ÇAP / YDP koordinatörüne başvurun; koordinatör bağlantıyı size iletir.</Alert>;
+  }
   if (state.done) {
     return <Alert tone="ok">Hesap varsa kayıtlı e-posta adresine şifre belirleme bağlantısı gönderildi. Gelen kutunuzu ve istenmeyen klasörünü kontrol edin.</Alert>;
   }

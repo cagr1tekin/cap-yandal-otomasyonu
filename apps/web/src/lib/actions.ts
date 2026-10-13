@@ -44,7 +44,7 @@ function multipart(f: FormData, fields: string[]) {
 export async function createStudentAction(_: ActionState, f: FormData): Promise<ActionState> {
   let created: string;
   try {
-    const r = await api<{ studentNo: string }>('/students', {
+    const r = await api<{ studentNo: string; inviteLink: string | null }>('/students', {
       method: 'POST',
       json: {
         studentNo: s(f, 'studentNo'),
@@ -57,6 +57,11 @@ export async function createStudentAction(_: ActionState, f: FormData): Promise<
       },
     });
     created = r.studentNo;
+    // E-posta kapalıysa bağlantı burada gösterilir (karta geçince kaybolurdu).
+    if (r.inviteLink) {
+      revalidatePath('/ogrenciler');
+      return { ok: true, message: `Öğrenci eklendi (${created}). Şifre belirleme bağlantısı:`, link: r.inviteLink };
+    }
   } catch (e) {
     return fail(e);
   }
@@ -94,9 +99,14 @@ export async function contactAction(_: ActionState, f: FormData): Promise<Action
 }
 
 export async function inviteAction(_: ActionState, f: FormData): Promise<ActionState> {
-  const r = await act(() => api(`/users/${encodeURIComponent(s(f, 'username'))}/invite`, { method: 'POST' }), 'Şifre belirleme bağlantısı e-postayla gönderildi.');
+  let r: { link: string | null };
+  try {
+    r = await api<{ link: string | null }>(`/users/${encodeURIComponent(s(f, 'username'))}/invite`, { method: 'POST' });
+  } catch (e) {
+    return fail(e);
+  }
   revalidatePath('/', 'layout');
-  return r;
+  return r.link ? { ok: true, message: 'Şifre belirleme bağlantısı oluşturuldu.', link: r.link } : { ok: true, message: 'Şifre belirleme bağlantısı e-postayla gönderildi.' };
 }
 
 // ---------------- Ders listesi, dönem dersleri, notlar ----------------
@@ -410,12 +420,14 @@ export async function saveTemplateAction(_: ActionState, f: FormData): Promise<A
 // ---------------- Hesaplar ve aktarım ----------------
 
 export async function createStaffAction(_: ActionState, f: FormData): Promise<ActionState> {
-  const r = await act(
-    () => api('/users', { method: 'POST', json: { username: s(f, 'username'), displayName: s(f, 'displayName'), email: s(f, 'email'), role: s(f, 'role') } }),
-    'Hesap açıldı; şifre belirleme bağlantısı e-postayla gönderildi.',
-  );
+  let r: { inviteLink: string | null };
+  try {
+    r = await api<{ inviteLink: string | null }>('/users', { method: 'POST', json: { username: s(f, 'username'), displayName: s(f, 'displayName'), email: s(f, 'email'), role: s(f, 'role') } });
+  } catch (e) {
+    return fail(e);
+  }
   revalidatePath('/kullanicilar');
-  return r;
+  return r.inviteLink ? { ok: true, message: 'Hesap açıldı.', link: r.inviteLink } : { ok: true, message: 'Hesap açıldı; şifre belirleme bağlantısı e-postayla gönderildi.' };
 }
 
 export async function accountStateAction(_: ActionState, f: FormData): Promise<ActionState> {

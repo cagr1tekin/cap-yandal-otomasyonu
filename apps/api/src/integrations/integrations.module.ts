@@ -22,6 +22,7 @@ export class SmtpMailAdapter extends MailPort {
   }
 
   async send(to: string, subject: string, text: string) {
+    if (!this.config.MAIL_ENABLED) return;
     await this.transport.sendMail({ from: this.config.MAIL_FROM, to, subject, text });
   }
 }

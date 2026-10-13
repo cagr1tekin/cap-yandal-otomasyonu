@@ -24,6 +24,7 @@ export class FakeIdentity extends IdentityPort {
 
   async invite(username: string) {
     this.invites.push(username);
+    return null;
   }
 
   async setEnabled(username: string, enabled: boolean) {

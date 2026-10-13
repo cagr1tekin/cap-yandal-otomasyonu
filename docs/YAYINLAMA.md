@@ -7,13 +7,13 @@
 | Redis (e-posta kuyruğu) | Render Key Value, free | Bellekte; yeniden başlayınca kuyruk boşalır |
 | PostgreSQL | Neon, free (Frankfurt) | 0,5 GB; 5 dk boşta kalınca uyur, ilk istekte kendisi uyanır |
 | Belgeler | PostgreSQL (`DocumentFile`) | Render free'de kalıcı disk yok: `STORAGE_DRIVER=db` |
-| E-posta | Brevo SMTP | Gönderen adresi Brevo'da doğrulanmış olmalı |
+| E-posta | Kapalı (`MAIL_ENABLED=false`) | Şifre belirleme bağlantısı koordinatörün ekranında çıkar, kişiye o iletir. İstenirse SMTP (ör. Brevo) bağlanır |
 
 Giriş sistemin kendisindedir (Keycloak yok): şifreler scrypt özetiyle `User.passwordHash`'te, oturum API'nin `AUTH_SECRET` ile imzaladığı 8 saatlik belirteçtir. Şifre belirleme bağlantısı tek kullanımlık ve 72 saat geçerlidir; veritabanında yalnızca özeti durur.
 
 ## Ortam değişkenleri
 
-**Render (cap-api):** `DATABASE_URL` (Neon, pooler'sız adres, `?sslmode=require`), `WEB_ORIGIN` (Vercel adresi), `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`. `AUTH_SECRET` Render'da üretilir; geri kalanı `render.yaml`'da.
+**Render (cap-api):** `DATABASE_URL` (Neon, pooler'sız adres, `?sslmode=require`), `WEB_ORIGIN` (Vercel adresi; şifre bağlantıları bu adresle üretilir). `AUTH_SECRET` Render'da üretilir; geri kalanı `render.yaml`'da.
 
 **Vercel (apps/web):** `NEXTAUTH_URL` (Vercel adresi), `NEXTAUTH_SECRET` (uzun rastgele), `API_URL` (`https://<render-adı>.onrender.com/api/v1`).
 

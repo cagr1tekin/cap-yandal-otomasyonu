@@ -51,7 +51,8 @@ export async function apiRaw(path: string): Promise<Response> {
 }
 
 /** Sunucu eylemleri için ortak sonuç biçimi. */
-export type ActionState = { ok: boolean; message?: string; problem?: Problem } | null;
+/** link: e-posta kapalıyken koordinatörün kişiye ileteceği şifre belirleme bağlantısı. */
+export type ActionState = { ok: boolean; message?: string; problem?: Problem; link?: string } | null;
 
 export async function act(fn: () => Promise<unknown>, okMessage: string): Promise<ActionState> {
   try {

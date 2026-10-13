@@ -17,7 +17,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
           <SignInForm callbackUrl={callbackUrl} />
           <div className="space-y-2 text-xs text-su-muted">
             <p>
-              <strong className="text-su-heading">Hesabınız yok mu?</strong> Kendi kendine kayıt yoktur. Koordinatör hesabınızı açtığında okul e-postanıza şifre belirleme bağlantısı gelir.
+              <strong className="text-su-heading">Hesabınız yok mu?</strong> Kendi kendine kayıt yoktur. Koordinatör hesabınızı açtığında size şifre belirleme bağlantısı iletilir.
             </p>
             <p>
               <strong className="text-su-heading">Şifrenizi mi unuttunuz?</strong>{' '}

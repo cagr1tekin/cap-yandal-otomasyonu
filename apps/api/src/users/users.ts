@@ -33,8 +33,8 @@ export class UsersService {
     await this.identity.ensure(input);
     const u = await this.prisma.user.create({ data: { ...input, createdBy: user.username } });
     await this.audit.log(user, { action: 'ACCOUNT_CREATE', entity: 'User', entityId: u.id, after: input });
-    await this.students.invite(user, u.username);
-    return u;
+    const { link } = await this.students.invite(user, u.username);
+    return { ...u, inviteLink: link };
   }
 
   async setActive(user: AuthUser, id: string, active: boolean, reason: string) {

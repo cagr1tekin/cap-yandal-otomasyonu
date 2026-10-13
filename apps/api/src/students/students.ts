@@ -68,8 +68,9 @@ export class StudentsService {
     // Önce kimlik servisinde hesap açılır; başarısız olursa öğrenci kaydı da oluşmaz.
     await this.identity.ensure({ username: input.studentNo, email: input.schoolEmail, displayName: input.fullName });
     const s = await (tx === this.prisma ? this.prisma.$transaction((t) => this.insert(user, input, source, t)) : this.insert(user, input, source, tx));
-    if (input.sendInvite) await this.invite(user, input.studentNo);
-    return s;
+    // E-posta kapalıysa bağlantı yanıtta döner; koordinatör öğrenciye iletir.
+    const invited = input.sendInvite ? await this.invite(user, input.studentNo) : null;
+    return { ...s, inviteLink: invited?.link ?? null };
   }
 
   private async insert(user: AuthUser, input: StudentCreateInput, source: RecordSource, tx: Prisma.TransactionClient | PrismaService) {
@@ -98,10 +99,10 @@ export class StudentsService {
     const u = await this.prisma.user.findUnique({ where: { username } });
     if (!u) throw notFound('Hesap');
     if (!u.active) throw conflict('Pasif hesaba davet gönderilmez.');
-    await this.identity.invite(username);
+    const link = await this.identity.invite(username);
     await this.prisma.user.update({ where: { id: u.id }, data: { invitedAt: new Date() } });
     await this.audit.log(user, { action: 'ACCOUNT_INVITE', entity: 'User', entityId: u.id, studentNo: u.role === 'OGRENCI' ? username : null });
-    return { ok: true };
+    return { ok: true, link };
   }
 
   async update(user: AuthUser, studentNo: string, input: z.infer<typeof StudentUpdateSchema>) {
