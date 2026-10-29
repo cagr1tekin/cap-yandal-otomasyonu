@@ -30,4 +30,4 @@ Bilgisayar Mühendisliği Bölümünün "Çift Anadal" sayfasındaki rehber ve i
 
 ## Çerçeve e-postası (2026-10-09)
 
-Danışman hocanın sistemi tanımlayan e-postası: [hoca-materyalleri/cerceve-eposta.md](hoca-materyalleri/cerceve-eposta.md). Önceki kapsam belgelerinin yerine geçer; yönergeyle çelişen noktada yönerge esastır.
+Danışman hocanın sistemi tanımlayan e-postası (9 Ekim 2026). Kişisel yazışma olduğu için metni depoda yayımlanmaz; yerelde `hoca-materyalleri/cerceve-eposta.md` olarak tutulur. Önceki kapsam belgelerinin yerine geçer; yönergeyle çelişen noktada yönerge esastır.

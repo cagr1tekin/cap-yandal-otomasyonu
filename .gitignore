@@ -12,3 +12,6 @@ test-results/
 e2e/.auth/
 storage/
 storage-test/
+
+# Danışmanın kişisel yazışması: depoda yayımlanmaz
+kaynaklar/hoca-materyalleri/cerceve-eposta.md

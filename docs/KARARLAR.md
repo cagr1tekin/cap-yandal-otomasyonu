@@ -179,7 +179,7 @@ Rehber, "Başvuru": dilekçe; transkript ve ilk %20 belgesi (fakülte içi böl�
 
 ## K-18 Çerçeve e-postası (9/10/2026): tek esas kaynak — **Kesin (danışman kararı)**
 
-Danışman hocanın çerçeve e-postası ([metni](../kaynaklar/hoca-materyalleri/cerceve-eposta.md)) sistemin tek esas kaynağıdır. **K-1, K-3, K-4, K-6, K-7, K-12, K-13, K-14 ve K-15'in iş akışına dair kısımlarının yerine geçer**; o maddeler önceki kapsamların kaydı olarak durur. Kural sayıları ve form içerikleri için yönergeler (K-2, K-11) ve bölüm belgeleri geçerliliğini korur; e-posta da "yönergeyle çelişirse yönerge esas alınır" der.
+Danışman hocanın çerçeve e-postası (kişisel yazışma olduğu için metni depoda yayımlanmaz) sistemin tek esas kaynağıdır. **K-1, K-3, K-4, K-6, K-7, K-12, K-13, K-14 ve K-15'in iş akışına dair kısımlarının yerine geçer**; o maddeler önceki kapsamların kaydı olarak durur. Kural sayıları ve form içerikleri için yönergeler (K-2, K-11) ve bölüm belgeleri geçerliliğini korur; e-posta da "yönergeyle çelişirse yönerge esas alınır" der.
 
 | E-postadaki çerçeve | Sistemdeki karşılığı |
 |---|---|

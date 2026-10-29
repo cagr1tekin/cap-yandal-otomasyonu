@@ -8,7 +8,7 @@ Selçuk Üniversitesi bitirme projesi. Teknoloji Fakültesi **Bilgisayar Mühend
 - öğrenciyle kalıcı yazışma,
 - yönerge kurallarına göre uyarılar; kararı koordinatör verir.
 
-Sistemin tek esas kaynağı danışman hocanın [çerçeve e-postasıdır](kaynaklar/hoca-materyalleri/cerceve-eposta.md). Başvuru değerlendirme ve öğrenci seçimi sistemde yapılmaz (dekanlıkta); koordinatör kabul edilen öğrenciyi ekler. OBİS bağlantısı yoktur, veri elle ya da CSV ile girilir; tasarım ileride OBİS'ten veri alınabilecek biçimdedir. Kararların kaynakları: [docs/KARARLAR.md](docs/KARARLAR.md) (güncel kapsam K-18 ve sonrası).
+Sistemin tek esas kaynağı danışman hocanın çerçeve e-postasıdır (kişisel yazışma olduğu için metni depoda yayımlanmaz). Başvuru değerlendirme ve öğrenci seçimi sistemde yapılmaz (dekanlıkta); koordinatör kabul edilen öğrenciyi ekler. OBİS bağlantısı yoktur, veri elle ya da CSV ile girilir; tasarım ileride OBİS'ten veri alınabilecek biçimdedir. Kararların kaynakları: [docs/KARARLAR.md](docs/KARARLAR.md) (güncel kapsam K-18 ve sonrası).
 
 > Bitirme projesidir, resmî sistem değildir. Bütün öğrenci ve personel verisi sentetiktir. Arayüz selcuk.edu.tr'deki renk, yazı tipi ve bileşen ölçüleriyle yeniden yazılmıştır; sitenin kodu ve logosu kullanılmaz.
 

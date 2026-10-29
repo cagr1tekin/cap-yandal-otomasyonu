@@ -354,7 +354,7 @@ Danışman kararıyla kapsam değişti; ayrıntı ve kaynaklar [KARARLAR.md](KAR
 
 ## Güncelleme (v0.5, 2026-10-09): çerçeve e-postasına göre takip sistemi
 
-Danışman hocanın çerçeve e-postası ([metni](../kaynaklar/hoca-materyalleri/cerceve-eposta.md)) bu belgenin önceki bütün kapsam tanımlarının yerine geçer.
+Danışman hocanın çerçeve e-postası (metni depoda yayımlanmaz) bu belgenin önceki bütün kapsam tanımlarının yerine geçer.
 
 **Problem:** Bölüme gelen ÇAP ve YDP öğrencileri form ve kâğıtla elle takip ediliyor: hangi dersin hangi dönem alınıp geçildiği, belgeler, yazışmalar ve yönerge kurallarına uygunluk tek yerde görülemiyor.
 
