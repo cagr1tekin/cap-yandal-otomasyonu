@@ -4,10 +4,15 @@ import { signIn } from 'next-auth/react';
 import { LogIn } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Alert, Button, Field, Input } from '@/components/ui';
+import { WAKING } from '@/lib/waking';
+
+/** Sunucu uyanırken her deneme ~50 sn bekler; uyanma ~1-1,5 dk sürdüğü için birkaç kez kendiliğinden denenir. */
+const WAKE_RETRIES = 2;
 
 export function SignInForm({ callbackUrl, initialError }: { callbackUrl: string; initialError?: string }) {
   const [error, setError] = useState(initialError);
   const [pending, setPending] = useState(false);
+  const [waking, setWaking] = useState(false);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -15,7 +20,13 @@ export function SignInForm({ callbackUrl, initialError }: { callbackUrl: string;
     setPending(true);
     setError(undefined);
     const form = new FormData(e.currentTarget);
-    const res = await signIn('credentials', { username: form.get('username'), password: form.get('password'), redirect: false });
+    const credentials = { username: form.get('username'), password: form.get('password'), redirect: false };
+    let res = await signIn('credentials', credentials);
+    for (let i = 0; i < WAKE_RETRIES && res?.error === WAKING; i++) {
+      setWaking(true);
+      res = await signIn('credentials', credentials);
+    }
+    setWaking(false);
     if (res?.ok && !res.error) {
       window.location.assign(callbackUrl);
       return;
@@ -27,6 +38,7 @@ export function SignInForm({ callbackUrl, initialError }: { callbackUrl: string;
   return (
     <form onSubmit={submit} className="space-y-4 text-left">
       {error && <Alert tone="bad">{error}</Alert>}
+      {waking && <Alert tone="info">Sunucu uykudan uyanıyor; bu bir dakika kadar sürebilir. Sayfayı kapatmayın, giriş kendiliğinden tamamlanacak.</Alert>}
       <Field label="Kullanıcı adı" htmlFor="username" hint="Öğrenciler için öğrenci numarası">
         <Input id="username" name="username" autoComplete="username" required autoFocus />
       </Field>

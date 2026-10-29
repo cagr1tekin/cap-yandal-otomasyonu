@@ -2,6 +2,7 @@ import type { NextAuthOptions } from 'next-auth';
 import { decode, type JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { cookies } from 'next/headers';
+import { WAKING } from './waking';
 
 /** API kökü; ortam değişkeni sonu /api/v1 olmadan girilse de tamamlanır. */
 export const API_BASE = (() => {
@@ -11,7 +12,6 @@ export const API_BASE = (() => {
 
 /** Uyuyan sunucu (ücretsiz barındırma) uyanırken beklenecek en uzun süre. */
 const WAKE_BUDGET_MS = 50_000;
-const WAKING = 'Sunucu uykudan uyanıyor. Bir dakika sonra tekrar deneyin.';
 
 /**
  * Oturum açmadan çağrılan API uçları (giriş, şifre belirleme). API uyanırken barındırma katmanının döndürdüğü
