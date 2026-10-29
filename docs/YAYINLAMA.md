@@ -27,3 +27,7 @@ DATABASE_URL='<neon>' STORAGE_DRIVER=db SEED_PASSWORD='<güçlü şifre>' npx ts
 ```
 
 Vercel sunucu fonksiyonları 4,5 MB'tan büyük istek almaz; bu yüzden canlıda `uploadMaxMb` ayarı 4'tür (Ayarlar ekranından da değişir).
+
+## Uyanık tutma
+
+Render ücretsiz katmanında API 15 dk istek gelmeyince uyur, ilk istek ~1 dk sürer. `infra/uyanik-tut` Cloudflare Worker'ı gündüz (TR 07:00-24:00) her 10 dakikada sağlık ucunu çağırır; gece uyumasına izin verilir (aylık 750 ücretsiz saat). Yükleme: `cd infra/uyanik-tut && npx wrangler deploy`. Web tarafı da giriş sırasında API uyanırken 50 sn'ye kadar yeniden dener.

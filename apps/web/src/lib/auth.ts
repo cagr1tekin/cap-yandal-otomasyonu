@@ -9,16 +9,43 @@ export const API_BASE = (() => {
   return raw.endsWith('/api/v1') ? raw : `${raw}/api/v1`;
 })();
 
-/** Oturum açmadan çağrılan API uçları (giriş, şifre belirleme). */
+/** Uyuyan sunucu (ücretsiz barındırma) uyanırken beklenecek en uzun süre. */
+const WAKE_BUDGET_MS = 50_000;
+const WAKING = 'Sunucu uykudan uyanıyor. Bir dakika sonra tekrar deneyin.';
+
+/**
+ * Oturum açmadan çağrılan API uçları (giriş, şifre belirleme). API uyanırken barındırma katmanının döndürdüğü
+ * yanıtlar (bağlantı hatası, 502/503/504, API'nin kendisinden gelmeyen 429) süre dolana kadar yeniden denenir;
+ * API'nin kendi yanıtları (application/problem+json) olduğu gibi döner.
+ */
 export async function publicApi<T>(path: string, json: unknown): Promise<{ ok: true; data: T } | { ok: false; status: number; detail: string }> {
-  try {
-    const res = await fetch(`${API_BASE}${path}`, { method: 'POST', cache: 'no-store', headers: { 'content-type': 'application/json' }, body: JSON.stringify(json) });
-    const body = await res.json().catch(() => ({}));
-    if (res.ok) return { ok: true, data: body as T };
-    const detail = res.status === 429 ? 'Çok fazla deneme yapıldı. Bir dakika sonra tekrar deneyin.' : (body.detail ?? body.errors?.[0]?.message ?? body.title ?? 'İşlem yapılamadı.');
-    return { ok: false, status: res.status, detail };
-  } catch {
-    return { ok: false, status: 503, detail: 'Sunucuya ulaşılamadı. Sunucu uykudan uyanıyor olabilir; bir dakika sonra tekrar deneyin.' };
+  const deadline = Date.now() + WAKE_BUDGET_MS;
+  for (;;) {
+    let res: Response | null = null;
+    try {
+      res = await fetch(`${API_BASE}${path}`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(json),
+        signal: AbortSignal.timeout(Math.max(1_000, deadline - Date.now())),
+      });
+    } catch {
+      res = null;
+    }
+    const fromApi = res?.headers.get('content-type')?.includes('json') ?? false;
+    const transient = !res || [502, 503, 504].includes(res.status) || (res.status === 429 && !fromApi);
+    if (transient) {
+      if (Date.now() + 3_000 < deadline) {
+        await new Promise((r) => setTimeout(r, 3_000));
+        continue;
+      }
+      return { ok: false, status: 503, detail: WAKING };
+    }
+    const body = await res!.json().catch(() => ({}));
+    if (res!.ok) return { ok: true, data: body as T };
+    const detail = res!.status === 429 ? 'Bu hesapla çok fazla deneme yapıldı. Bir dakika sonra tekrar deneyin.' : (body.detail ?? body.errors?.[0]?.message ?? body.title ?? 'İşlem yapılamadı.');
+    return { ok: false, status: res!.status, detail };
   }
 }
 

@@ -1,0 +1,8 @@
+name = "cap-api-uyanik-tut"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[triggers]
+# UTC 04:00-20:59 = TR 07:00-23:59
+crons = ["*/10 4-20 * * *"]
